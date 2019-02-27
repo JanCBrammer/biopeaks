@@ -23,10 +23,22 @@ for record in records[:3]:
     peaks = annotation.sample
     mypeaks, mytroughs, _, _ = extrema_signal(resp, sfreq)
     
-    plt.figure()
-    plt.plot(resp)
-    plt.scatter(peaks, resp[peaks], c='r')
-    plt.scatter(mypeaks, resp[mypeaks], c='r', marker='X')
-    plt.scatter(mytroughs, resp[mytroughs], c='r', marker='X')
+#    plt.figure()
+#    plt.plot(resp)
+#    plt.scatter(peaks, resp[peaks], c='r')
+#    plt.scatter(mypeaks, resp[mypeaks], c='r', marker='X')
+#    plt.scatter(mytroughs, resp[mytroughs], c='r', marker='X')
+    
+    
+    # acceptance window: if an algorithmically annotated peak falls within
+    # t msec of any of the two manually annotated peaks, it is scored as 
+    # true positive, t is the average disagreement between both manual
+    # annotators
+    
+    # calculate two metrics for evaluation (according to AAMI guidelines):
+    # 1. sensitivity: how many of the manually annotated peaks does the 
+    # algorithm annotate as peaks (TP / TP + FN)?
+    # 2. precision: out of all peaks that are algorithmically annotated as 
+    # peaks (TP + FP), how many are correct (TP)?
     
 
