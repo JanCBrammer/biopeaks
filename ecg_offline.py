@@ -5,18 +5,13 @@ Created on Fri Jan 18 11:01:04 2019
 @author: John Doe
 """
 
-import os
-import glob
-import bioread
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from scipy.signal import butter, filtfilt, argrelmax, argrelmin, find_peaks, welch, medfilt, hilbert, peak_prominences
-from sklearn.cluster import KMeans, SpectralClustering, DBSCAN
-from sklearn.mixture import GaussianMixture
+from scipy.signal import argrelmax, argrelmin, find_peaks, welch, hilbert, \
+peak_prominences
+from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import PCA
-from scipy import stats
 from filters import butter_bandpass_filter
 
 
@@ -45,7 +40,8 @@ def peaks_signal(signal, sfreq):
 	
 	height = ecg_filt[all_peaks]
 	
-	# for each peak p, get the average slope (absolute value) of the ECGs slope from preceding peaks to p and from p to subsequent peak
+	# for each peak p, get the average slope (absolute value) of the ECGs slope
+    # from preceding peaks to p and from p to subsequent peak
 	slope = np.zeros(np.size(all_peaks))
 	firstdiff = np.abs(np.diff(ecg_filt))
 	for p in np.arange(1, np.size(all_peaks)-1):
@@ -56,7 +52,8 @@ def peaks_signal(signal, sfreq):
 	prominence = np.empty(np.size(ecg_filt))
 	prominence[:] = np.nan
 	posprom = peak_prominences(ecg_filt, pospeaks)[0]
-	negprom = peak_prominences(ecg_filt * -1, negpeaks)[0]    # all this shananigance is to circumvent the fact that prominence can only be determined for positive peaks
+    # * -1 to make signal positive, which is required by peak_prominences
+	negprom = peak_prominences(ecg_filt * -1, negpeaks)[0]    
 	prominence[pospeaks] = posprom
 	prominence[negpeaks] = negprom
 	prominence = prominence[~np.isnan(prominence)]    
@@ -64,7 +61,9 @@ def peaks_signal(signal, sfreq):
 	hilb = hilbert(ecg_filt)
 	# extract the phase angle time series
 	instphase = np.angle(hilb)
-	# frequency sliding is defined as the temporal derivative of the phase angle time series (using the sampling rate s and 2π to scale the result to frequencies in hertz)
+	# frequency sliding is defined as the temporal derivative of the phase
+    # angle time series (using the sampling rate s and 2π to scale the result
+    # to frequencies in hertz)
 	instfreq = (np.diff(np.unwrap(instphase)) / (2.0 * np.pi) * sfreq)
 	instfreq = instfreq[all_peaks]
 	
@@ -85,16 +84,19 @@ def peaks_signal(signal, sfreq):
 	plt.subplot(2,1,1)
 	plt.scatter(features[:, 0], features[:, 1])
 	
-	# get an initial estimate of dominant heart rate (assume BPM ranging from 50 to 150)
+	# get an initial estimate of dominant heart rate (assume BPM ranging from
+    # 50 to 150)
 	fmin, fmax = .8, 2.5
-	f, powden = welch(ecg_sqrd, sfreq, nperseg=np.size(ecg_filt))    # use squared data here to make QRS complex more prominent
+    # use squared data here to make QRS complex more prominent
+	f, powden = welch(ecg_sqrd, sfreq, nperseg=np.size(ecg_filt))
 	f_range = np.logical_and(f>=fmin, f<=fmax)
 	f = f[f_range]
 	powden = powden[f_range]
 	pow_peaks = find_peaks(powden)[0]
 	max_pow = pow_peaks[np.argmax(powden[pow_peaks])]
 	freq_est = f[max_pow]
-	# calculate expected number of beats over the given signal lenght at the estimated heart rate
+	# calculate expected number of beats over the given signal lenght at the
+    # estimated heart rate
 	scds = np.size(ecg_filt) / sfreq    
 	expNpeaks = scds * freq_est
 	print expNpeaks
@@ -115,7 +117,9 @@ def peaks_signal(signal, sfreq):
 	
 	label_counts = np.unique(labels, return_counts=True)
 	# make sure these variables are calculated irrespective of number of labels
-	diffexpNpeaks = 1 / (np.abs(label_counts[1] - expNpeaks) + 1)   # smaller difference results in larger value, + 1 to avoid potential division by zero
+	# smaller difference results in larger value, + 1 to avoid potential
+    # division by zero
+    diffexpNpeaks = 1 / (np.abs(label_counts[1] - expNpeaks) + 1)
 	medheight = []
 	for i in label_counts[0]:
 		height_i = height[labels == i]
@@ -124,28 +128,39 @@ def peaks_signal(signal, sfreq):
 	medheight = np.log10(medheight)    # give less weight to extreme values
 
 	print medheight, diffexpNpeaks
-	# diffexpNpeaks will be 1 if the difference is 0 and progressively smaller as the difference grows,
-	# therefore, it gives progressively smaller weight to medheight as the difference increase
+	# diffexpNpeaks will be 1 if the difference is 0 and progressively smaller
+    # as the difference grows; therefore, it gives progressively smaller weight
+    # to medheight as the difference increase
 	criterion = medheight * diffexpNpeaks 
 	
 	peak_label = np.argmax(criterion)
 	peak_label_idcs = np.where(labels == peak_label)[0]
 	labeled_peaks = all_peaks[peak_label_idcs]
 	plt.subplot(2,1,1)
-	plt.scatter(features[peak_label_idcs, 0], features[peak_label_idcs, 1], c='g')
+	plt.scatter(features[peak_label_idcs, 0], features[peak_label_idcs, 1],
+                c='g')
 	
 	
-	# as final criterion (to identify false positives), check if any of the IBIs is smaller than 0.5 * the expected IBI
+	# as final criterion (to identify false positives), check if any of the
+    # IBIs is smaller than 0.5 * the expected IBI
 	ibi_est = int(1. / freq_est * sfreq)
-	fp_peak_idcs = np.where(np.diff(labeled_peaks) < ibi_est * .5)    # lives in the same space as peak_label_idcs
+    # lives in the same space as peak_label_idcs
+	fp_peak_idcs = np.where(np.diff(labeled_peaks) < ibi_est * .5)
 	fp_peaks = labeled_peaks[fp_peak_idcs]
-	plt.scatter(features[peak_label_idcs[fp_peak_idcs], 0], features[peak_label_idcs[fp_peak_idcs], 1], marker = 'X', c='r', s=150)
+	plt.scatter(features[peak_label_idcs[fp_peak_idcs], 0],
+                features[peak_label_idcs[fp_peak_idcs], 1],
+                marker = 'X',
+                c='r',
+                s=150)
 	
-	# for each pair of peaks that has been flagged as potential false positives ("pair" pertains to those peaks that are used to calculate a given difference in fp_peaks),
-	# choose the most likely false positive according to the distance of each peak to the cluster center, such that larger distance pertains to greater likelihood
-	# of being the "true" false positive peak
+	# for each pair of peaks that has been flagged as potential false positives
+    # ("pair" pertains to those peaks that are used to calculate a given
+    # difference in fp_peaks), choose the most likely false positive according
+    # to the distance of each peak to the cluster center, such that larger
+    # distance pertains to greater likelihood of being the "true" false
+    # positive peak
 	disttocent = np.ravel(clustering.fit_transform(features)[peak_label_idcs,
-						  peak_label])    # clustering.fit_transform returns n_samples x n_clusters dimensional array
+						  peak_label])
 #        final_peaks = []
 #        for p in fp_peak_idcs[0]:
 #            peaka = disttocent[p]
@@ -164,7 +179,12 @@ def peaks_signal(signal, sfreq):
 		peaka = disttocent[p]
 		peakb = disttocent[p + 1]
 		discard_peak = np.argmax([peaka, peakb])
-		plt.scatter(final_peaks[p:p + 2][discard_peak], ecg_filt[final_peaks[p:p + 2][discard_peak]], c='r')
-		disttocent[p:p + 2][discard_peak] = np.max(disttocent) + 1    # make sure the discarded peak "looses" in case it is in the next pair of peaks
+		plt.scatter(final_peaks[p:p + 2][discard_peak],
+                    ecg_filt[final_peaks[p:p + 2][discard_peak]], c='r')
+        # make sure the discarded peak "looses" in case it is in the next pair
+        # of peaks
+		disttocent[p:p + 2][discard_peak] = np.max(disttocent) + 1
 	final_peaks = np.delete(final_peaks, np.where(final_peaks == 0)[0])
+    
+    return final_peaks
 	

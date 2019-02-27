@@ -36,13 +36,19 @@ def rpeaks(signal, sfreq):
         return candidate
             
     # set free parameters
-    window_size = np.ceil(0.28 * sfreq)    # in samples; sufficiently small such that no two R-peaks can occur in the same window
-    window_overlap = 2   
-    stride = np.int(window_size - window_overlap)    # amount of samples the window is shifted on each iteration
-    Rthreshold = 0.7    # weight for R-peak threshold for post-training phase    
-    pmax_adopt = 100 # this determines how sensitive the algorithm reacts to changes in pmax
-    paid_adopt = 100 # this determines how sensitive the algorithm reacts to changes in paid
-    dur_train = 15    # duration training in seconds
+    # in samples; sufficiently small such that no two R-peaks can occur in the
+    # same window
+    window_size = np.ceil(0.28 * sfreq)
+    window_overlap = 2
+    # amount of samples the window is shifted on each iteration
+    stride = np.int(window_size - window_overlap)
+    # weight for R-peak threshold for post-training phase  
+    Rthreshold = 0.7 
+    # determines after how many beats the parameters are adapted     
+    pmax_adopt = 100 
+    paid_adopt = 100 
+    # duration training in seconds
+    dur_train = 15    
     
     # initiate stuff
     training_data = np.zeros([2,1])
@@ -60,9 +66,11 @@ def rpeaks(signal, sfreq):
         first_diff = x[1:] - x[:-1]
     
         inflect = inflection_nonzero(first_diff)
-        
+        # first row: voltage, second row: index (timestamp), '+1' makes the
+        # inflection point coincide with the actual peak, since
+        # 'inflection_nonzero()' returns the index -1 to the actual peak
         candidateR = np.stack( (np.abs(x[inflect + 1] - np.median(x)), 
-                                block_indices[inflect + 1] ))   # first row: voltage, second row: index (timestamp), '+1' makes the inflection point coincide with the actual peak, since 'inflection_nonzero()' returns the index -1 to the actual peak
+                                block_indices[inflect + 1] ))   
     
         if candidateR.shape[1] > 0:
         
@@ -76,17 +84,21 @@ def rpeaks(signal, sfreq):
                 training_data = training_data[:, above_threshold]
                 
                 pmax = np.mean(training_data[0,:])
+                # only consider those R-peaks that are not closer than 0.18 sec
+                # to each other
+                
                 paid = np.median(np.diff(training_data[1,:])
-                                [np.diff(training_data[1,:]) > 0.18 * sfreq])    # only consider those R-peaks that are not closer than 0.18 sec to each other
+                                [np.diff(training_data[1,:]) > 0.18 * sfreq])    
                 
-                
+                # initiate Rpeaks for first post-training window
                 Rpeaks = np.column_stack((np.zeros([2,1]),
-                                          training_data[:,-1]))    # initiate Rpeaks for first post-training window
+                                          training_data[:,-1]))
             
             # post-training
             else:
                 
-                # exclude candidate peaks that are within 0.5*paid of last detected peak
+                # exclude candidate peaks that are within 0.5*paid of last
+                # detected peak
                 sieve_a = sieving(candidateR, 'right', Rpeaks[1,-1], 0.5*paid)
                
                 if sieve_a.shape[1] == 0: 
@@ -107,7 +119,8 @@ def rpeaks(signal, sfreq):
                     
                     elif pmaxR.shape[1] > 1: 
         
-                        # give first priority to canidate peaks that are within -/+ 0.1 * paid of last detected peak + paid
+                        # give first priority to canidate peaks that are within
+                        # -/+ 0.1 * paid of last detected peak + paid
                         sieve_b = sieving(pmaxR,
                                           'both',
                                           Rpeaks[1,-1]+paid,
@@ -116,9 +129,12 @@ def rpeaks(signal, sfreq):
                         if sieve_b.shape[1] > 0:
                             pmaxR = sieve_b[:,sieve_b[0,:].argmax()]
                             Rpeaks = np.column_stack([Rpeaks, pmaxR])
-                        else:    # if no peaks are found, extend the sieve range
+                        # if no peaks are found, extend the sieve range
+                        else:
                             
-                            # give second priority to canidate peaks that are within -/+ 0.2 * paid of last detected peak + paid
+                            # give second priority to canidate peaks that are
+                            # within -/+ 0.2 * paid of last detected peak +
+                            # paid
                             sieve_c = sieving(pmaxR,
                                               'both',
                                               Rpeaks[1,-1]+paid,
@@ -127,9 +143,11 @@ def rpeaks(signal, sfreq):
                             if sieve_c.shape[1] > 0:
                                 pmaxR = sieve_c[:,sieve_c[0,:].argmax()]
                                 Rpeaks = np.column_stack([Rpeaks, pmaxR])
-                            else:    # if no peaks are found, extend the sieve range
+                            else:    
                             
-                                # give third priority to candidate peaks that are within -/+ 0.3 * paid of last detected peak + paid
+                                # give third priority to candidate peaks that
+                                # are within -/+ 0.3 * paid of last detected
+                                # peak + paid
                                 sieve_d = sieving(pmaxR,
                                                   'both',
                                                   Rpeaks[1,-1]+paid,
@@ -140,33 +158,20 @@ def rpeaks(signal, sfreq):
                                     Rpeaks = np.column_stack([Rpeaks, pmaxR])
                                 else:   
                                     
-                                   # option 1: ignore segment
+                                   # ignore segment
                                    block += 1
                                    continue
-                                
-    #                                # option 2: extrapolate generic peak
-    #                                pmaxR = [pmax * Rthreshold, Rpeaks[1,-1] + paid]    # extrapolate generic peak
-    #                                Rpeaks = np.column_stack([Rpeaks, pmaxR])
-    #                                
-    #                                # option 3: choose maximum peak in segment
-    #                                pmaxR = pmaxR[:, pmaxR[0,:].argmax()]
-    #                                Rpeaks = np.column_stack([Rpeaks, pmaxR])
-                                       
         
                 beatdiff = np.diff(Rpeaks[1,:])
-           
                 hrinst = np.int(60. / (beatdiff[-1]
                                                 / sfreq))
                 bpm.append(hrinst)
                 
                 # update parameters
                 if np.mod(Rpeaks.shape[1], pmax_adopt) == 0:
-    #                pmax = np.mean(np.sort(Rpeaks[0,-pmax_adopt:])[np.int(pmax_adopt * 0.25):])    # this takes the median of the smallest 25 percent , try taking median of largest 25 percent ([25:] instead [:25])!!
-    #                pmax = np.mean(Rpeaks[0,-pmax_adopt:])
                     pmax = np.mean(Rpeaks[0,:])
                     
                 if np.mod(Rpeaks.shape[1], paid_adopt) == 0:
-    #                paid = np.median(np.abs(np.diff(Rpeaks[1,-paid_adopt:])))
                     paid = np.median(np.abs(np.diff(Rpeaks[1,:])))
     
             block += 1
