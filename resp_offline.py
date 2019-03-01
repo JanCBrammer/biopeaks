@@ -14,8 +14,8 @@ from filters import butter_lowpass_filter
 def extrema_signal(signal, sfreq):
 
     N = np.size(signal)
-    # get an initial estimate of dominant breathing rate and corresponding IBI
-    # assume rate ranging from 10 to 30 breaths per minute
+    # get an initial estimate of dominant breathing rate; assume rate ranging
+    # from 10 to 30 breaths per minute
     fmin, fmax = .16, 0.5
     f, powden = welch(signal, sfreq, nperseg=N)
     f_range = np.logical_and(f >= fmin, f <= fmax)
@@ -47,11 +47,11 @@ def extrema_signal(signal, sfreq):
 
     # because some local extrema could be thrown out by now, there could be
     # cases where multiple local extrema of the same kind occur consecutively;
-    # i.e. cases where the alternation of peaks and troughs is broken;
-    # for each local extreme of kind i, compute difference to
-    # the next following local extreme of the kind i and of the kind j,
-    # if the ii difference is smaller than the ij difference, there are two
-    # consecutive local extrema of the kind i
+    # i.e. cases where the alternation of peaks and troughs is broken; for each
+    # local extreme of kind i, compute difference to the next following local
+    # extreme of the kind i and of the kind j, if the ii difference is smaller
+    # than the ij difference, there are two consecutive local extrema of the
+    # kind i
     remove_p = []
     for p in range(len(peaks) - 1):
 
@@ -99,7 +99,7 @@ def extrema_signal(signal, sfreq):
 
     troughs = np.delete(troughs, remove_t)
 
-    # refine the position of the peaks and troughs, since they're  often
+    # refine the position of the peaks and troughs, since they're often
     # slightly misplaced due to the filtering
 
     # unilateral extend of search window around preliminary peaks in samples
