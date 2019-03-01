@@ -16,7 +16,7 @@ sensitivity2 = []
 precision1 = []
 precision2 = []
 
-for record in records[:1]:
+for record in records:
 
     data = wfdb.rdrecord(record, pb_dir='bidmc')
     annotation = wfdb.rdann(record, pb_dir='bidmc', extension='breath')
