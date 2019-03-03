@@ -18,6 +18,8 @@ precision2 = []
 
 for record in records:
 
+    print 'processing record ' + record
+
     data = wfdb.rdrecord(record, pb_dir='bidmc')
     annotation = wfdb.rdann(record, pb_dir='bidmc', extension='breath')
 
@@ -32,11 +34,11 @@ for record in records:
     manupeaks2 = annotation.sample[annotator2]
     algopeaks, _, _, _ = extrema_signal(resp, sfreq)
 
-    plt.figure()
-    plt.plot(resp)
-    plt.scatter(manupeaks1, resp[manupeaks1], c='m')
-    plt.scatter(manupeaks2, resp[manupeaks2], c='b')
-    plt.scatter(algopeaks, resp[algopeaks], c='g', marker='X', s=150)
+#    plt.figure()
+#    plt.plot(resp)
+#    plt.scatter(manupeaks1, resp[manupeaks1], c='m')
+#    plt.scatter(manupeaks2, resp[manupeaks2], c='b')
+#    plt.scatter(algopeaks, resp[algopeaks], c='g', marker='X', s=150)
 
     # perform benchmarking against each annotator seperately; an
     # algorythmically annotated peaks is scored as true positives if it is
@@ -50,9 +52,43 @@ for record in records:
 
     # unilateral extend of acceptance margin centered on each algopeak; in sec
     acceptance_margin = 0.7
+    
     tp1 = []
-    tp2 = []
+    fn1 = []
+    # true positives; unique peaks that are in both, algopeaks and manupeaks (
+    # within the specified acceptance margin)
+    # false negatives: returns unique peaks in manupeaks that are not in
+    # true positives
+    for manupeak in manupeaks1:
 
+        # get the algorithmically annotated peak that is closest to manupeak...
+        mindiff = min(np.abs(algopeaks - manupeak))
+        # ... and evaluate if algopeak falls within the acceptance margin
+        # around the closest manupeak
+        if mindiff <= acceptance_margin * sfreq:
+            tp1.append(manupeak)
+        elif mindiff > acceptance_margin * sfreq:
+            fn1.append(manupeak)
+
+    tp2 = []
+    fn2 = []
+    # true positives; unique peaks that are in both, algopeaks and manupeaks (
+    # within the specified acceptance margin)
+    # false negatives: returns unique peaks in manupeaks that are not in
+    # true positives
+    for manupeak in manupeaks2:
+
+        # get the algorithmically annotated peak that is closest to manupeak...
+        mindiff = min(np.abs(algopeaks - manupeak))
+        # ... and evaluate if algopeak falls within the acceptance margin
+        # around the closest manupeak
+        if mindiff <= acceptance_margin * sfreq:
+            tp2.append(manupeak)
+        elif mindiff > acceptance_margin * sfreq:
+            fn2.append(manupeak)
+
+    fp1 = []
+    fp2 = []
     # true positives; unique peaks that are in both, algopeaks and manupeaks (
     # wuthih the specified acceptance margin)
     for algopeak in algopeaks:
@@ -62,27 +98,19 @@ for record in records:
         mindiff2 = min(np.abs(manupeaks2 - algopeak))
         # ... and evaluate if algopeak falls within the acceptance margin
         # around the closest manupeak
-        if mindiff1 <= acceptance_margin * sfreq:
-            tp1.append(algopeak)
-        if mindiff2 <= acceptance_margin * sfreq:
-            tp2.append(algopeak)
-
-    # false positives: unique peaks in algopeaks that are not in true positives
-    fp1 = np.setdiff1d(algopeaks, tp1)
-    fp2 = np.setdiff1d(algopeaks, tp2)
-    # false negatives: returns unique peaks in manupeaks that are not in
-    # true positives
-    fn1 = np.setdiff1d(manupeaks1, tp1)
-    fn2 = np.setdiff1d(manupeaks2, tp2)
+        if mindiff1 > acceptance_margin * sfreq:
+            fp1.append(algopeak)
+        if mindiff2 > acceptance_margin * sfreq:
+            fp2.append(algopeak)
 
     # calculate two metrics for benchmarking (according to AAMI guidelines):
     # 1. sensitivity: how many of the manually annotated peaks does the
     # algorithm annotate as peaks (TP / TP + FN)?
     # 2. precision: out of all peaks that are algorithmically annotated as
     # peaks (TP + FP), how many are correct (TP)?
-    sensitivity1.append(float(len(tp1)) / (len(fp1) + len(fn1)))
+    sensitivity1.append(float(len(tp1)) / (len(tp1) + len(fn1)))
     precision1.append(float(len(tp1)) / (len(tp1) + len(fp1)))
-    sensitivity2.append(float(len(tp2)) / (len(fp2) + len(fn2)))
+    sensitivity2.append(float(len(tp2)) / (len(tp2) + len(fn2)))
     precision2.append(float(len(tp2)) / (len(tp2) + len(fp2)))
 
 print np.mean(sensitivity1), np.mean(precision1)
