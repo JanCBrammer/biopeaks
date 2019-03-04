@@ -28,7 +28,7 @@ def extrema_signal(signal, sfreq):
         max_pow = np.argmax(powden)
     freq_est = f[max_pow]
 
-    filt = butter_lowpass_filter(signal, 2 * freq_est, sfreq)
+    filt = butter_lowpass_filter(signal, 2 * freq_est, sfreq, order=2)
 
     # identify preliminary local extrema
     locmax = argrelextrema(filt, np.greater)[0]
