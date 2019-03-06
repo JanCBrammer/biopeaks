@@ -6,6 +6,7 @@ Created on Wed Feb 27 14:24:54 2019
 """
 
 import wfdb
+from wfdb import processing
 import matplotlib.pyplot as plt
 import numpy as np
 from resp_offline import extrema_signal
@@ -33,7 +34,7 @@ for record in records:
     manupeaks1 = annotation.sample[annotator1]
     manupeaks2 = annotation.sample[annotator2]
     algopeaks, _, _, _ = extrema_signal(resp, sfreq)
-
+    
 #    plt.figure()
 #    plt.plot(resp)
 #    plt.scatter(manupeaks1, resp[manupeaks1], c='m')
@@ -52,66 +53,34 @@ for record in records:
 
     # unilateral extend of acceptance margin centered on each algopeak; in sec
     acceptance_margin = 0.7
-    
-    tp1 = []
-    fn1 = []
-    # true positives; unique peaks that are in both, algopeaks and manupeaks (
-    # within the specified acceptance margin)
-    # false negatives: returns unique peaks in manupeaks that are not in
-    # true positives
-    for manupeak in manupeaks1:
 
-        # get the algorithmically annotated peak that is closest to manupeak...
-        mindiff = min(np.abs(algopeaks - manupeak))
-        # ... and evaluate if algopeak falls within the acceptance margin
-        # around the closest manupeak
-        if mindiff <= acceptance_margin * sfreq:
-            tp1.append(manupeak)
-        elif mindiff > acceptance_margin * sfreq:
-            fn1.append(manupeak)
+    comparitor1 = processing.compare_annotations(manupeaks1,
+                                                 np.ravel(algopeaks),
+                                                 int(acceptance_margin *
+                                                     sfreq))
+    tp1 = comparitor1.tp
+    fp1 = comparitor1.fp
+    fn1 = comparitor1.fn
 
-    tp2 = []
-    fn2 = []
-    # true positives; unique peaks that are in both, algopeaks and manupeaks (
-    # within the specified acceptance margin)
-    # false negatives: returns unique peaks in manupeaks that are not in
-    # true positives
-    for manupeak in manupeaks2:
-
-        # get the algorithmically annotated peak that is closest to manupeak...
-        mindiff = min(np.abs(algopeaks - manupeak))
-        # ... and evaluate if algopeak falls within the acceptance margin
-        # around the closest manupeak
-        if mindiff <= acceptance_margin * sfreq:
-            tp2.append(manupeak)
-        elif mindiff > acceptance_margin * sfreq:
-            fn2.append(manupeak)
-
-    fp1 = []
-    fp2 = []
-    # true positives; unique peaks that are in both, algopeaks and manupeaks (
-    # wuthih the specified acceptance margin)
-    for algopeak in algopeaks:
-
-        # get the manually annotated peak that is closest to algopeak...
-        mindiff1 = min(np.abs(manupeaks1 - algopeak))
-        mindiff2 = min(np.abs(manupeaks2 - algopeak))
-        # ... and evaluate if algopeak falls within the acceptance margin
-        # around the closest manupeak
-        if mindiff1 > acceptance_margin * sfreq:
-            fp1.append(algopeak)
-        if mindiff2 > acceptance_margin * sfreq:
-            fp2.append(algopeak)
+    comparitor2 = processing.compare_annotations(manupeaks2,
+                                                 np.ravel(algopeaks),
+                                                 int(acceptance_margin *
+                                                     sfreq))
+    tp2 = comparitor2.tp
+    fp2 = comparitor2.fp
+    fn2 = comparitor2.fn
 
     # calculate two metrics for benchmarking (according to AAMI guidelines):
     # 1. sensitivity: how many of the manually annotated peaks does the
     # algorithm annotate as peaks (TP / TP + FN)?
     # 2. precision: out of all peaks that are algorithmically annotated as
     # peaks (TP + FP), how many are correct (TP)?
-    sensitivity1.append(float(len(tp1)) / (len(tp1) + len(fn1)))
-    precision1.append(float(len(tp1)) / (len(tp1) + len(fp1)))
-    sensitivity2.append(float(len(tp2)) / (len(tp2) + len(fn2)))
-    precision2.append(float(len(tp2)) / (len(tp2) + len(fp2)))
+    sensitivity1.append(float(tp1) / (tp1 + fn1))
+    precision1.append(float(tp1) / (tp1 + fp1))
+    sensitivity2.append(float(tp2) / (tp2 + fn2))
+    precision2.append(float(tp2) / (tp2 + fp2))
+    print sensitivity1[-1], precision1[-1]
+    print sensitivity2[-1], precision2[-1]
 
 print np.mean(sensitivity1), np.mean(precision1)
 print np.mean(sensitivity2), np.mean(precision2)
