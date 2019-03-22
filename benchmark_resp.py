@@ -34,7 +34,7 @@ for record in records:
     manupeaks1 = annotation.sample[annotator1]
     manupeaks2 = annotation.sample[annotator2]
     algopeaks, _, _, _ = extrema_signal(resp, sfreq)
-    
+
 #    plt.figure()
 #    plt.plot(resp)
 #    plt.scatter(manupeaks1, resp[manupeaks1], c='m')
