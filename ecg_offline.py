@@ -7,15 +7,9 @@ Created on Fri Jan 18 11:01:04 2019
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import argrelmax, argrelmin, find_peaks, welch, hilbert, \
-    peak_prominences, iirnotch
 from sklearn.cluster import KMeans
-from sklearn.mixture import GaussianMixture
-from sklearn.preprocessing import MinMaxScaler, StandardScaler, PolynomialFeatures, normalize
-from sklearn.decomposition import PCA
-from filters import butter_lowpass_filter, butter_highpass_filter, butter_bandstop_filter
-import seaborn as sns
-import pandas as pd
+from sklearn.preprocessing import normalize
+from filters import butter_highpass_filter
 
 def moving_average(signal, window_size):
     
@@ -34,7 +28,6 @@ def peaks_signal(signal, sfreq, enable_plot=False):
     clustering = KMeans(n_clusters=2, random_state=42)
     clustering.fit(normgrad)
     labels = clustering.labels_
-    
     
     # identify cluster with fewer instances (since this corresponds to QRS)
     label_counts = np.unique(labels, return_counts=True)[1]
@@ -61,19 +54,18 @@ def peaks_signal(signal, sfreq, enable_plot=False):
             
             peak = beg + np.argmax(np.square(filt[beg:end]))
             peaks.append(peak)
-            
     
-    if enable_plot is True:
-        plt.figure()
-        plt.plot(signal)
+#    if enable_plot is True:
+#        plt.figure()
+#        plt.plot(signal)
 #        plt.plot(filt)
 #        plt.plot(absgrad)
 #        plt.plot(smoothgrad)
 #        plt.plot(normgrad)
 #        plt.plot(labels)
-        plt.plot(labels)
-        plt.scatter(beg_qrs, labels[beg_qrs], c='m')
-        plt.scatter(end_qrs, labels[end_qrs], c='y')
+#        plt.plot(labels)
+#        plt.scatter(beg_qrs, labels[beg_qrs], c='m')
+#        plt.scatter(end_qrs, labels[end_qrs], c='y')
        
     return np.asarray(peaks).astype(int)
         
