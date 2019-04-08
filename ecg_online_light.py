@@ -95,12 +95,6 @@ def rpeaks(signal, sfreq):
                     block += 1
                     continue
                 
-                # if no peak has been detected in the maximal search range,
-                # select the maximum peak between the last peak and the end of
-                # the maximal search range
-                if (sieve_a.shape[1] == 0) and (block_idcs[-1] > Rpeaks[1, -1] + paid + 0.3 * paid):
-                    print 'foo'                                                    
-                
                 elif sieve_a.shape[1] > 0:
                     
                     # retain only candidate peaks that are above threshold

@@ -10,17 +10,21 @@ from wfdb.processing import compare_annotations
 import glob
 import matplotlib.pyplot as plt
 import numpy as np
-from ecg_online_light import rpeaks
+#from ecg_online_light import rpeaks
+from ecg_online import rpeaks
+#from ecg_offline import peaks_signal
 
 
-records = glob.glob(r'C:\Users\John Doe\surfdrive\Beta\Data\ECG\mitdb\*.dat')
-annotations = glob.glob(r'C:\Users\John Doe\surfdrive\Beta\Data\ECG\mitdb'
+records = glob.glob(r'C:\Users\JohnDoe\surfdrive\Beta\Data\ECG\mitdb\*.dat')
+annotations = glob.glob(r'C:\Users\JohnDoe\surfdrive\Beta\Data\ECG\mitdb'
                         '\*.atr')
 
-sampto = 'end'#None#int(60. * 10 * 360)
-sampfrom = 0#int(15. * 360)
+#np.random.seed(1)
+#selection = np.random.choice(range(len(records)), 1, replace=False)
+#selection = [4,6,8,9,18,19,22,23,24,26,28,29,36,37,40,42,43,44,46]
 
-#selection = [2, 4, 6, 8, 15, 18, 23, 24, 26, 28, 40, 41, 42, 44]
+sampto = None#int(60. * 1 * 360)
+sampfrom = 0#int(15. * 360)
 
 sensitivity = []
 precision = []
@@ -28,10 +32,10 @@ precision = []
 for subject in zip(records, annotations):
 
 #for i in selection:
-      
+#      
 #    subject = zip(records, annotations)[i]
 
-    print 'processing subject ' + subject[1][-7:-4]
+    print('processing subject {}'.format(subject[1][-7:-4]))
 
     data = wfdb.rdrecord(subject[0][:-4], sampto=sampto)
     annotation = wfdb.rdann(subject[1][:-4], 'atr',
@@ -42,24 +46,26 @@ for subject in zip(records, annotations):
     ecg = data.p_signal[:, 0]
 
     manupeaks = annotation.sample
+    #algopeaks = peaks_signal(ecg, sfreq)
     algopeaks = rpeaks(ecg, sfreq)
 
     # tolerance for match between algorithmic and manual annotation (in sec)
     tolerance = 0.05
     comparitor = compare_annotations(manupeaks, algopeaks,
-                                     int(tolerance * sfreq))
+                                     int(np.rint(tolerance * sfreq)))
     tp = comparitor.tp
     fp = comparitor.fp
     fn = comparitor.fn
 
 #    plt.figure()
 #    plt.plot(ecg)
-#    plt.scatter(training_peaks, ecg[training_peaks], c='0')
+#    plt.plot(np.square(ecg))
+#    plt.plot(np.abs(ecg))
 #    plt.scatter(manupeaks, ecg[manupeaks], c='m')
 #    plt.scatter(algopeaks, ecg[algopeaks], c='g', marker='X', s=150)
 
     sensitivity.append(float(tp) / (tp + fn))
     precision.append(float(tp) / (tp + fp))
-    print sensitivity[-1], precision[-1]
+    print(sensitivity[-1], precision[-1])
 
-print np.mean(sensitivity), np.mean(precision)
+print(np.mean(sensitivity), np.mean(precision))

@@ -20,7 +20,7 @@ def rpeaks(signal, sfreq, enable_plot=False):
     # set free parameters
     window_size = np.ceil(3 * sfreq)
     # amount of samples to shift the window on each iteration
-    stride = np.ceil(0.05 * sfreq)
+    stride = np.ceil(0.5 * sfreq)
     # minimal time bewteen beats
     min_ibi = 0.2 * sfreq
     

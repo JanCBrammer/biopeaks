@@ -19,7 +19,7 @@ precision2 = []
 
 for record in records:
 
-    print 'processing record ' + record
+    print('processing record {}'.format(record))
 
     data = wfdb.rdrecord(record, pb_dir='bidmc')
     annotation = wfdb.rdann(record, pb_dir='bidmc', extension='breath')
@@ -79,8 +79,8 @@ for record in records:
     precision1.append(float(tp1) / (tp1 + fp1))
     sensitivity2.append(float(tp2) / (tp2 + fn2))
     precision2.append(float(tp2) / (tp2 + fp2))
-    print sensitivity1[-1], precision1[-1]
-    print sensitivity2[-1], precision2[-1]
+    print(sensitivity1[-1], precision1[-1])
+    print(sensitivity2[-1], precision2[-1])
 
-print np.mean(sensitivity1), np.mean(precision1)
-print np.mean(sensitivity2), np.mean(precision2)
+print(np.mean(sensitivity1), np.mean(precision1))
+print(np.mean(sensitivity2), np.mean(precision2))
