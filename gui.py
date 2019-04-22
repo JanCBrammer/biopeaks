@@ -6,6 +6,7 @@ Created on Thu Apr  4 18:52:52 2019
 """
 
 import sys
+import numpy as np
 from guiutils import load_data
 from ecg_offline import peaks_signal
 from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton,
@@ -32,17 +33,22 @@ class Window(QMainWindow):
         
         # initialize data
         self.data = None
+        self.peaks = None
         
         # set up toolbar
         toolbar = self.addToolBar('Toolbar')
 
-        openData = QAction(QIcon('open_icon.png'), 'Open', self)
-        openData.triggered.connect(self.open_data)
-        toolbar.addAction(openData)      
+        loadData = QAction(QIcon('open_icon.png'), 'Load data', self)
+        loadData.triggered.connect(self.load_data)
+        toolbar.addAction(loadData)      
 
         findPeaks = QAction(QIcon('plot_icon.png'), 'Find peaks', self)
         findPeaks.triggered.connect(self.find_peaks)
         toolbar.addAction(findPeaks)      
+
+        savePeaks = QAction(QIcon('save_icon.png'), 'Save peaks', self)
+        savePeaks.triggered.connect(self.save_peaks)
+        toolbar.addAction(savePeaks)      
 
         # set up the central widget containing the plot and navigationtoolbar
         self.centwidget = QWidget()
@@ -58,7 +64,7 @@ class Window(QMainWindow):
         self.show()
 
     # toolbar methods
-    def open_data(self):
+    def load_data(self):
         fname = QFileDialog.getOpenFileNames(self, 'Open file', '\home')
         
         # initiate plot to show user that their data loaded successfully
@@ -69,12 +75,18 @@ class Window(QMainWindow):
             self.canvas.draw()
         
     def find_peaks(self):
-        
-        # show peaks
+        # identify and show peaks
         if self.data is not None:
             self.peaks = peaks_signal(self.data, 360)
             self.ax.scatter(self.peaks, self.data[self.peaks], c='m')
             self.canvas.draw()
+            
+    def save_peaks(self):
+        filename, _ = QFileDialog.getSaveFileName(self, 'Save peaks', 'untitled.csv',
+                                                  'All Files (*);;CSV (*.csv)')
+        if filename and (self.peaks is not None):
+            np.savetxt(filename, self.peaks)
+            
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
