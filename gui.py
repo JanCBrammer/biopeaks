@@ -34,7 +34,7 @@ class Window(QMainWindow):
         # initialize data
         self.data = None
         self.peaks = None
-        self.sfreq = 360
+        self.sfreq = 1000
         
         # set up toolbar
         toolbar = self.addToolBar('Toolbar')
@@ -79,28 +79,33 @@ class Window(QMainWindow):
 
     # toolbar methods
     def load_data(self):
-        fname = QFileDialog.getOpenFileNames(self, 'Open file', '\home')
+        loadname = QFileDialog.getOpenFileNames(self, 'Open file', '\home')
+        print(loadname[0])
+        if loadname[0]:
+            # until batch processing is implemented, select first file from list
+            loadname = loadname[0][0]
+            print(loadname)
         
         # initiate plot to show user that their data loaded successfully
-        if fname[0]:
-            self.data = load_data(fname[0][0][:-4])
-            self.ax.clear()
-            self.ax.plot(self.data)
-            self.canvas.draw()
+            self.data = load_data(loadname)
+            if self.data is not None:
+                self.ax.clear()
+                self.ax.plot(self.data)
+                self.canvas.draw()
         
     def find_peaks(self):
         # identify and show peaks
         if self.data is not None:
-            self.peaks = peaks_signal(self.data, 360)
+            self.peaks = peaks_signal(self.data, self.sfreq)
             self.ax.scatter(self.peaks, self.data[self.peaks], c='m')
             self.canvas.draw()
             
     def save_peaks(self):
-        filename, _ = QFileDialog.getSaveFileName(self, 'Save peaks',
+        savename, _ = QFileDialog.getSaveFileName(self, 'Save peaks',
                                                   'untitled.csv',
                                                   'CSV (*.csv)')
-        if filename and (self.peaks is not None):
-            np.savetxt(filename, self.peaks)
+        if savename and (self.peaks is not None):
+            np.savetxt(savename, self.peaks)
             
     # other methods
     def update_sfreq(self, text):
