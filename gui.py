@@ -11,7 +11,7 @@ from guiutils import load_data
 from ecg_offline import peaks_signal
 from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton,
                              QFileDialog, QAction, QMainWindow,
-                             QVBoxLayout, QSizePolicy)
+                             QVBoxLayout, QHBoxLayout, QLineEdit)
 from PyQt5.QtGui import QIcon
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
@@ -34,6 +34,7 @@ class Window(QMainWindow):
         # initialize data
         self.data = None
         self.peaks = None
+        self.sfreq = 360
         
         # set up toolbar
         toolbar = self.addToolBar('Toolbar')
@@ -52,15 +53,28 @@ class Window(QMainWindow):
 
         # set up the central widget containing the plot and navigationtoolbar
         self.centwidget = QWidget()
+        self.setCentralWidget(self.centwidget)
+
+        # define GUI elements
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
         self.ax = self.figure.add_subplot(111)
         self.navitools = NavigationToolbar(self.canvas, self)
-        self.layout = QVBoxLayout(self.centwidget)
-        self.layout.addWidget(self.canvas)
-        self.layout.addWidget(self.navitools)
-        self.setCentralWidget(self.centwidget)
+        self.sfreqbox = QLineEdit(self)
+        self.sfreqbutton = QPushButton('update sampling frequency', self)
+        self.sfreqbutton.clicked.connect(self.update_sfreq)
         
+        # define GUI layout
+        self.vlayout = QVBoxLayout(self.centwidget)
+        self.vlayout.addWidget(self.canvas)
+        
+        self.hlayout = QHBoxLayout()
+        self.vlayout.addLayout(self.hlayout)
+        
+        self.hlayout.addWidget(self.navitools)
+        self.hlayout.addWidget(self.sfreqbutton)
+        self.hlayout.addWidget(self.sfreqbox)
+
         self.show()
 
     # toolbar methods
@@ -82,10 +96,19 @@ class Window(QMainWindow):
             self.canvas.draw()
             
     def save_peaks(self):
-        filename, _ = QFileDialog.getSaveFileName(self, 'Save peaks', 'untitled.csv',
-                                                  'All Files (*);;CSV (*.csv)')
+        filename, _ = QFileDialog.getSaveFileName(self, 'Save peaks',
+                                                  'untitled.csv',
+                                                  'CSV (*.csv)')
         if filename and (self.peaks is not None):
             np.savetxt(filename, self.peaks)
+            
+    # other methods
+    def update_sfreq(self, text):
+        try:
+            self.sfreq = int(self.sfreqbox.text())
+        except:
+            print('please enter numerical value')
+        print(self.sfreq)
             
 
 if __name__ == '__main__':
