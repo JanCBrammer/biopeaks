@@ -59,6 +59,7 @@ class Window(QMainWindow):
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
         self.ax = self.figure.add_subplot(111)
+        self.ax.set_xlabel('seconds')
         self.navitools = NavigationToolbar(self.canvas, self)
         self.sfreqbox = QLineEdit(self)
         self.sfreqbutton = QPushButton('update sampling frequency', self)
@@ -89,8 +90,12 @@ class Window(QMainWindow):
         # initiate plot to show user that their data loaded successfully
             self.data = load_data(loadname)
             if self.data is not None:
+                # clear axis and history toolbar for new data
                 self.ax.clear()
-                self.ax.plot(self.data)
+                self.navitools.update()
+                # set x-axis to seconds
+                xvals = (np.arange(0, self.data.size) / self.sfreq)
+                self.ax.plot(xvals, self.data)
                 self.canvas.draw()
         
     def find_peaks(self):
