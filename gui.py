@@ -14,17 +14,36 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton,
                              QVBoxLayout, QHBoxLayout, QLineEdit,
                              QCheckBox)
 from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
                                                 FigureCanvas)
 from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as
                                                 NavigationToolbar)
 
+
 # custom widgets
 class CustomNavigationToolbar(NavigationToolbar):
     # only retain desired functionality
     toolitems = [t for t in NavigationToolbar.toolitems if t[0] in
                  ('Home','Pan', 'Zoom')]
+    
+
+class Worker(QObject):
+    finished = pyqtSignal()
+
+    def __init__(self):
+        super(Worker, self).__init__()
+        self.isRunning = False
+
+    def task(self):
+        self.isRunning = True
+        while self.isRunning:
+            print('peak editing enabled')
+        self.finished.emit()
+
+    def stop(self):
+        self.isRunning = False
 
 
 class Window(QMainWindow):
@@ -38,6 +57,13 @@ class Window(QMainWindow):
         self.setGeometry(50, 50, 1500, 500)
         self.setWindowIcon(QIcon('python_icon.png'))
         
+        # set up thread for peak editing
+        self.thread = QThread()
+        self.worker = Worker()
+        self.worker.moveToThread(self.thread)
+        self.thread.started.connect(self.worker.task)
+        self.worker.finished.connect(self.thread.quit)
+                
         # initialize data
         self.data = None
         self.peaks = None
@@ -131,13 +157,13 @@ class Window(QMainWindow):
         print(self.sfreq)
         
     def edit_peaks(self, state):
+        # capture cursor position in axis and print position to terminal
+        # if key "a" is pressed
         if self.editcheckbox.isChecked():
-            print('peak editing enabled')
-            # capture cursor position in axis and print position to terminal
-            # if key "a" is pressed
-        
+            self.thread.start()
+        else:
+            self.worker.stop()
             
-
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     GUI = Window()
