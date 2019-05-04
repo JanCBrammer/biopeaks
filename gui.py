@@ -98,10 +98,12 @@ class Window(QMainWindow):
         
         loadname = QFileDialog.getOpenFileNames(self, 'Open file', '\home')
         if loadname[0]:
-            # until batch processing is implemented, select first file from list
-            self.data = LoadData(loadname[0][0])
+            # until batch processing is implemented, select first file from
+            # list; modality is hardcoded as ECG for now until selection of
+            # modality is implemented
+            self.data = LoadData(loadname[0][0], 'ECG')
         
-            if self.data is not None:
+            if self.data.loaded is True:
                 # clear axis and history toolbar for new data, also remove old
                 # peaks from memory
                 self.ax.clear()
@@ -111,6 +113,8 @@ class Window(QMainWindow):
                 self.line = self.ax.plot(self.data.sec, self.data.signal)
                 self.ax.set_xlabel('seconds')
                 self.canvas.draw()
+            else:
+                print('make sure to load data in the OpenSignals format')
                 
     def find_peaks(self):
         if self.peaks is None:
