@@ -7,12 +7,12 @@ Created on Thu Apr  4 18:52:52 2019
 
 import sys
 import numpy as np
-from guiutils import load_data
+from guiutils import LoadData
 from ecg_offline import peaks_signal
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton,
+from PyQt5.QtWidgets import (QApplication, QWidget,
                              QFileDialog, QAction, QMainWindow,
-                             QVBoxLayout, QHBoxLayout, QLineEdit,
+                             QVBoxLayout, QHBoxLayout,
                              QCheckBox)
 from PyQt5.QtGui import QIcon
 from matplotlib.figure import Figure
@@ -43,7 +43,6 @@ class Window(QMainWindow):
         # initialize data and parameters
         self.data = None
         self.peaks = None
-        self.sfreq = None
         self.scat = None
         self.editingenabled = False
 
@@ -71,9 +70,6 @@ class Window(QMainWindow):
         self.canvas = FigureCanvas(self.figure)
         self.ax = self.figure.add_subplot(111)
         self.navitools = CustomNavigationToolbar(self.canvas, self)
-        self.sfreqbox = QLineEdit(self)
-        self.sfreqbutton = QPushButton('update sampling frequency', self)
-        self.sfreqbutton.clicked.connect(self.update_sfreq)
         self.editcheckbox = QCheckBox('edit peaks', self)
         self.editcheckbox.stateChanged.connect(self.enable_editing)
         
@@ -94,67 +90,46 @@ class Window(QMainWindow):
         
         self.hlayout.addWidget(self.navitools)
         self.hlayout.addWidget(self.editcheckbox)
-        self.hlayout.addWidget(self.sfreqbox)
-        self.hlayout.addWidget(self.sfreqbutton)
 
         self.show()
 
     # toolbar methods
     def load_data(self):
         
-        if self.sfreq is not None:
-            loadname = QFileDialog.getOpenFileNames(self, 'Open file', '\home')
-            if loadname[0]:
-                # until batch processing is implemented, select first file from list
-                loadname = loadname[0][0]
-            
-                # initiate plot to show user that their data loaded successfully
-                self.data = load_data(loadname)
-                if self.data is not None:
-                    # clear axis and history toolbar for new data
-                    self.ax.clear()
-                    self.navitools.update()
-                    # set x-axis to seconds
-                    self.xtime = (np.arange(0, self.data.size) / self.sfreq)
-                    self.line = self.ax.plot(self.xtime, self.data)
-                    self.ax.set_xlabel('seconds')
-                    self.canvas.draw()
-        else:
-            print('please enter the sampling frequency of your data')
+        loadname = QFileDialog.getOpenFileNames(self, 'Open file', '\home')
+        if loadname[0]:
+            # until batch processing is implemented, select first file from list
+            self.data = LoadData(loadname[0][0])
+        
+            if self.data is not None:
+                # clear axis and history toolbar for new data, also remove old
+                # peaks from memory
+                self.ax.clear()
+                self.navitools.update()
+                self.peaks = None
+                # initiate plot to show user that data loaded successfully            
+                self.line = self.ax.plot(self.data.sec, self.data.signal)
+                self.ax.set_xlabel('seconds')
+                self.canvas.draw()
                 
     def find_peaks(self):
-        # identify and show peaks
-        if self.data is not None:
-            self.peaks = peaks_signal(self.data, self.sfreq)
-            self.plot_peaks()
+        if self.peaks is None:
+            # identify and show peaks
+            if self.data is not None:
+                self.peaks = peaks_signal(self.data.signal, self.data.sfreq)
+                self.plot_peaks()
+        else:
+            print('the peaks for this dataset are already in memory')
             
     def save_peaks(self):
-        savename, _ = QFileDialog.getSaveFileName(self, 'Save peaks',
-                                                  'untitled.csv',
-                                                  'CSV (*.csv)')
-        if savename and (self.peaks is not None):
-            # save peaks in seconds
-            np.savetxt(savename, self.time[self.peaks])
-            
-    # other methods
-    def update_sfreq(self, text):
-#        try:
-        self.sfreq = int(self.sfreqbox.text())
-        # re-calculate peaks and re-plot data and peaks
-        if self.data is not  None:
-            self.ax.clear()
-            self.navitools.update()
-            # set x-axis to seconds
-            self.xtime = (np.arange(0, self.data.size) / self.sfreq)
-            self.line = self.ax.plot(self.xtime, self.data)
-            self.ax.set_xlabel('seconds')
-            self.canvas.draw()
         if self.peaks is not None:
-            self.find_peaks()
-        print('setting sampling frequency to {}'.format(self.sfreq))
-#        except:
-#            print('please enter numerical value')
-        
+            savename, _ = QFileDialog.getSaveFileName(self, 'Save peaks',
+                                                      'untitled.csv',
+                                                      'CSV (*.csv)')
+            if savename:
+                # save peaks in seconds
+                np.savetxt(savename, self.data.sec[self.peaks])
+            
     def enable_editing(self, state):
         if self.editcheckbox.isChecked():
             self.editingenabled = True
@@ -164,10 +139,10 @@ class Window(QMainWindow):
     def edit_peaks(self, event):
         if self.editingenabled is True:
             if self.peaks is not None:
-                peaksamp = int(np.rint(event.xdata * self.sfreq))
+                peaksamp = int(np.rint(event.xdata * self.data.sfreq))
                  # search peak in a window of 200 msec, centered on selected
                  # x coordinate
-                extend = int(np.rint(self.sfreq * 0.1))
+                extend = int(np.rint(self.data.sfreq * 0.1))
                 searchrange = np.arange(peaksamp - extend,
                                         peaksamp + extend)
                 if event.key == 'd':
@@ -177,20 +152,22 @@ class Window(QMainWindow):
                         self.peaks = np.delete(self.peaks, peakidx)
                         self.plot_peaks()
                 elif event.key == 'a':
-                    peakidx = np.argmax(np.abs(self.data[searchrange]))
+                    peakidx = np.argmax(np.abs(self.data.signal[searchrange]))
                     newpeak = searchrange[0] + peakidx
                     # only add new peak if it doesn't exist already
                     if np.all(self.peaks != newpeak):
                         insertidx = np.searchsorted(self.peaks, newpeak)
                         self.peaks = np.insert(self.peaks, insertidx, newpeak)
                         self.plot_peaks()
+            else:
+                print('please search peaks before editing them')
                 
     def plot_peaks(self):
         if self.scat is not None:
             # in case of re-plotting, remove the current peaks
             self.scat.remove()
-        self.scat = self.ax.scatter(self.xtime[self.peaks],
-                                    self.data[self.peaks], c='m')
+        self.scat = self.ax.scatter(self.data.sec[self.peaks],
+                                    self.data.signal[self.peaks], c='m')
         self.canvas.draw()
     
 if __name__ == '__main__':
