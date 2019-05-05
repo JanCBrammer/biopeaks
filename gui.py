@@ -7,6 +7,7 @@ Created on Thu Apr  4 18:52:52 2019
 
 import sys
 import numpy as np
+from scipy.signal import argrelmin, argrelmax
 from guiutils import LoadData
 from ecg_offline import peaks_signal
 from PyQt5 import QtCore
@@ -144,8 +145,8 @@ class Window(QMainWindow):
         if self.editingenabled is True:
             if self.peaks is not None:
                 peaksamp = int(np.rint(event.xdata * self.data.sfreq))
-                 # search peak in a window of 200 msec, centered on selected
-                 # x coordinate
+                # search peak in a window of 200 msec, centered on selected
+                # x coordinate
                 extend = int(np.rint(self.data.sfreq * 0.1))
                 searchrange = np.arange(peaksamp - extend,
                                         peaksamp + extend)
@@ -156,8 +157,17 @@ class Window(QMainWindow):
                         self.peaks = np.delete(self.peaks, peakidx)
                         self.plot_peaks()
                 elif event.key == 'a':
-                    peakidx = np.argmax(np.abs(self.data.signal[searchrange]))
-                    newpeak = searchrange[0] + peakidx
+#                    searchsignal = self.data.signal[searchrange]
+#                    peakidx = np.argmax(np.abs(searchsignal -
+#                                               np.mean(searchsignal)))
+#                    newpeak = searchrange[0] + peakidx
+                    searchsignal = self.data.signal[searchrange]
+                    locmax = argrelmax(searchsignal)[0]
+                    locmin = argrelmin(searchsignal)[0]
+                    locext = np.concatenate((locmax, locmin))
+                    locext.sort(kind='mergesort')
+                    peakidx = np.argmin(np.abs(searchrange[locext] - peaksamp))
+                    newpeak = searchrange[0] + locext[peakidx]
                     # only add new peak if it doesn't exist already
                     if np.all(self.peaks != newpeak):
                         insertidx = np.searchsorted(self.peaks, newpeak)
