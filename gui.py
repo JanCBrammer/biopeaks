@@ -7,14 +7,14 @@ Created on Thu Apr  4 18:52:52 2019
 
 import sys
 import numpy as np
-from scipy.signal import argrelmin, argrelmax
+from scipy.signal import find_peaks
 from guiutils import LoadData
 from ecg_offline import peaks_signal
+from resp_offline import extrema_signal
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import (QApplication, QWidget,
+from PyQt5.QtWidgets import (QApplication, QWidget, QComboBox,
                              QFileDialog, QAction, QMainWindow,
-                             QVBoxLayout, QHBoxLayout,
-                             QCheckBox)
+                             QVBoxLayout, QHBoxLayout, QCheckBox)
 from PyQt5.QtGui import QIcon
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
@@ -27,7 +27,7 @@ from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as
 class CustomNavigationToolbar(NavigationToolbar):
     # only retain desired functionality
     toolitems = [t for t in NavigationToolbar.toolitems if t[0] in
-                 ('Home','Pan', 'Zoom')]
+                 ('Home','Pan', 'Zoom', 'Back', 'Forward')]
     
 
 class Window(QMainWindow):
@@ -45,7 +45,6 @@ class Window(QMainWindow):
         self.data = None
         self.peaks = None
         self.scat = None
-        self.editingenabled = False
 
         # set up toolbar
         toolbar = self.addToolBar('Toolbar')
@@ -72,7 +71,9 @@ class Window(QMainWindow):
         self.ax = self.figure.add_subplot(111)
         self.navitools = CustomNavigationToolbar(self.canvas, self)
         self.editcheckbox = QCheckBox('edit peaks', self)
-        self.editcheckbox.stateChanged.connect(self.enable_editing)
+        self.modmenu = QComboBox(self)
+        self.modmenu.addItem('ECG')
+        self.modmenu.addItem('RESP')
         
         # connect canvas to keyboard and mouse input for peak editing;
         # only widgets (e.g. canvas) that currently have focus capture
@@ -90,19 +91,19 @@ class Window(QMainWindow):
         self.vlayout.addLayout(self.hlayout)
         
         self.hlayout.addWidget(self.navitools)
+        self.hlayout.addWidget(self.modmenu)
         self.hlayout.addWidget(self.editcheckbox)
 
         self.show()
 
     # toolbar methods
     def load_data(self):
-        
         loadname = QFileDialog.getOpenFileNames(self, 'Open file', '\home')
         if loadname[0]:
             # until batch processing is implemented, select first file from
             # list; modality is hardcoded as ECG for now until selection of
             # modality is implemented
-            self.data = LoadData(loadname[0][0], 'ECG')
+            self.data = LoadData(loadname[0][0], self.modmenu.currentText())
         
             if self.data.loaded is True:
                 # clear axis and history toolbar for new data, also remove old
@@ -121,7 +122,12 @@ class Window(QMainWindow):
         if self.peaks is None:
             # identify and show peaks
             if self.data is not None:
-                self.peaks = peaks_signal(self.data.signal, self.data.sfreq)
+                if self.modmenu.currentText() == 'ECG':
+                    self.peaks = peaks_signal(self.data.signal,
+                                              self.data.sfreq)
+                elif self.modmenu.currentText() == 'RESP':
+                    self.peaks = extrema_signal(self.data.signal,
+                                                self.data.sfreq)
                 self.plot_peaks()
         else:
             print('the peaks for this dataset are already in memory')
@@ -135,14 +141,9 @@ class Window(QMainWindow):
                 # save peaks in seconds
                 np.savetxt(savename, self.data.sec[self.peaks])
             
-    def enable_editing(self, state):
-        if self.editcheckbox.isChecked():
-            self.editingenabled = True
-        else:
-            self.editingenabled = False
-            
+    # other methods
     def edit_peaks(self, event):
-        if self.editingenabled is True:
+        if self.editcheckbox.isChecked():
             if self.peaks is not None:
                 peaksamp = int(np.rint(event.xdata * self.data.sfreq))
                 # search peak in a window of 200 msec, centered on selected
@@ -157,17 +158,10 @@ class Window(QMainWindow):
                         self.peaks = np.delete(self.peaks, peakidx)
                         self.plot_peaks()
                 elif event.key == 'a':
-#                    searchsignal = self.data.signal[searchrange]
-#                    peakidx = np.argmax(np.abs(searchsignal -
-#                                               np.mean(searchsignal)))
-#                    newpeak = searchrange[0] + peakidx
                     searchsignal = self.data.signal[searchrange]
-                    locmax = argrelmax(searchsignal)[0]
-                    locmin = argrelmin(searchsignal)[0]
-                    locext = np.concatenate((locmax, locmin))
-                    locext.sort(kind='mergesort')
-                    peakidx = np.argmin(np.abs(searchrange[locext] - peaksamp))
-                    newpeak = searchrange[0] + locext[peakidx]
+                    exidcs, _ = find_peaks(searchsignal)
+                    peakidx = np.argmin(np.abs(searchrange[exidcs] - peaksamp))
+                    newpeak = searchrange[0] + exidcs[peakidx]
                     # only add new peak if it doesn't exist already
                     if np.all(self.peaks != newpeak):
                         insertidx = np.searchsorted(self.peaks, newpeak)
