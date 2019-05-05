@@ -6,7 +6,6 @@ Created on Wed Dec  5 17:33:13 2018
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.signal import welch, find_peaks, argrelextrema
 from filters import butter_lowpass_filter
 
@@ -30,10 +29,11 @@ def extrema_signal(signal, sfreq):
 
     filt = butter_lowpass_filter(signal, 2 * freq_est, sfreq, order=2)
 
-    # identify preliminary local extrema
+    # identify preliminary local extrema (separately for peaks and troughs)
     locmax = argrelextrema(filt, np.greater)[0]
     locmin = argrelextrema(filt, np.less)[0]
-    extrema = np.sort((np.append(locmax, locmin)))
+    extrema = np.concatenate((locmax, locmin))
+    extrema.sort(kind='mergesort')
 
     # in the following, only consider those extrema that have a minimum
     # vertical difference to their direct neighbor, i.e. define outliers in
@@ -152,11 +152,11 @@ def extrema_signal(signal, sfreq):
     amp_peaks = signal[adjusted_peaks]
     amp_troughs = signal[adjusted_troughs]
 
+    # prepare data for handling in biopeaks gui
+    returnextrema = np.concatenate((adjusted_peaks, adjusted_troughs))
+    returnextrema.sort(kind='mergesort')
+    returnamps = np.concatenate((amp_peaks, amp_troughs))
+    returnamps.sort(kind='mergesort')
+    returnarray = np.column_stack((returnextrema, returnamps)).astype(int)
 
-#    plt.figure()
-#    plt.plot(signal, c='g')
-#    plt.plot(filt)
-#    plt.scatter(adjusted_peaks, signal[adjusted_peaks], c='m', s=150)
-#    plt.scatter(adjusted_troughs, signal[adjusted_troughs], c='g', s=150)
-
-    return adjusted_peaks, adjusted_troughs, amp_peaks, amp_troughs
+    return returnarray

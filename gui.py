@@ -107,10 +107,11 @@ class Window(QMainWindow):
         
             if self.data.loaded is True:
                 # clear axis and history toolbar for new data, also remove old
-                # peaks from memory
+                # peaks and corresponding plot elements from memory
                 self.ax.clear()
                 self.navitools.update()
                 self.peaks = None
+                self.scat = None
                 # initiate plot to show user that data loaded successfully            
                 self.line = self.ax.plot(self.data.sec, self.data.signal)
                 self.ax.set_xlabel('seconds')
@@ -123,9 +124,14 @@ class Window(QMainWindow):
             # identify and show peaks
             if self.data is not None:
                 if self.modmenu.currentText() == 'ECG':
+                    # for ECG data, data.signal returns a vector with indices
+                    # of R-peaks
                     self.peaks = peaks_signal(self.data.signal,
                                               self.data.sfreq)
                 elif self.modmenu.currentText() == 'RESP':
+                    # for respiration data, data.signal returns a two column
+                    # vector, with indices in column 0 and amplitudes at 
+                    # indices in column 1
                     self.peaks = extrema_signal(self.data.signal,
                                                 self.data.sfreq)
                 self.plot_peaks()
@@ -143,30 +149,42 @@ class Window(QMainWindow):
             
     # other methods
     def edit_peaks(self, event):
+        # account for the fact that depending on sensor modality, data.peaks
+        # has different shapes; preserve ndarrays throughout editing!
         if self.editcheckbox.isChecked():
             if self.peaks is not None:
-                peaksamp = int(np.rint(event.xdata * self.data.sfreq))
+                cursor = int(np.rint(event.xdata * self.data.sfreq))
                 # search peak in a window of 200 msec, centered on selected
-                # x coordinate
+                # x coordinate of cursor position
                 extend = int(np.rint(self.data.sfreq * 0.1))
-                searchrange = np.arange(peaksamp - extend,
-                                        peaksamp + extend)
+                searchrange = np.arange(cursor - extend,
+                                        cursor + extend)
                 if event.key == 'd':
-                    peakidx = np.argmin(np.abs(self.peaks - peaksamp))
+                    peakidx = np.argmin(np.abs(self.peaks[:, 0] - cursor))
                     # only delete peaks that are within search range
-                    if np.any(searchrange == self.peaks[peakidx]): 
-                        self.peaks = np.delete(self.peaks, peakidx)
+                    if np.any(searchrange == self.peaks[peakidx, 0]): 
+                        self.peaks = np.delete(self.peaks, peakidx, axis=0)
                         self.plot_peaks()
                 elif event.key == 'a':
                     searchsignal = self.data.signal[searchrange]
                     exidcs, _ = find_peaks(searchsignal)
-                    peakidx = np.argmin(np.abs(searchrange[exidcs] - peaksamp))
-                    newpeak = searchrange[0] + exidcs[peakidx]
-                    # only add new peak if it doesn't exist already
-                    if np.all(self.peaks != newpeak):
-                        insertidx = np.searchsorted(self.peaks, newpeak)
-                        self.peaks = np.insert(self.peaks, insertidx, newpeak)
-                        self.plot_peaks()
+                    if exidcs.size > 0:
+                        peakidx = np.argmin(np.abs(searchrange[exidcs] -
+                                                   cursor))
+                        newpeak = searchrange[0] + exidcs[peakidx]
+                        # only add new peak if it doesn't exist already
+                        if np.all(self.peaks[:, 0] != newpeak):
+                            insertidx = np.searchsorted(self.peaks[:, 0],
+                                                        newpeak)
+                            if self.modmenu.currentText() == 'ECG':
+                                self.peaks = np.insert(self.peaks, insertidx,
+                                                       newpeak, axis=0)
+                            elif self.modmenu.currentText() == 'RESP':
+                                insertarr = [newpeak,
+                                             self.data.signal[newpeak]]
+                                self.peaks = np.insert(self.peaks, insertidx,
+                                                       insertarr, axis=0)                            
+                            self.plot_peaks()
             else:
                 print('please search peaks before editing them')
                 
@@ -174,8 +192,8 @@ class Window(QMainWindow):
         if self.scat is not None:
             # in case of re-plotting, remove the current peaks
             self.scat.remove()
-        self.scat = self.ax.scatter(self.data.sec[self.peaks],
-                                    self.data.signal[self.peaks], c='m')
+        self.scat = self.ax.scatter(self.data.sec[self.peaks[:, 0]],
+                                    self.data.signal[self.peaks[:, 0]], c='m')
         self.canvas.draw()
     
 if __name__ == '__main__':
