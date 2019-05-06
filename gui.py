@@ -7,7 +7,7 @@ Created on Thu Apr  4 18:52:52 2019
 
 import sys
 import numpy as np
-from scipy.signal import argrelmin, argrelmax
+from scipy.signal import find_peaks
 from guiutils import LoadData
 from ecg_offline import peaks_signal
 from resp_offline import extrema_signal
@@ -167,8 +167,10 @@ class Window(QMainWindow):
                         self.plot_peaks()
                 elif event.key == 'a':
                     searchsignal = self.data.signal[searchrange]
-                    locmax = argrelmax(searchsignal)[0]
-                    locmin = argrelmin(searchsignal)[0]
+                    # use find_peaks to also detect local extrema that are
+                    # plateaus
+                    locmax, _ = find_peaks(searchsignal)
+                    locmin, _ = find_peaks(searchsignal * -1)
                     locext = np.concatenate((locmax, locmin))
                     locext.sort(kind='mergesort')
                     if locext.size > 0:
