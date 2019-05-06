@@ -7,7 +7,7 @@ Created on Thu Apr  4 18:52:52 2019
 
 import sys
 import numpy as np
-from scipy.signal import find_peaks
+from scipy.signal import argrelmin, argrelmax
 from guiutils import LoadData
 from ecg_offline import peaks_signal
 from resp_offline import extrema_signal
@@ -167,19 +167,23 @@ class Window(QMainWindow):
                         self.plot_peaks()
                 elif event.key == 'a':
                     searchsignal = self.data.signal[searchrange]
-                    exidcs, _ = find_peaks(searchsignal)
-                    if exidcs.size > 0:
-                        peakidx = np.argmin(np.abs(searchrange[exidcs] -
+                    locmax = argrelmax(searchsignal)[0]
+                    locmin = argrelmin(searchsignal)[0]
+                    locext = np.concatenate((locmax, locmin))
+                    locext.sort(kind='mergesort')
+                    if locext.size > 0:
+                        peakidx = np.argmin(np.abs(searchrange[locext] -
                                                    cursor))
-                        newpeak = searchrange[0] + exidcs[peakidx]
+                        newpeak = searchrange[0] + locext[peakidx]
                         # only add new peak if it doesn't exist already
                         if np.all(self.peaks[:, 0] != newpeak):
                             insertidx = np.searchsorted(self.peaks[:, 0],
                                                         newpeak)
-                            if self.modmenu.currentText() == 'ECG':
+                            if self.peaks.shape[1] == 1:
+                                insertarr = [newpeak]
                                 self.peaks = np.insert(self.peaks, insertidx,
-                                                       newpeak, axis=0)
-                            elif self.modmenu.currentText() == 'RESP':
+                                                       insertarr, axis=0)
+                            elif self.peaks.shape[1] == 2:
                                 insertarr = [newpeak,
                                              self.data.signal[newpeak]]
                                 self.peaks = np.insert(self.peaks, insertidx,
