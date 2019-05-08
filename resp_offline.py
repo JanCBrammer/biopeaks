@@ -149,14 +149,10 @@ def extrema_signal(signal, sfreq):
         adjusted_p = search_samples[np.argmax(search_signal)]
         adjusted_peaks.append(adjusted_p)
 
-    amp_peaks = signal[adjusted_peaks]
-    amp_troughs = signal[adjusted_troughs]
-
     # prepare data for handling in biopeaks gui
     returnextrema = np.concatenate((adjusted_peaks, adjusted_troughs))
     returnextrema.sort(kind='mergesort')
-    returnamps = np.concatenate((amp_peaks, amp_troughs))
-    returnamps.sort(kind='mergesort')
+    returnamps = signal[returnextrema]
     returnarray = np.column_stack((returnextrema, returnamps)).astype(int)
 
     return returnarray
