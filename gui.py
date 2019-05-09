@@ -145,7 +145,35 @@ class Window(QMainWindow):
                                                       'CSV (*.csv)')
             if savename:
                 # save peaks in seconds
-                np.savetxt(savename, self.data.sec[self.peaks])
+                if self.peaks.shape[1] == 1:
+                    np.savetxt(savename, self.data.sec[self.peaks])
+                elif self.peaks.shape[1] == 2:
+                    # check if the alternation of peaks and troughs is
+                    # unbroken (it might be at this point due to user edits);
+                    # if alternation of sign in extdiffs is broken, remove
+                    # the extreme (or extrema) that cause(s) the break(s)
+                    extdiffs = np.sign(np.diff(self.peaks[:, 1]))
+                    extdiffs = np.add(extdiffs[0:-1], extdiffs[1:])
+                    removeext = np.where(extdiffs != 0)[0] + 1
+                    self.peaks = np.delete(self.peaks, removeext, axis=0)
+                    # determine if series starts with peak or trough to be able
+                    # to save peaks and troughs separately (as well as the
+                    # corresponding amplitudes)
+                    if self.peaks[0, 1] > self.peaks[1, 1]:
+                        peaks = self.peaks[0:-3:2, 0]
+                        troughs = self.peaks[1:-2:2, 0]
+                        amppeaks = self.peaks[0:-3:2, 1]
+                        amptroughs = self.peaks[1:-2:2, 1]
+                    elif self.peaks[0, 1] < self.peaks[1, 1]:
+                        peaks = self.peaks[1:-2:2, 0]
+                        troughs = self.peaks[0:-3:2, 0]
+                        amppeaks = self.peaks[1:-2:2, 1]
+                        amptroughs = self.peaks[0:-3:2, 1]
+                    savearray = np.column_stack((peaks,
+                                                 troughs,
+                                                 amppeaks,
+                                                 amptroughs))
+                    np.savetxt(savename, savearray)
             
     # other methods
     def edit_peaks(self, event):
