@@ -14,7 +14,8 @@ from resp_offline import extrema_signal
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QApplication, QWidget, QComboBox,
                              QFileDialog, QAction, QMainWindow,
-                             QVBoxLayout, QHBoxLayout, QCheckBox)
+                             QVBoxLayout, QHBoxLayout, QCheckBox,
+                             QLabel, QStatusBar)
 from PyQt5.QtGui import QIcon
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
@@ -38,7 +39,7 @@ class Window(QMainWindow):
  
     def initUI(self):
         self.setWindowTitle('biopeaks')
-        self.setGeometry(50, 50, 1500, 500)
+        self.setGeometry(50, 50, 1750, 750)
         self.setWindowIcon(QIcon('python_icon.png'))
                 
         # initialize data and parameters
@@ -59,7 +60,14 @@ class Window(QMainWindow):
 
         savePeaks = QAction(QIcon('save_icon.png'), 'Save peaks', self)
         savePeaks.triggered.connect(self.save_peaks)
-        toolbar.addAction(savePeaks)      
+        toolbar.addAction(savePeaks) 
+        
+        # set up status bar
+        self.statusBar = QStatusBar()
+        self.statusBar.showMessage('Ready')
+        self.setStatusBar(self.statusBar)
+        self.currentFile = QLabel('current file')
+        self.statusBar.addPermanentWidget(self.currentFile)
 
         # set up the central widget containing the plot and navigationtoolbar
         self.centwidget = QWidget()
@@ -116,7 +124,10 @@ class Window(QMainWindow):
                 self.line = self.ax.plot(self.data.sec, self.data.signal)
                 self.ax.set_xlabel('seconds')
                 self.canvas.draw()
+                self.currentFile.setText(loadname[0][0])
             else:
+                self.data = None
+                self.statusBar.showMessage('make sure to load data in the OpenSignals format')
                 print('make sure to load data in the OpenSignals format')
                 
     def find_peaks(self):
@@ -136,6 +147,7 @@ class Window(QMainWindow):
                                                 self.data.sfreq)
                 self.plot_peaks()
         else:
+            self.statusBar.showMessage('the peaks for this dataset are already in memory')
             print('the peaks for this dataset are already in memory')
             
     def save_peaks(self):
@@ -220,6 +232,7 @@ class Window(QMainWindow):
                                                        insertarr, axis=0)                            
                             self.plot_peaks()
             else:
+                self.statusBar.showMessage('please search peaks before editing them')
                 print('please search peaks before editing them')
                 
     def plot_peaks(self):
