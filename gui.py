@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QComboBox,
                              QVBoxLayout, QHBoxLayout, QCheckBox,
                              QLabel, QStatusBar)
 from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
                                                 FigureCanvas)
@@ -25,17 +26,37 @@ from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as
                                                 NavigationToolbar)
 
 
-# custom widgets
 class CustomNavigationToolbar(NavigationToolbar):
-    # only retain desired functionality
+    # only retain desired functionality of navitoolbar
     toolitems = [t for t in NavigationToolbar.toolitems if t[0] in
-                 ('Home','Pan', 'Zoom', 'Back', 'Forward')]
+                 ('Home', 'Pan', 'Zoom', 'Back', 'Forward')]
+
+
+# threading is implemented according to https://pythonguis.com/courses/
+# multithreading-pyqt-applications-qthreadpool/complete-example/
+class WorkerSignals(QObject):
     
+    output = pyqtSignal(object)
+    
+    
+class Worker(QRunnable):
+    
+    def __init__(self, func, data, sfreq):
+        super(Worker, self).__init__()
+        self.function = func
+        self.data = data
+        self.sfreq = sfreq
+        self.signals = WorkerSignals()
+
+    def run(self):
+        peaks = self.function(self.data, self.sfreq)
+        self.signals.output.emit(peaks)
+
 
 class Window(QMainWindow):
  
     def __init__(self):
-        super().__init__()
+        super(Window, self).__init__()
         self.initUI()
  
     def initUI(self):
@@ -47,6 +68,8 @@ class Window(QMainWindow):
         self.data = None
         self.peaks = None
         self.scat = None
+    
+        self.threadpool = QThreadPool()
 
         # set up toolbar
         toolbar = self.addToolBar('Toolbar')
@@ -134,29 +157,32 @@ class Window(QMainWindow):
                 
     def find_peaks(self):
         if self.peaks is None:
-            # identify and show peaks
             if self.data is not None:
                 if self.modmenu.currentText() == 'ECG':
-                    # for ECG data, data.signal returns a vector with indices
-                    # of R-peaks
-                    self.peaks = peaks_ecg(self.data.signal,
-                                              self.data.sfreq)
-                if self.modmenu.currentText() == 'PPG':
-                    # for ECG data, data.signal returns a vector with indices
-                    # of R-peaks
-                    self.peaks = peaks_ppg(self.data.signal,
-                                              self.data.sfreq)
+                    self.peakfunc = peaks_ecg
+                elif self.modmenu.currentText() == 'PPG':
+                    self.peakfunc = peaks_ppg
                 elif self.modmenu.currentText() == 'RESP':
-                    # for respiration data, data.signal returns a two column
-                    # vector, with indices in column 0 and amplitudes at 
-                    # indices in column 1
-                    self.peaks = extrema_resp(self.data.signal,
-                                                self.data.sfreq)
-                self.plot_peaks()
+                    self.peakfunc = extrema_resp
+                # move identification of extrema to thread to not block GUI;
+                # QThreadPool deletes the QRunnable (Worker) automatically by
+                # default once it's finished (no manual deletion required)
+                worker = Worker(self.peakfunc,
+                                self.data.signal,
+                                self.data.sfreq)
+                worker.signals.output.connect(self.instantiate_peaks)
+                self.threadpool.start(worker) 
         else:
             self.statusBar.showMessage('the peaks for this dataset are '
                                        'already in memory', 10000)
             print('the peaks for this dataset are already in memory')
+            
+    def instantiate_peaks(self, output):
+        # for ECG and PPG data, self.peaks returns a vector with indices of
+        # R-peaks; for respiration data, self.peaks returns a two column 
+        # vector, with indices in column 0 and amplitudes at indices in column 1
+        self.peaks = output
+        self.plot_peaks()
             
     def save_peaks(self):
         if self.peaks is not None:
