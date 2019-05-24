@@ -130,6 +130,9 @@ class Window(QMainWindow):
 
     # toolbar methods
     def load_data(self):
+        # in case find_peaks is currently running, disable for the associated 
+        # thread to finish
+        self.threadpool.waitForDone()
         loadname = QFileDialog.getOpenFileNames(self, 'Open file', '\home')
         if loadname[0]:
             # until batch processing is implemented, select first file from
@@ -171,7 +174,8 @@ class Window(QMainWindow):
                                 self.data.signal,
                                 self.data.sfreq)
                 worker.signals.output.connect(self.instantiate_peaks)
-                self.threadpool.start(worker) 
+                self.threadpool.start(worker)
+
         else:
             self.statusBar.showMessage('the peaks for this dataset are '
                                        'already in memory', 10000)
