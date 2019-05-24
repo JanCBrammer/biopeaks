@@ -12,7 +12,7 @@ from filters import butter_bandpass_filter
 from sklearn.cluster import KMeans
 
 
-def peaks_signal(signal, sfreq):
+def peaks_ppg(signal, sfreq):
     
     signal_filt = butter_bandpass_filter(signal,
                                          .8,
@@ -74,14 +74,18 @@ def peaks_signal(signal, sfreq):
     
     final_peaks = np.delete(thresh_peaks, discard_peaks)
     
+#    plt.figure()
+#    plt.plot(signal_filt)
+#    plt.scatter(template_peaks, signal_filt[template_peaks], c='y', marker='X', s=200)
+#    plt.scatter(final_peaks, signal_filt[final_peaks], c='g')
+#    plt.scatter(thresh_peaks[discard_peaks], signal_filt[thresh_peaks[discard_peaks]], c='r')
     
-    
-    plt.figure()
-    plt.plot(signal_filt)
-    plt.scatter(template_peaks, signal_filt[template_peaks], c='y', marker='X', s=200)
-    plt.scatter(final_peaks, signal_filt[final_peaks], c='g')
-    plt.scatter(thresh_peaks[discard_peaks], signal_filt[thresh_peaks[discard_peaks]], c='r')
-    
-    return final_peaks
+    # prepare data for handling in biopeaks gui (must be ndarray to allow
+    # homogeneous handling with respiratory data)
+    returnarray = np.ndarray((np.size(final_peaks), 1))
+    returnarray[:, 0] = final_peaks
+    returnarray = returnarray.astype(int)
+
+    return returnarray
     
    

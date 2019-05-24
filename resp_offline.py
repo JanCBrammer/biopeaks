@@ -10,7 +10,7 @@ from scipy.signal import welch, find_peaks, argrelextrema
 from filters import butter_lowpass_filter
 
 
-def extrema_signal(signal, sfreq):
+def extrema_resp(signal, sfreq):
 
     N = np.size(signal)
     # get an initial estimate of dominant breathing rate; assume rate ranging

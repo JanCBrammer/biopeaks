@@ -15,7 +15,7 @@ def moving_average(signal, window_size):
     return np.convolve(signal, np.ones((window_size,)) / window_size,
                        mode='same')
     
-def peaks_signal(signal, sfreq, enable_plot=False):
+def peaks_ecg(signal, sfreq, enable_plot=False):
     
     filt = butter_highpass_filter(signal, .5, sfreq)
     grad = np.gradient(filt)
@@ -57,7 +57,7 @@ def peaks_signal(signal, sfreq, enable_plot=False):
 
     # prepare data for handling in biopeaks gui (must be ndarray to allow
     # homogeneous handling with respiratory data)
-    returnarray = np.ndarray((len(peaks), 1))
+    returnarray = np.ndarray((np.size(peaks), 1))
     returnarray[:, 0] = peaks
     returnarray = returnarray.astype(int)
 

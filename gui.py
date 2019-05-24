@@ -9,8 +9,9 @@ import sys
 import numpy as np
 from scipy.signal import find_peaks
 from guiutils import LoadData
-from ecg_offline import peaks_signal
-from resp_offline import extrema_signal
+from ecg_offline import peaks_ecg
+from ppg_offline import peaks_ppg
+from resp_offline import extrema_resp
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QApplication, QWidget, QComboBox,
                              QFileDialog, QAction, QMainWindow,
@@ -62,11 +63,10 @@ class Window(QMainWindow):
         savePeaks.triggered.connect(self.save_peaks)
         toolbar.addAction(savePeaks) 
         
-        # set up status bar
+        # set up status bar to display error messages and current file path
         self.statusBar = QStatusBar()
-        self.statusBar.showMessage('Ready')
         self.setStatusBar(self.statusBar)
-        self.currentFile = QLabel('current file')
+        self.currentFile = QLabel()
         self.statusBar.addPermanentWidget(self.currentFile)
 
         # set up the central widget containing the plot and navigationtoolbar
@@ -81,6 +81,7 @@ class Window(QMainWindow):
         self.editcheckbox = QCheckBox('edit peaks', self)
         self.modmenu = QComboBox(self)
         self.modmenu.addItem('ECG')
+        self.modmenu.addItem('PPG')
         self.modmenu.addItem('RESP')
         
         # connect canvas to keyboard and mouse input for peak editing;
@@ -127,7 +128,8 @@ class Window(QMainWindow):
                 self.currentFile.setText(loadname[0][0])
             else:
                 self.data = None
-                self.statusBar.showMessage('make sure to load data in the OpenSignals format')
+                self.statusBar.showMessage('make sure to load data in '
+                                           'OpenSignals format', 10000)
                 print('make sure to load data in the OpenSignals format')
                 
     def find_peaks(self):
@@ -137,17 +139,23 @@ class Window(QMainWindow):
                 if self.modmenu.currentText() == 'ECG':
                     # for ECG data, data.signal returns a vector with indices
                     # of R-peaks
-                    self.peaks = peaks_signal(self.data.signal,
+                    self.peaks = peaks_ecg(self.data.signal,
+                                              self.data.sfreq)
+                if self.modmenu.currentText() == 'PPG':
+                    # for ECG data, data.signal returns a vector with indices
+                    # of R-peaks
+                    self.peaks = peaks_ppg(self.data.signal,
                                               self.data.sfreq)
                 elif self.modmenu.currentText() == 'RESP':
                     # for respiration data, data.signal returns a two column
                     # vector, with indices in column 0 and amplitudes at 
                     # indices in column 1
-                    self.peaks = extrema_signal(self.data.signal,
+                    self.peaks = extrema_resp(self.data.signal,
                                                 self.data.sfreq)
                 self.plot_peaks()
         else:
-            self.statusBar.showMessage('the peaks for this dataset are already in memory')
+            self.statusBar.showMessage('the peaks for this dataset are '
+                                       'already in memory', 10000)
             print('the peaks for this dataset are already in memory')
             
     def save_peaks(self):
@@ -232,7 +240,8 @@ class Window(QMainWindow):
                                                        insertarr, axis=0)                            
                             self.plot_peaks()
             else:
-                self.statusBar.showMessage('please search peaks before editing them')
+                self.statusBar.showMessage('please search peaks before '
+                                           'editing them', 10000)
                 print('please search peaks before editing them')
                 
     def plot_peaks(self):
