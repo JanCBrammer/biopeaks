@@ -18,7 +18,8 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QComboBox,
                              QVBoxLayout, QHBoxLayout, QCheckBox,
                              QLabel, QStatusBar)
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
+from PyQt5.QtCore import (QObject, QRunnable, QThreadPool, QSignalMapper,
+                          pyqtSignal)
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
                                                 FigureCanvas)
@@ -63,6 +64,17 @@ class Window(QMainWindow):
         self.setWindowTitle('biopeaks')
         self.setGeometry(50, 50, 1750, 750)
         self.setWindowIcon(QIcon('python_icon.png'))
+        
+        # define GUI elements
+        self.figure = Figure()
+        self.canvas = FigureCanvas(self.figure)
+        self.ax = self.figure.add_subplot(111)
+        self.navitools = CustomNavigationToolbar(self.canvas, self)
+        self.editcheckbox = QCheckBox('edit peaks', self)
+        self.modmenu = QComboBox(self)
+        self.modmenu.addItem('ECG')
+        self.modmenu.addItem('PPG')
+        self.modmenu.addItem('RESP')
                 
         # initialize data and parameters
         self.data = None
@@ -71,20 +83,53 @@ class Window(QMainWindow):
     
         self.threadpool = QThreadPool()
 
-        # set up toolbar
-        toolbar = self.addToolBar('Toolbar')
-
-        loadData = QAction(QIcon('open_icon.png'), 'Load data', self)
-        loadData.triggered.connect(self.load_data)
-        toolbar.addAction(loadData)      
-
-        findPeaks = QAction(QIcon('plot_icon.png'), 'Find peaks', self)
-        findPeaks.triggered.connect(self.find_peaks)
-        toolbar.addAction(findPeaks)      
-
-        savePeaks = QAction(QIcon('save_icon.png'), 'Save peaks', self)
+        # set up menubar
+        menubar = self.menuBar()
+        
+        # signal menu
+        signalmenu = menubar.addMenu('load signal')
+        
+        # define mapping to handle the many signals to one slot situation
+        self.channelmapper = QSignalMapper()
+        
+        byName = QAction('by channel name', self)
+        byName.triggered.connect(self.channelmapper.map)
+        self.channelmapper.setMapping(byName, 0)
+        signalmenu.addAction(byName)
+        
+        byNumber = signalmenu.addMenu('by channel number')
+        for t, i in [('A1', 1),
+                     ('A2', 2),
+                     ('A3', 3),
+                     ('A4', 4),
+                     ('A5', 5),
+                     ('A6', 6)]:
+            a = QAction(t, self)
+            a.triggered.connect(self.channelmapper.map)
+            self.channelmapper.setMapping(a, i)
+            byNumber.addAction(a)
+        
+        self.channelmapper.mapped.connect(self.load_data)
+        
+        # peak menu
+        peakmenu = menubar.addMenu('peaks')
+        findmode = peakmenu.addMenu('find peaks')
+        
+        findSingle = QAction('single file', self)
+        findSingle.triggered.connect(self.find_peaks)
+        findmode.addAction(findSingle)
+        
+        findBatch = QAction('multiple files', self)
+        findBatch.triggered.connect(self.batch_handler)
+        findmode.addAction(findBatch)
+        
+        savePeaks = QAction('save peaks', self)
         savePeaks.triggered.connect(self.save_peaks)
-        toolbar.addAction(savePeaks) 
+        peakmenu.addAction(savePeaks) 
+
+        loadPeaks = QAction('load peaks', self)
+        loadPeaks.triggered.connect(self.load_peaks)
+        peakmenu.addAction(loadPeaks) 
         
         # set up status bar to display error messages and current file path
         self.statusBar = QStatusBar()
@@ -96,17 +141,6 @@ class Window(QMainWindow):
         self.centwidget = QWidget()
         self.setCentralWidget(self.centwidget)
 
-        # define GUI elements
-        self.figure = Figure()
-        self.canvas = FigureCanvas(self.figure)
-        self.ax = self.figure.add_subplot(111)
-        self.navitools = CustomNavigationToolbar(self.canvas, self)
-        self.editcheckbox = QCheckBox('edit peaks', self)
-        self.modmenu = QComboBox(self)
-        self.modmenu.addItem('ECG')
-        self.modmenu.addItem('PPG')
-        self.modmenu.addItem('RESP')
-        
         # connect canvas to keyboard and mouse input for peak editing;
         # only widgets (e.g. canvas) that currently have focus capture
         # keyboard input: "You must enable keyboard focus for a widget if
@@ -117,31 +151,29 @@ class Window(QMainWindow):
         
         # define GUI layout
         self.vlayout = QVBoxLayout(self.centwidget)
+        self.vlayout.addWidget(self.modmenu)
         self.vlayout.addWidget(self.canvas)
         
         self.hlayout = QHBoxLayout()
         self.vlayout.addLayout(self.hlayout)
-        
         self.hlayout.addWidget(self.navitools)
-        self.hlayout.addWidget(self.modmenu)
         self.hlayout.addWidget(self.editcheckbox)
 
         self.show()
 
-    # toolbar methods
-    def load_data(self):
-        # in case find_peaks is currently running, disable for the associated 
+    # menubar methods
+    def load_data(self, chanmap):
+        # in case find_peaks is currently running, wait for the associated 
         # thread to finish
         self.threadpool.waitForDone()
         loadname = QFileDialog.getOpenFileNames(self, 'Open file', '\home')
         if loadname[0]:
-            # until batch processing is implemented, select first file from
-            # list; modality is hardcoded as ECG for now until selection of
-            # modality is implemented
-            self.data = LoadData(loadname[0][0], self.modmenu.currentText())
+            if chanmap == 0:
+                chanmap = self.modmenu.currentText()
+            self.data = LoadData(loadname[0][0], chanmap)
         
             if self.data.loaded is True:
-                # clear axis and history toolbar for new data, also remove old
+                # clear axis and history navitools for new data, also remove old
                 # peaks and corresponding plot elements from memory
                 self.ax.clear()
                 self.navitools.update()
@@ -158,7 +190,10 @@ class Window(QMainWindow):
                                            'OpenSignals format', 10000)
                 print('make sure to load data in the OpenSignals format')
                 
-    def find_peaks(self):
+    def find_peaks(self, findmap):
+        # in case find_peaks is currently running, wait for the associated 
+        # thread to finish
+        self.threadpool.waitForDone()
         if self.peaks is None:
             if self.data is not None:
                 if self.modmenu.currentText() == 'ECG':
@@ -184,9 +219,13 @@ class Window(QMainWindow):
     def instantiate_peaks(self, output):
         # for ECG and PPG data, self.peaks returns a vector with indices of
         # R-peaks; for respiration data, self.peaks returns a two column 
-        # vector, with indices in column 0 and amplitudes at indices in column 1
+        # vector, with indices in column 0 and amplitudes at indices in column
+        # 1
         self.peaks = output
         self.plot_peaks()
+        
+    def load_peaks(self):
+        pass
             
     def save_peaks(self):
         if self.peaks is not None:
@@ -281,6 +320,10 @@ class Window(QMainWindow):
         self.scat = self.ax.scatter(self.data.sec[self.peaks[:, 0]],
                                     self.data.signal[self.peaks[:, 0]], c='m')
         self.canvas.draw()
+        
+    def batch_handler(self):
+        pass
+        # pop-up ask for savedir
     
 if __name__ == '__main__':
     app = QApplication(sys.argv)

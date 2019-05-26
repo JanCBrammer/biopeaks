@@ -13,8 +13,8 @@ import pandas as pd
 
 class LoadData:
 
-    def __init__(self, datadir, modality):
-        self.modality = modality
+    def __init__(self, datadir, chanmap):
+        self.chanmap = chanmap
         self.datadir = datadir
         self.signal = None
         self.sfreq = None
@@ -37,11 +37,19 @@ class LoadData:
                     # parse header and extract relevant metadata
                     self.sfreq = metadata['sampling rate']
                     sensors = metadata['sensor']
-                    # find the index of the sensor that corresponds to the
-                    # selected modality; it doesn't matter if sensor is called
-                    # <modality>BIT or <modality>BITREV
-                    sensidx = [i for i, s in enumerate(sensors)
-                                if self.modality in s]
+                    channels = metadata['label']
+                    
+                    print(type(self.chanmap))
+                    
+                    if type(self.chanmap) is str:
+                        # find the index of the sensor that corresponds to the
+                        # selected modality; it doesn't matter if sensor is
+                        # called <modality>BIT or <modality>BITREV
+                        sensidx = [i for i, s in enumerate(sensors)
+                                    if self.chanmap in s]
+                    elif type(self.chanmap) is int:
+                        sensidx = [i for i, s in enumerate(channels)
+                                    if str(self.chanmap) in s]
                     if sensidx:
                         # select only first sensor of the selected modality
                         # (it is conceivable that multiple sensors of the same
