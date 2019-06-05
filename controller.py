@@ -5,15 +5,15 @@ Created on Mon Jun  3 18:47:13 2019
 @author: John Doe
 """
 
-import time
 import os
 import json
 import pandas as pd
 import numpy as np
+from scipy.signal import find_peaks
 from ecg_offline import peaks_ecg
 from ppg_offline import peaks_ppg
 from resp_offline import extrema_resp
-from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
 
 # threading is implemented according to https://pythonguis.com/courses/
@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import QFileDialog
     
 class WorkerSignals(QObject):
 
-    batch_progress = pyqtSignal(str)
+    plot_update = pyqtSignal(str)
     
     
 class Worker(QRunnable):
@@ -34,7 +34,7 @@ class Worker(QRunnable):
         self.args = args
         self.kwargs = kwargs
         self.signals = WorkerSignals()    
-        self.kwargs['batch_progress_sig'] = self.signals.batch_progress 
+        self.kwargs['batch_progress_sig'] = self.signals.plot_update 
         
     def run(self):
         self.fn(*self.args, **self.kwargs)
@@ -66,7 +66,8 @@ class Controller(QObject):
     ###########
     
     def open_signal(self):
-        self.fnames = QFileDialog.getOpenFileNames(None, 'Open file', '\home')[0]
+        self.fnames = QFileDialog.getOpenFileNames(None, 'Open file',
+                                                   '\home')[0]
         print(self.fnames)
         if self.fnames:
             self.numfiles = np.size(self.fnames)
@@ -148,7 +149,6 @@ class Controller(QObject):
         pass
     
     def find_peaks(self):
-        print('finding peaks')
         if self._model.loaded:
             if self._model.modality == 'ECG':
                 peaks = peaks_ecg(self._model.signal,
@@ -161,13 +161,60 @@ class Controller(QObject):
                                      self._model.sfreq)
             self._model.peaks = peaks
     
-    def edit_peaks(self):
-        pass
+    def edit_peaks(self, event):
+        # account for the fact that depending on sensor modality, data.peaks
+        # has different shapes; preserve ndarrays throughout editing!
+        if self._model.editable:
+            if self._model.peaks is not None:
+                cursor = int(np.rint(event.xdata * self._model.sfreq))
+                # search peak in a window of 200 msec, centered on selected
+                # x coordinate of cursor position
+                extend = int(np.rint(self._model.sfreq * 0.1))
+                searchrange = np.arange(cursor - extend,
+                                        cursor + extend)
+                if event.key == 'd':
+                    peakidx = np.argmin(np.abs(self._model.peaks[:, 0] -
+                                               cursor))
+                    # only delete peaks that are within search range
+                    if np.any(searchrange == self._model.peaks[peakidx, 0]): 
+                        self._model.peaks = np.delete(self._model.peaks,
+                                                      peakidx, axis=0)
+                        self.plot_update('peaks')
+                elif event.key == 'a':
+                    searchsignal = self._model.signal[searchrange]
+                    # use find_peaks to also detect local extrema that are
+                    # plateaus
+                    locmax, _ = find_peaks(searchsignal)
+                    locmin, _ = find_peaks(searchsignal * -1)
+                    locext = np.concatenate((locmax, locmin))
+                    locext.sort(kind='mergesort')
+                    if locext.size > 0:
+                        peakidx = np.argmin(np.abs(searchrange[locext] -
+                                                   cursor))
+                        newpeak = searchrange[0] + locext[peakidx]
+                        # only add new peak if it doesn't exist already
+                        if np.all(self._model.peaks[:, 0] != newpeak):
+                            insertidx = np.searchsorted(self._model.
+                                                        peaks[:, 0], newpeak)
+                            if self._model.peaks.shape[1] == 1:
+                                insertarr = [newpeak]
+                                self._model.peaks = np.insert(self._model.
+                                                              peaks, insertidx,
+                                                              insertarr,
+                                                              axis=0)
+                            elif self._model.peaks.shape[1] == 2:
+                                insertarr = [newpeak,
+                                             self._model.signal[newpeak]]
+                                self._model.peaks = np.insert(self._model.
+                                                              peaks, insertidx,
+                                                              insertarr,
+                                                              axis=0)                            
+                            self.plot_update('peaks')
     
     def save_peaks(self):
         pass
     
-    def batch_progress(self, value):
+    def plot_update(self, value):
         if value == 'signal':
             self.signal_changed.emit()
         elif value == 'peaks':
@@ -178,7 +225,6 @@ class Controller(QObject):
             pass
             # open file dialog to get savepath
         for fname in self.fnames:
-            print(fname)
             self.read_signal(fname)
             batch_progress_sig.emit('signal')
             self.find_peaks()
@@ -189,7 +235,7 @@ class Controller(QObject):
                     
     def batch_executer(self, batch):
         worker = Worker(batch)
-        worker.signals.batch_progress.connect(self.batch_progress)
+        worker.signals.plot_update.connect(self.plot_update)
         self.threadpool.start(worker)
 
             

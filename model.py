@@ -5,7 +5,7 @@ Created on Mon Jun  3 18:47:12 2019
 @author: John Doe
 """
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject
 
 
 class Model(QObject):

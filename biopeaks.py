@@ -8,8 +8,8 @@ Created on Mon Jun  3 18:47:10 2019
 import sys
 from PyQt5.QtWidgets import QApplication
 from model import Model
-from controller import Controller
 from view import View
+from controller import Controller
 
 
 class Application(QApplication):

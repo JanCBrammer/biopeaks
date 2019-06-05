@@ -5,12 +5,10 @@ Created on Mon Jun  3 18:47:12 2019
 @author: John Doe
 """
 
-from PyQt5.QtWidgets import (QApplication, QWidget, QComboBox,
-                             QFileDialog, QAction, QMainWindow,
+from PyQt5.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                              QVBoxLayout, QHBoxLayout, QCheckBox,
-                             QLabel, QStatusBar, QGroupBox, QGridLayout)
+                             QLabel, QStatusBar, QGroupBox)
 from PyQt5 import QtCore
-from PyQt5.QtCore import QSignalMapper, pyqtSlot
 from PyQt5.QtGui import QIcon
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
@@ -95,7 +93,7 @@ class View(QMainWindow):
         menubar = self.menuBar()
         
         # signal menu
-        openSignal = QAction('load signal', self)
+        openSignal = QAction('load data', self)
         openSignal.triggered.connect(self._controller.open_signal)
         menubar.addAction(openSignal)
     
