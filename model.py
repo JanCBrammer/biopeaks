@@ -5,19 +5,58 @@ Created on Mon Jun  3 18:47:12 2019
 @author: John Doe
 """
 
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, pyqtSignal
 
 
+#class Model(QObject):
+#    
+#    def __init__(self):
+#        super().__init__()
+#        
+#        ##############
+#        # attributes #
+#        ##############
+#        self.signal = None
+#        self.peaks = None
+#        self.sfreq = None
+#        self.sec = None
+#        self.modality = None
+#        self.channel = None
+#        self.signalpath = None
+#        self.editable = False
+#        self.loaded = False
+        
 class Model(QObject):
     
+    signal_changed = pyqtSignal()
+    peaks_changed = pyqtSignal()
+
+    @property
+    def signal(self):
+        return self._signal
+
+    @signal.setter
+    def signal(self, value):
+        self._signal = value
+        self.signal_changed.emit()
+        
+    @property
+    def peaks(self):
+        return self._peaks
+
+    @peaks.setter
+    def peaks(self, value):
+        self._peaks = value
+        self.peaks_changed.emit()
+
     def __init__(self):
         super().__init__()
-        
+
         ##############
         # attributes #
         ##############
-        self.signal = None
-        self.peaks = None
+        self._signal = None
+        self._peaks = None
         self.sfreq = None
         self.sec = None
         self.modality = None
@@ -25,6 +64,4 @@ class Model(QObject):
         self.signalpath = None
         self.editable = False
         self.loaded = False
-
-    
     

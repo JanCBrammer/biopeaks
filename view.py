@@ -153,8 +153,8 @@ class View(QMainWindow):
         ##############################################
         # connect output widgets to external signals #
         ##############################################
-        self._controller.signal_changed.connect(self.plot_signal)
-        self._controller.peaks_changed.connect(self.plot_peaks)
+        self._model.signal_changed.connect(self.plot_signal)
+        self._model.peaks_changed.connect(self.plot_peaks)
     
     ###########
     # methods #
@@ -176,8 +176,4 @@ class View(QMainWindow):
                                     self._model.signal[self._model.
                                                        peaks[:, 0]], c='m')
         self.canvas.draw()
-        
-        
-        
-        
         

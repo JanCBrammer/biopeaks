@@ -16,28 +16,18 @@ from resp_offline import extrema_resp
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
 
-# threading is implemented according to https://pythonguis.com/courses/
-# multithreading-pyqt-applications-qthreadpool/complete-example/
+## threading is implemented according to https://pythonguis.com/courses/
+## multithreading-pyqt-applications-qthreadpool/complete-example/
 
-    
-class WorkerSignals(QObject):
-
-    plot_update = pyqtSignal(str)
-    
-    
 class Worker(QRunnable):
     
-    def __init__(self, fn, *args, **kwargs):
+    def __init__(self, fn):
         super(Worker, self).__init__()
 
         self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
-        self.signals = WorkerSignals()    
-        self.kwargs['batch_progress_sig'] = self.signals.plot_update 
         
     def run(self):
-        self.fn(*self.args, **self.kwargs)
+        self.fn()
         
         
 class Controller(QObject):
@@ -56,21 +46,21 @@ class Controller(QObject):
         self.batchmode = None
        
     ###########
-    # signals #
-    ###########
-    signal_changed = pyqtSignal()
-    peaks_changed = pyqtSignal()
-    
-    ###########
     # methods #
     ###########
-    
     def open_signal(self):
-        self.fnames = QFileDialog.getOpenFileNames(None, 'Open file',
+        self.fnames = QFileDialog.getOpenFileNames(None, 'Choose your data',
                                                    '\home')[0]
         print(self.fnames)
         if self.fnames:
             self.numfiles = np.size(self.fnames)
+#            if self.batchmode == 'multiple files':
+#                self.savedir = QFileDialog.getExistingDirectory(None,
+#                                                                'Choose a '
+#                                                                'directory '
+#                                                                'for saving '
+#                                                                'the peaks',
+#                                                                 '\home')
             batch = self.batch_constructor
             self.batch_executer(batch)
     
@@ -220,22 +210,15 @@ class Controller(QObject):
         elif value == 'peaks':
             self.peaks_changed.emit()
     
-    def batch_constructor(self, batch_progress_sig):
-        if self.batchmode == 'multiple files':
-            pass
-            # open file dialog to get savepath
+    def batch_constructor(self):
         for fname in self.fnames:
             self.read_signal(fname)
-            batch_progress_sig.emit('signal')
+#            if self.batchmode == 'multiple files':
             self.find_peaks()
-            batch_progress_sig.emit('peaks')
-            if self.batchmode == 'multiple files':
-                pass
-                # save peaks to savepath with "<fname>_peaks" ending
+            # save peaks to savepath with "<fname>_peaks" ending
                     
     def batch_executer(self, batch):
         worker = Worker(batch)
-        worker.signals.plot_update.connect(self.plot_update)
         self.threadpool.start(worker)
 
             
