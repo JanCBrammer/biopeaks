@@ -100,8 +100,12 @@ class View(QMainWindow):
         # peak menu
         peakmenu = menubar.addMenu('peaks')
         
+        findPeaks = QAction('find peaks', self)
+        findPeaks.triggered.connect(self._controller.find_peaks)
+        peakmenu.addAction(findPeaks)
+        
         savePeaks = QAction('save peaks', self)
-        savePeaks.triggered.connect(self._controller.save_peaks)
+        savePeaks.triggered.connect(self._controller.get_savepath)
         peakmenu.addAction(savePeaks) 
 
         loadPeaks = QAction('load peaks', self)

@@ -13,17 +13,19 @@ from scipy.signal import find_peaks
 from ecg_offline import peaks_ecg
 from ppg_offline import peaks_ppg
 from resp_offline import extrema_resp
-from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
+from PyQt5.QtCore import QObject, QRunnable, QThreadPool
 from PyQt5.QtWidgets import QFileDialog
+
+peakfuncs = {'ECG': peaks_ecg,
+             'PPG': peaks_ppg,
+             'RESP': extrema_resp}
 
 ## threading is implemented according to https://pythonguis.com/courses/
 ## multithreading-pyqt-applications-qthreadpool/complete-example/
-
 class Worker(QRunnable):
     
     def __init__(self, fn):
         super(Worker, self).__init__()
-
         self.fn = fn
         
     def run(self):
@@ -41,7 +43,7 @@ class Controller(QObject):
         ##############
         # attributes #
         ##############
-        self.fnames = None
+        self.fpaths = None
         self.numfiles = None
         self.batchmode = None
        
@@ -49,18 +51,13 @@ class Controller(QObject):
     # methods #
     ###########
     def open_signal(self):
-        self.fnames = QFileDialog.getOpenFileNames(None, 'Choose your data',
+        self.fpaths = QFileDialog.getOpenFileNames(None, 'Choose your data',
                                                    '\home')[0]
-        print(self.fnames)
-        if self.fnames:
-            self.numfiles = np.size(self.fnames)
-#            if self.batchmode == 'multiple files':
-#                self.savedir = QFileDialog.getExistingDirectory(None,
-#                                                                'Choose a '
-#                                                                'directory '
-#                                                                'for saving '
-#                                                                'the peaks',
-#                                                                 '\home')
+        print(self.fpaths)
+        if self.fpaths:
+            self.numfiles = np.size(self.fpaths)
+            if self.batchmode == 'multiple files':
+                self.get_savepath()
             batch = self.batch_constructor
             self.batch_executer(batch)
     
@@ -140,15 +137,9 @@ class Controller(QObject):
     
     def find_peaks(self):
         if self._model.loaded:
-            if self._model.modality == 'ECG':
-                peaks = peaks_ecg(self._model.signal,
-                                  self._model.sfreq)
-            elif self._model.modality == 'PPG':
-                peaks = peaks_ppg(self._model.signal,
-                                  self._model.sfreq)
-            elif self._model.modality == 'RESP':
-                peaks = extrema_resp(self._model.signal,
-                                     self._model.sfreq)
+            peakfunc = peakfuncs[self._model.modality]
+            peaks = peakfunc(self._model.signal,
+                             self._model.sfreq)
             self._model.peaks = peaks
     
     def edit_peaks(self, event):
@@ -199,33 +190,66 @@ class Controller(QObject):
                                                               peaks, insertidx,
                                                               insertarr,
                                                               axis=0)                            
-                            self.plot_update('peaks')
     
+    def get_savepath(self):
+        if self.batchmode == 'single file':
+            self.savepath, _ = QFileDialog.getSaveFileName(None, 'Save peaks',
+                                                           'untitled.csv',
+                                                           'CSV (*.csv)')
+            self.save_peaks()
+        elif self.batchmode == 'multiple files':
+            self.savedir = QFileDialog.getExistingDirectory(None, 'Choose a '
+                                                            'directory for '
+                                                            'saving the '
+                                                            'peaks', '\home')
+        
     def save_peaks(self):
-        pass
-    
-    def plot_update(self, value):
-        if value == 'signal':
-            self.signal_changed.emit()
-        elif value == 'peaks':
-            self.peaks_changed.emit()
+        if self._model.peaks is not None:
+            # save peaks in seconds
+            if self._model.peaks.shape[1] == 1:
+                np.savetxt(self.savepath, self._model.sec[self._model.peaks])
+            elif self._model.peaks.shape[1] == 2:
+                # check if the alternation of peaks and troughs is
+                # unbroken (it might be at this point due to user edits);
+                # if alternation of sign in extdiffs is broken, remove
+                # the extreme (or extrema) that cause(s) the break(s)
+                extdiffs = np.sign(np.diff(self._model.peaks[:, 1]))
+                extdiffs = np.add(extdiffs[0:-1], extdiffs[1:])
+                removeext = np.where(extdiffs != 0)[0] + 1
+                self.peaks = np.delete(self._model.peaks, removeext, axis=0)
+                # determine if series starts with peak or trough to be able
+                # to save peaks and troughs separately (as well as the
+                # corresponding amplitudes)
+                if self._model.peaks[0, 1] > self._model.peaks[1, 1]:
+                    peaks = self._model.peaks[0:-3:2, 0]
+                    troughs = self._model.peaks[1:-2:2, 0]
+                    amppeaks = self._model.peaks[0:-3:2, 1]
+                    amptroughs = self._model.peaks[1:-2:2, 1]
+                elif self._model.peaks[0, 1] < self._model.peaks[1, 1]:
+                    peaks = self._model.peaks[1:-2:2, 0]
+                    troughs = self._model.peaks[0:-3:2, 0]
+                    amppeaks = self._model.peaks[1:-2:2, 1]
+                    amptroughs = self._model.peaks[0:-3:2, 1]
+                savearray = np.column_stack((peaks,
+                                             troughs,
+                                             amppeaks,
+                                             amptroughs))
+                np.savetxt(self.savepath, savearray)
     
     def batch_constructor(self):
-        for fname in self.fnames:
-            self.read_signal(fname)
-#            if self.batchmode == 'multiple files':
-            self.find_peaks()
-            # save peaks to savepath with "<fname>_peaks" ending
+        for fpath in self.fpaths:
+            self.read_signal(fpath)
+            if self.batchmode == 'multiple files':
+                self.find_peaks()
+                # save peaks to self.savepath with "<fname>_peaks" ending
+                _, fname = os.path.split(fpath)
+                fpartname, _ = os.path.splitext(fname)
+                self.savepath = os.path.join(self.savedir,
+                                             '{}{}'.format(fpartname,
+                                              '_peaks.csv'))
+                self.save_peaks()
                     
     def batch_executer(self, batch):
         worker = Worker(batch)
         self.threadpool.start(worker)
-
-            
-            
-    
-    
-    
-    
-    
-    
+        
