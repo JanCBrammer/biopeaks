@@ -12,6 +12,7 @@ class Model(QObject):
     
     signal_changed = pyqtSignal()
     peaks_changed = pyqtSignal()
+    path_changed = pyqtSignal()
 
     @property
     def signal(self):
@@ -30,20 +31,31 @@ class Model(QObject):
     def peaks(self, value):
         self._peaks = value
         self.peaks_changed.emit()
+        
+    @property
+    def signalpath(self):
+        return self._signalpath
+
+    @signalpath.setter
+    def signalpath(self, value):
+        self._signalpath = value
+        self.path_changed.emit()
 
     def __init__(self):
         super().__init__()
 
-        ##############
-        # attributes #
-        ##############
         self._signal = None
         self._peaks = None
+        self._signalpath = None
         self.sfreq = None
         self.sec = None
-        self.modality = None
-        self.channel = None
-        self.signalpath = None
-        self.editable = False
         self.loaded = False
-    
+        
+    def reset(self):
+        self._signal = None
+        self._peaks = None
+        self._signalpath = None
+        self.sfreq = None
+        self.sec = None
+        self.loaded = False
+        

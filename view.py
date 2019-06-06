@@ -100,15 +100,15 @@ class View(QMainWindow):
         # peak menu
         peakmenu = menubar.addMenu('peaks')
         
-        findPeaks = QAction('find peaks', self)
+        findPeaks = QAction('find', self)
         findPeaks.triggered.connect(self._controller.find_peaks)
         peakmenu.addAction(findPeaks)
         
-        savePeaks = QAction('save peaks', self)
+        savePeaks = QAction('save', self)
         savePeaks.triggered.connect(self._controller.get_savepath)
         peakmenu.addAction(savePeaks) 
 
-        loadPeaks = QAction('load peaks', self)
+        loadPeaks = QAction('load', self)
         loadPeaks.triggered.connect(self._controller.open_peaks)
         peakmenu.addAction(loadPeaks) 
         
@@ -159,6 +159,7 @@ class View(QMainWindow):
         ##############################################
         self._model.signal_changed.connect(self.plot_signal)
         self._model.peaks_changed.connect(self.plot_peaks)
+        self._model.path_changed.connect(self.display_path)
     
     ###########
     # methods #
@@ -180,4 +181,7 @@ class View(QMainWindow):
                                     self._model.signal[self._model.
                                                        peaks[:, 0]], c='m')
         self.canvas.draw()
+        
+    def display_path(self):
+        self.currentFile.setText(self._model.signalpath)
         

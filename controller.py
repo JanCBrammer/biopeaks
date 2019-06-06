@@ -39,13 +39,11 @@ class Controller(QObject):
 
         self._model = model
         self.threadpool = QThreadPool()
-
-        ##############
-        # attributes #
-        ##############
         self.fpaths = None
-        self.numfiles = None
         self.batchmode = None
+        self.modality = None
+        self.channel = None
+        self.editable = False
        
     ###########
     # methods #
@@ -55,34 +53,13 @@ class Controller(QObject):
                                                    '\home')[0]
         print(self.fpaths)
         if self.fpaths:
-            self.numfiles = np.size(self.fpaths)
+            # reset model before reading new dataset
+            self._model.reset()
             if self.batchmode == 'multiple files':
                 self.get_savepath()
             batch = self.batch_constructor
             self.batch_executer(batch)
     
-    def open_peaks(self):
-        pass
-    
-    def change_modality(self, value):
-        self._model.modality = value
-        print(value)
-        
-    def change_channel(self, value):
-        self._model.channel = value
-        print(value)
-        
-    def change_batchmode(self, value):
-        self.batchmode = value
-        print(value)
-        
-    def change_editable(self, value):
-        if value == 2:
-            self._model.editable = True
-        elif value == 0:
-            self._model.editable = False
-        print(value)
-        
     def read_signal(self, path):
         _, self.file_extension = os.path.splitext(path)
         if self.file_extension == '.txt':
@@ -91,8 +68,6 @@ class Controller(QObject):
                 # read first line and check if user provided an OpenSignals
                 # file
                 if 'OpenSignals' in f.readline():
-                    if self._model.channel == 0:
-                        self._model.channel = self._model.modality
                     # read second line and convert json header to dict (only
                     # selects first device / MAC adress)
                     metadata = json.loads(f.readline()[1:])
@@ -102,15 +77,17 @@ class Controller(QObject):
                     sensors = metadata['sensor']
                     channels = metadata['label']
                     # select channel and load data
-                    if type(self._model.channel) is str:
-                        # find the index of the sensor that corresponds to the
-                        # selected modality; it doesn't matter if sensor is
-                        # called <modality>BIT or <modality>BITREV
-                        sensidx = [i for i, s in enumerate(sensors)
-                                    if self._model.channel in s]
-                    elif type(self._model.channel) is int:
+                    # find the index of the sensor that corresponds to the
+                    # selected modality; it doesn't matter if sensor is
+                    # called <modality>BIT or <modality>BITREV
+                    if self.channel[0] == 'A':
                         sensidx = [i for i, s in enumerate(channels)
-                                    if str(self._model.channel) in s]
+                                    if self.channel in s]
+                    else:
+                        sensidx = [i for i, s in enumerate(sensors)
+                                    if self.channel in s]
+                    
+                
                     if sensidx:
                         # select only first sensor of the selected modality
                         # (it is conceivable that multiple sensors of the same
@@ -129,15 +106,18 @@ class Controller(QObject):
                         self._model.signal = np.ravel(signal)
                         self._model.sfreq = sfreq
                         self._model.sec = sec
+                        self._model.signalpath = path
                         self._model.loaded = True
                                                 
-                        
+    def open_peaks(self):
+        pass   
+            
     def read_peaks(self):
         pass
     
     def find_peaks(self):
         if self._model.loaded:
-            peakfunc = peakfuncs[self._model.modality]
+            peakfunc = peakfuncs[self.modality]
             peaks = peakfunc(self._model.signal,
                              self._model.sfreq)
             self._model.peaks = peaks
@@ -145,7 +125,7 @@ class Controller(QObject):
     def edit_peaks(self, event):
         # account for the fact that depending on sensor modality, data.peaks
         # has different shapes; preserve ndarrays throughout editing!
-        if self._model.editable:
+        if self.editable:
             if self._model.peaks is not None:
                 cursor = int(np.rint(event.xdata * self._model.sfreq))
                 # search peak in a window of 200 msec, centered on selected
@@ -192,19 +172,22 @@ class Controller(QObject):
                                                               axis=0)                            
     
     def get_savepath(self):
-        if self.batchmode == 'single file':
-            self.savepath, _ = QFileDialog.getSaveFileName(None, 'Save peaks',
+        if self.batchmode == 'single file' and self._model.peaks is not None:
+            self.savepath, _ = QFileDialog.getSaveFileName(None,
+                                                           'Save peaks',
                                                            'untitled.csv',
                                                            'CSV (*.csv)')
             self.save_peaks()
         elif self.batchmode == 'multiple files':
-            self.savedir = QFileDialog.getExistingDirectory(None, 'Choose a '
-                                                            'directory for '
-                                                            'saving the '
-                                                            'peaks', '\home')
+            self.savedir = QFileDialog.getExistingDirectory(None,
+                                                            'Choose a '
+                                                            'directory'
+                                                            'for saving '
+                                                            'the peaks',
+                                                            '\home')
         
     def save_peaks(self):
-        if self._model.peaks is not None:
+        if self.savepath:
             # save peaks in seconds
             if self._model.peaks.shape[1] == 1:
                 np.savetxt(self.savepath, self._model.sec[self._model.peaks])
@@ -238,6 +221,8 @@ class Controller(QObject):
     
     def batch_constructor(self):
         for fpath in self.fpaths:
+            # reset model before reading new dataset
+            self._model.reset()
             self.read_signal(fpath)
             if self.batchmode == 'multiple files':
                 self.find_peaks()
@@ -252,4 +237,23 @@ class Controller(QObject):
     def batch_executer(self, batch):
         worker = Worker(batch)
         self.threadpool.start(worker)
+        
+    def change_modality(self, value):
+        self.modality = value
+        print(value)
+        
+    def change_channel(self, value):
+        self.channel = value
+        print(value)
+        
+    def change_batchmode(self, value):
+        self.batchmode = value
+        print(value)
+        
+    def change_editable(self, value):
+        if value == 2:
+            self.editable = True
+        elif value == 0:
+            self.editable = False
+        print(value)
         
