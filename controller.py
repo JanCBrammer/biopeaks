@@ -40,6 +40,7 @@ class Controller(QObject):
         self._model = model
         self.threadpool = QThreadPool()
         self.fpaths = None
+        self.peakpath = None
         self.batchmode = None
         self.modality = None
         self.channel = None
@@ -86,8 +87,6 @@ class Controller(QObject):
                     else:
                         sensidx = [i for i, s in enumerate(sensors)
                                     if self.channel in s]
-                    
-                
                     if sensidx:
                         # select only first sensor of the selected modality
                         # (it is conceivable that multiple sensors of the same
@@ -97,26 +96,43 @@ class Controller(QObject):
                         # add 5 to sensor index to obtain signal from selected
                         # modality; load data with pandas for performance
                         sensidx += 5
-                        signal = pd.read_csv(path, delimiter = '\t',
+                        signal = pd.read_csv(path, delimiter='\t',
                                              usecols=[sensidx], header=None,
                                              comment='#')
                         siglen = signal.size
-                        sec = np.linspace(0, siglen / sfreq, siglen,
-                                          1 / sfreq)
+                        sec = np.linspace(0, siglen / sfreq, siglen, 1 / sfreq)
                         self._model.signal = np.ravel(signal)
                         self._model.sfreq = sfreq
                         self._model.sec = sec
                         self._model.signalpath = path
                         self._model.loaded = True
                                                 
-    def open_peaks(self):
-        pass   
-            
     def read_peaks(self):
-        pass
-    
+        if self._model.loaded and self._model.peaks is None:
+            self.peakpath = QFileDialog.getOpenFileNames(None,
+                                                         'Choose your peaks',
+                                                         '\home')[0][0]
+            if self.peakpath:
+                dfpeaks = pd.read_csv(self.peakpath)
+                if dfpeaks.shape[1] == 1:
+                    peaks = dfpeaks['peaks'].copy()
+                    # convert back to samples
+                    peaks = peaks * self._model.sfreq
+                    # reshape to a format understood by plotting function
+                    # (ndarray of type int)
+                    peaks = np.rint(peaks[:, np.newaxis]).astype(int)
+                    self._model.peaks = peaks
+                elif dfpeaks.shape[1] == 4:
+                    # mergesort peaks and troughs
+                    extrema = np.concatenate((dfpeaks['peaks'].copy(),
+                                              dfpeaks['troughs'].copy()))
+                    extrema.sort(kind='mergesort')
+                    extrema = extrema * self._model.sfreq
+                    extrema = np.rint(extrema[:, np.newaxis]).astype(int)
+                    self._model.peaks = extrema
+            
     def find_peaks(self):
-        if self._model.loaded:
+        if self._model.loaded and self._model.peaks is None:
             peakfunc = peakfuncs[self.modality]
             peaks = peakfunc(self._model.signal,
                              self._model.sfreq)
@@ -190,7 +206,8 @@ class Controller(QObject):
         if self.savepath:
             # save peaks in seconds
             if self._model.peaks.shape[1] == 1:
-                np.savetxt(self.savepath, self._model.sec[self._model.peaks])
+                savearray = pd.DataFrame(self._model.peaks / self._model.sfreq)
+                savearray.to_csv(self.savepath, index=False, header=['peaks'])
             elif self._model.peaks.shape[1] == 2:
                 # check if the alternation of peaks and troughs is
                 # unbroken (it might be at this point due to user edits);
@@ -199,25 +216,32 @@ class Controller(QObject):
                 extdiffs = np.sign(np.diff(self._model.peaks[:, 1]))
                 extdiffs = np.add(extdiffs[0:-1], extdiffs[1:])
                 removeext = np.where(extdiffs != 0)[0] + 1
-                self.peaks = np.delete(self._model.peaks, removeext, axis=0)
+                # work on local copy of extrema to avoid call to plotting
+                # function
+                extrema = np.delete(self._model.peaks, removeext, axis=0)
                 # determine if series starts with peak or trough to be able
                 # to save peaks and troughs separately (as well as the
                 # corresponding amplitudes)
-                if self._model.peaks[0, 1] > self._model.peaks[1, 1]:
-                    peaks = self._model.peaks[0:-3:2, 0]
-                    troughs = self._model.peaks[1:-2:2, 0]
-                    amppeaks = self._model.peaks[0:-3:2, 1]
-                    amptroughs = self._model.peaks[1:-2:2, 1]
-                elif self._model.peaks[0, 1] < self._model.peaks[1, 1]:
-                    peaks = self._model.peaks[1:-2:2, 0]
-                    troughs = self._model.peaks[0:-3:2, 0]
-                    amppeaks = self._model.peaks[1:-2:2, 1]
-                    amptroughs = self._model.peaks[0:-3:2, 1]
-                savearray = np.column_stack((peaks,
-                                             troughs,
+                if extrema[0, 1] > extrema[1, 1]:
+                    peaks = extrema[0:-3:2, 0]
+                    troughs = extrema[1:-2:2, 0]
+                    amppeaks = extrema[0:-3:2, 1]
+                    amptroughs = extrema[1:-2:2, 1]
+                elif extrema[0, 1] < extrema[1, 1]:
+                    peaks = extrema[1:-2:2, 0]
+                    troughs = extrema[0:-3:2, 0]
+                    amppeaks = extrema[1:-2:2, 1]
+                    amptroughs = extrema[0:-3:2, 1]
+                # make sure extrema are float: IMPORTANT, if seconds are
+                # saved as int, rounding errors (i.e. misplaced peaks) occur
+                savearray = np.column_stack((peaks / self._model.sfreq,
+                                             troughs / self._model.sfreq,
                                              amppeaks,
                                              amptroughs))
-                np.savetxt(self.savepath, savearray)
+                savearray = pd.DataFrame(savearray)
+                savearray.to_csv(self.savepath, index=False,
+                                 header=['peaks', 'troughs',
+                                         'amppeaks', 'amptroughs'])
     
     def batch_constructor(self):
         for fpath in self.fpaths:
@@ -256,4 +280,3 @@ class Controller(QObject):
         elif value == 0:
             self.editable = False
         print(value)
-        
