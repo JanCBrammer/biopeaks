@@ -42,6 +42,8 @@ class View(QMainWindow):
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
         self.ax = self.figure.add_subplot(111)
+        self.ax.get_yaxis().set_visible(False)
+        self.ax.set_frame_on(False)
         self.line = None
         self.scat = None
         self.navitools = CustomNavigationToolbar(self.canvas, self)
@@ -169,7 +171,7 @@ class View(QMainWindow):
         self.ax.clear()
         self.navitools.update()
         self.line = self.ax.plot(self._model.sec, self._model.signal)
-        self.ax.set_xlabel('seconds')
+        self.ax.set_xlabel('seconds', fontsize='x-large', fontweight='heavy')
         self.canvas.draw()
     
     def plot_peaks(self):
