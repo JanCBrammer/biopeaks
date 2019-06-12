@@ -156,7 +156,6 @@ class Controller(QObject):
                     if np.any(searchrange == self._model.peaks[peakidx, 0]): 
                         self._model.peaks = np.delete(self._model.peaks,
                                                       peakidx, axis=0)
-                        self.plot_update('peaks')
                 elif event.key == 'a':
                     searchsignal = self._model.signal[searchrange]
                     # use find_peaks to also detect local extrema that are
