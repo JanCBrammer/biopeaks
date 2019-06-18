@@ -76,14 +76,14 @@ class Controller(QObject):
                     # parse header and extract relevant metadata
                     sfreq = metadata['sampling rate']
                     sensors = metadata['sensor']
-                    channels = metadata['label']
+                    channels = metadata['channels']
                     # select channel and load data
+                    if self.channel[0] == 'A':
+                        sensidx = sensidx = [i for i, s in enumerate(channels)
+                                    if int(self.channel[1]) == s]
                     # find the index of the sensor that corresponds to the
                     # selected modality; it doesn't matter if sensor is
                     # called <modality>BIT or <modality>BITREV
-                    if self.channel[0] == 'A':
-                        sensidx = [i for i, s in enumerate(channels)
-                                    if self.channel in s]
                     else:
                         sensidx = [i for i, s in enumerate(sensors)
                                     if self.channel in s]
