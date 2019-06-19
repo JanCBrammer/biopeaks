@@ -7,7 +7,7 @@ Created on Mon Jun  3 18:47:12 2019
 
 from PyQt5.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                              QVBoxLayout, QHBoxLayout, QCheckBox,
-                             QLabel, QStatusBar, QGroupBox)
+                             QLabel, QStatusBar, QGroupBox, QDockWidget)
 from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon
 from matplotlib.figure import Figure
@@ -53,6 +53,9 @@ class View(QMainWindow):
         self.editcheckbox.stateChanged.connect(self._controller.
                                                change_editable)
         
+        # segment selection
+        self.segmenter = QDockWidget()
+        
         # modality selection
         self.batchmenulabel = QLabel('processing mode:')
         self.batchmenu = QComboBox(self)
@@ -95,9 +98,19 @@ class View(QMainWindow):
         menubar = self.menuBar()
         
         # signal menu
-        openSignal = QAction('load data', self)
+        signalmenu = menubar.addMenu('data')
+        
+        openSignal = QAction('load', self)
         openSignal.triggered.connect(self._controller.open_signal)
-        menubar.addAction(openSignal)
+        signalmenu.addAction(openSignal)
+        
+        segmentSignal = QAction('select segment', self)
+        segmentSignal.triggered.connect(self._controller.segment_signal)
+        signalmenu.addAction(segmentSignal)
+        
+        saveSignal = QAction('save', self)
+        saveSignal.triggered.connect(self._controller.save_signal)
+        signalmenu.addAction(saveSignal)
     
         # peak menu
         peakmenu = menubar.addMenu('peaks')

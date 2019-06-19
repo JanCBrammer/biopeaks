@@ -79,7 +79,7 @@ class Controller(QObject):
                     channels = metadata['channels']
                     # select channel and load data
                     if self.channel[0] == 'A':
-                        sensidx = sensidx = [i for i, s in enumerate(channels)
+                        sensidx = [i for i, s in enumerate(channels)
                                     if int(self.channel[1]) == s]
                     # find the index of the sensor that corresponds to the
                     # selected modality; it doesn't matter if sensor is
@@ -106,6 +106,12 @@ class Controller(QObject):
                         self._model.sec = sec
                         self._model.signalpath = path
                         self._model.loaded = True
+                        
+    def segment_signal(self):
+        pass
+    
+    def save_signal(self):
+        pass
                                                 
     def read_peaks(self):
         if self._model.loaded and self._model.peaks is None:
