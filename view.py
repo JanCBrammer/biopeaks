@@ -7,15 +7,15 @@ Created on Mon Jun  3 18:47:12 2019
 
 from PyQt5.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                              QVBoxLayout, QHBoxLayout, QCheckBox,
-                             QLabel, QStatusBar, QGroupBox, QDockWidget)
-from PyQt5 import QtCore
-from PyQt5.QtGui import QIcon
+                             QLabel, QStatusBar, QGroupBox, QDockWidget,
+                             QLineEdit, QFormLayout, QPushButton)
+from PyQt5.QtCore import Qt, QSignalMapper, QRegExp
+from PyQt5.QtGui import QIcon, QRegExpValidator
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
                                                 FigureCanvas)
 from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as
                                                 NavigationToolbar)
-
 
 class CustomNavigationToolbar(NavigationToolbar):
     # only retain desired functionality of navitoolbar
@@ -46,6 +46,9 @@ class View(QMainWindow):
         self.ax.set_frame_on(False)
         self.line = None
         self.scat = None
+        self.begline = None
+        self.endline = None
+        self.segmentspan = None
         self.navitools = CustomNavigationToolbar(self.canvas, self)
         
         # peak editing
@@ -94,11 +97,34 @@ class View(QMainWindow):
         # segment selection; this widget will be openend / set visible from
         # the menu and closed from within itself (see mapping of segmentermap);
         # it provides utilities to select a segment from the signal
-        self.segmentermap = QtCore.QSignalMapper(self)
+        self.segmentermap = QSignalMapper(self)
         self.segmenter = QDockWidget('select a segment', self)
+        
+        regex = QRegExp('[0-9]+')
+        validator = QRegExpValidator(regex)
+        self.startlabel = QLabel('start')
+        self.startedit = QLineEdit()
+        self.startedit.setValidator(validator)
+        self.startedit.textEdited.connect(self._controller.change_begsamp)
+        self.endlabel = QLabel('end')
+        self.endedit = QLineEdit()
+        self.endedit.setValidator(validator)
+        self.endedit.textEdited.connect(self._controller.change_endsamp)
+        self.confirmedit = QPushButton('confirm selection')
+        self.confirmedit.clicked.connect(self._controller.segment_signal)
+        self.confirmedit.clicked.connect(self.segmentermap.map)
+        self.segmentermap.setMapping(self.confirmedit, 0)
+        self.segmenterlayout= QFormLayout()
+        self.segmenterlayout.addRow(self.startlabel, self.startedit)
+        self.segmenterlayout.addRow(self.endlabel, self.endedit)
+        self.segmenterlayout.addRow(self.confirmedit)
+        self.segmenterwidget = QWidget()
+        self.segmenterwidget.setLayout(self.segmenterlayout)
+        self.segmenter.setWidget(self.segmenterwidget)
+        
         self.segmenter.setVisible(False)
-        self.segmenter.setAllowedAreas(QtCore.Qt.RightDockWidgetArea)
-        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.segmenter)
+        self.segmenter.setAllowedAreas(Qt.RightDockWidgetArea)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.segmenter)
         
 
         # set up menubar
@@ -151,7 +177,7 @@ class View(QMainWindow):
         # only widgets (e.g. canvas) that currently have focus capture
         # keyboard input: "You must enable keyboard focus for a widget if
         # it processes keyboard events."
-        self.canvas.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.canvas.setFocusPolicy(Qt.ClickFocus)
         self.canvas.setFocus()
         self.canvas.mpl_connect('key_press_event', self._controller.edit_peaks)
         
@@ -185,6 +211,7 @@ class View(QMainWindow):
         self._model.signal_changed.connect(self.plot_signal)
         self._model.peaks_changed.connect(self.plot_peaks)
         self._model.path_changed.connect(self.display_path)
+        self._model.segment_changed.connect(self.plot_segment)
     
     ###########
     # methods #
@@ -207,12 +234,36 @@ class View(QMainWindow):
                                                        peaks[:, 0]], c='m')
         self.canvas.draw()
         
-    def display_path(self):
-        self.currentFile.setText(self._model.signalpath)
+    def plot_segment(self):
+        # remove old plot elements
+        if self.begline is not None:
+            self.begline.remove()
+        if self.endline is not None:
+            self.endline.remove()
+        if self.segmentspan is not None:
+            self.segmentspan.remove()
+        # plot new elements, NANs won't be plotted
+        self.begline = self.ax.axvline(self._model.begsamp, color='m')           
+        self.endline = self.ax.axvline(self._model.endsamp, color='m')           
+        if self._model.begsamp < self._model.endsamp:
+            self.segmentspan = self.ax.axvspan(self._model.begsamp,
+                                               self._model.endsamp,
+                                               color='m',
+                                               alpha=0.5)
+        else:
+            # set segmentspan to None again, so there won't be an attempt 
+            # to remove a a none-existing plot element the next time
+            # plot_segment is called
+            self.segmentspan = None
+        self.canvas.draw()
         
     def toggle_segmenter(self, value):
-        if value == 1:
-            self.segmenter.setVisible(True)
-        elif value == 0:
-            self.segmenter.setVisible(False)
+        if self._model.loaded:
+            if value == 1:
+                self.segmenter.setVisible(True)
+            elif value == 0:
+                self.segmenter.setVisible(False)
+            
+    def display_path(self):
+        self.currentFile.setText(self._model.signalpath)
         

@@ -285,3 +285,23 @@ class Controller(QObject):
         elif value == 0:
             self.editable = False
         print(value)
+        
+    def change_begsamp(self, value):
+        # disregard empty strings and convert to float
+        if value:
+            value = float(value)
+            if (value > self._model.sec[0]) & (value < self._model.sec[-1]):
+                self._model.begsamp = value
+                print(value)
+        else:
+            self._model.begsamp = np.nan
+            
+    def change_endsamp(self, value):
+        if value:
+            value = float(value)
+            if (value > self._model.sec[0]) & (value < self._model.sec[-1]):
+                self._model.endsamp = value
+                print(value)
+        else:
+            self._model.endsamp = np.nan
+        
