@@ -53,9 +53,6 @@ class View(QMainWindow):
         self.editcheckbox.stateChanged.connect(self._controller.
                                                change_editable)
         
-        # segment selection
-        self.segmenter = QDockWidget()
-        
         # modality selection
         self.batchmenulabel = QLabel('processing mode:')
         self.batchmenu = QComboBox(self)
@@ -93,7 +90,17 @@ class View(QMainWindow):
                                                  change_channel)
         # initialize with default value
         self._controller.change_channel(self.chanmenu.currentText())
-                
+        
+        # segment selection; this widget will be openend / set visible from
+        # the menu and closed from within itself (see mapping of segmentermap);
+        # it provides utilities to select a segment from the signal
+        self.segmentermap = QtCore.QSignalMapper(self)
+        self.segmenter = QDockWidget('select a segment', self)
+        self.segmenter.setVisible(False)
+        self.segmenter.setAllowedAreas(QtCore.Qt.RightDockWidgetArea)
+        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.segmenter)
+        
+
         # set up menubar
         menubar = self.menuBar()
         
@@ -105,8 +112,11 @@ class View(QMainWindow):
         signalmenu.addAction(openSignal)
         
         segmentSignal = QAction('select segment', self)
-        segmentSignal.triggered.connect(self._controller.segment_signal)
+        segmentSignal.triggered.connect(self.segmentermap.map)
+        self.segmentermap.setMapping(segmentSignal, 1)
         signalmenu.addAction(segmentSignal)
+        
+        self.segmentermap.mapped.connect(self.toggle_segmenter)
         
         saveSignal = QAction('save', self)
         saveSignal.triggered.connect(self._controller.save_signal)
@@ -199,4 +209,10 @@ class View(QMainWindow):
         
     def display_path(self):
         self.currentFile.setText(self._model.signalpath)
+        
+    def toggle_segmenter(self, value):
+        if value == 1:
+            self.segmenter.setVisible(True)
+        elif value == 0:
+            self.segmenter.setVisible(False)
         
