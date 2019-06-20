@@ -6,11 +6,11 @@ Created on Mon Jun  3 18:47:12 2019
 """
 
 from PyQt5.QtCore import QObject, pyqtSignal
-import numpy as np
 
         
 class Model(QObject):
     
+    # costum signals
     signal_changed = pyqtSignal()
     peaks_changed = pyqtSignal()
     path_changed = pyqtSignal()
@@ -44,22 +44,14 @@ class Model(QObject):
         self.path_changed.emit()
         
     @property
-    def begsamp(self):
-        return self._begsamp
+    def segment(self):
+        return self._segment
     
-    @ begsamp.setter
-    def begsamp(self, value):
-        self._begsamp = value
+    @ segment.setter
+    def segment(self, value):
+        self._segment = value
         self.segment_changed.emit()
         
-    @property
-    def endsamp(self):
-        return self._endsamp
-    
-    @ endsamp.setter
-    def endsamp(self, value):
-        self._endsamp = value
-        self.segment_changed.emit()
 
     def __init__(self):
         super().__init__()
@@ -67,8 +59,7 @@ class Model(QObject):
         self._signal = None
         self._peaks = None
         self._signalpath = None
-        self._begsamp = np.nan
-        self._endsamp = np.nan
+        self._segment = None
         self.sfreq = None
         self.sec = None
         self.loaded = False
@@ -77,8 +68,7 @@ class Model(QObject):
         self._signal = None
         self._peaks = None
         self._signalpath = None
-        self._begsamp = np.nan
-        self._endsamp = np.nan
+        self._segment = None
         self.sfreq = None
         self.sec = None
         self.loaded = False

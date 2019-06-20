@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                              QVBoxLayout, QHBoxLayout, QCheckBox,
                              QLabel, QStatusBar, QGroupBox, QDockWidget,
                              QLineEdit, QFormLayout, QPushButton)
-from PyQt5.QtCore import Qt, QSignalMapper, QRegExp
+from PyQt5.QtCore import Qt, QSignalMapper, QRegExp, pyqtSignal
 from PyQt5.QtGui import QIcon, QRegExpValidator
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
@@ -24,6 +24,12 @@ class CustomNavigationToolbar(NavigationToolbar):
     
     
 class View(QMainWindow):
+    
+    # define costum signals here, since "they must be part of the class
+    # definition and cannot be dynamically added as class attributes after
+    # the class has been defined "
+    segment_updated = pyqtSignal(object)
+
     def __init__(self, model, controller):
         super().__init__()
 
@@ -46,8 +52,6 @@ class View(QMainWindow):
         self.ax.set_frame_on(False)
         self.line = None
         self.scat = None
-        self.begline = None
-        self.endline = None
         self.segmentspan = None
         self.navitools = CustomNavigationToolbar(self.canvas, self)
         
@@ -94,29 +98,36 @@ class View(QMainWindow):
         # initialize with default value
         self._controller.change_channel(self.chanmenu.currentText())
         
-        # segment selection; this widget will be openend / set visible from
+        # segment selection; this widget can be openend / set visible from
         # the menu and closed from within itself (see mapping of segmentermap);
         # it provides utilities to select a segment from the signal
         self.segmentermap = QSignalMapper(self)
         self.segmenter = QDockWidget('select a segment', self)
-        
+        # disable closing such that widget can only be closed by confirming
+        # selection
+        self.segmenter.setFeatures(QDockWidget.NoDockWidgetFeatures)        
         regex = QRegExp('[0-9]+')
         validator = QRegExpValidator(regex)
         self.startlabel = QLabel('start')
         self.startedit = QLineEdit()
         self.startedit.setValidator(validator)
-        self.startedit.textEdited.connect(self._controller.change_begsamp)
         self.endlabel = QLabel('end')
         self.endedit = QLineEdit()
         self.endedit.setValidator(validator)
-        self.endedit.textEdited.connect(self._controller.change_endsamp)
+        self.previewedit = QPushButton('update selection')
+        self.previewedit.clicked.connect(self.emit_segment)
+        # use previosly defined costum signal that sends start and end of
+        # selected segment to controllerfrom within emit_segment
+        self.segment_updated.connect(self._controller.change_segment)
         self.confirmedit = QPushButton('confirm selection')
         self.confirmedit.clicked.connect(self._controller.segment_signal)
         self.confirmedit.clicked.connect(self.segmentermap.map)
         self.segmentermap.setMapping(self.confirmedit, 0)
+        
         self.segmenterlayout= QFormLayout()
         self.segmenterlayout.addRow(self.startlabel, self.startedit)
         self.segmenterlayout.addRow(self.endlabel, self.endedit)
+        self.segmenterlayout.addRow(self.previewedit)
         self.segmenterlayout.addRow(self.confirmedit)
         self.segmenterwidget = QWidget()
         self.segmenterwidget.setLayout(self.segmenterlayout)
@@ -126,7 +137,6 @@ class View(QMainWindow):
         self.segmenter.setAllowedAreas(Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.RightDockWidgetArea, self.segmenter)
         
-
         # set up menubar
         menubar = self.menuBar()
         
@@ -217,7 +227,6 @@ class View(QMainWindow):
     # methods #
     ###########
     def plot_signal(self):
-        print('plot signal is listening')
         self.ax.clear()
         self.navitools.update()
         self.line = self.ax.plot(self._model.sec, self._model.signal)
@@ -225,7 +234,6 @@ class View(QMainWindow):
         self.canvas.draw()
     
     def plot_peaks(self):
-        print('plot peaks is listening')
         if self.scat is not None:
             # in case of re-plotting, remove the current peaks
             self.scat.remove()
@@ -235,35 +243,30 @@ class View(QMainWindow):
         self.canvas.draw()
         
     def plot_segment(self):
-        # remove old plot elements
-        if self.begline is not None:
-            self.begline.remove()
-        if self.endline is not None:
-            self.endline.remove()
         if self.segmentspan is not None:
             self.segmentspan.remove()
-        # plot new elements, NANs won't be plotted
-        self.begline = self.ax.axvline(self._model.begsamp, color='m')           
-        self.endline = self.ax.axvline(self._model.endsamp, color='m')           
-        if self._model.begsamp < self._model.endsamp:
-            self.segmentspan = self.ax.axvspan(self._model.begsamp,
-                                               self._model.endsamp,
-                                               color='m',
-                                               alpha=0.5)
-        else:
-            # set segmentspan to None again, so there won't be an attempt 
-            # to remove a a none-existing plot element the next time
-            # plot_segment is called
-            self.segmentspan = None
+        self.segmentspan = self.ax.axvspan(self._model.segment[0],
+                                           self._model.segment[1],
+                                           color='m',
+                                           alpha=0.25)
         self.canvas.draw()
+        self.confirmedit.setEnabled(True)
+
         
     def toggle_segmenter(self, value):
         if self._model.loaded:
             if value == 1:
                 self.segmenter.setVisible(True)
+                self.confirmedit.setEnabled(False)
             elif value == 0:
                 self.segmenter.setVisible(False)
+
             
     def display_path(self):
         self.currentFile.setText(self._model.signalpath)
+        
+    def emit_segment(self):
+        begsamp = self.startedit.text()
+        endsamp = self.endedit.text()
+        self.segment_updated.emit([begsamp, endsamp])
         

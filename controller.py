@@ -100,7 +100,7 @@ class Controller(QObject):
                                              usecols=[sensidx], header=None,
                                              comment='#')
                         siglen = signal.size
-                        sec = np.linspace(0, siglen / sfreq, siglen, 1 / sfreq)
+                        sec = np.linspace(0, siglen / sfreq, siglen)
                         self._model.signal = np.ravel(signal)
                         self._model.sfreq = sfreq
                         self._model.sec = sec
@@ -108,8 +108,21 @@ class Controller(QObject):
                         self._model.loaded = True
                         
     def segment_signal(self):
-        pass
-    
+        # convert from seconds to samples
+        begsamp = int(np.rint(self._model.segment[0] * self._model.sfreq))
+        endsamp = int(np.rint(self._model.segment[1] * self._model.sfreq))
+        siglen = endsamp - begsamp
+        sec = np.linspace(0, siglen / self._model.sfreq, siglen)
+        self._model.sec = sec
+        self._model.signal = self._model.signal[begsamp:endsamp]
+        if self._model.peaks is not None:
+            peakidcs = np.where((self._model.peaks[:, 0] >= begsamp) &
+                                (self._model.peaks[:, 0] <= endsamp))[0]
+            peaks = self._model.peaks[peakidcs, :]
+            peaks[:, 0] -= begsamp
+            self._model.peaks = peaks
+                                
+            
     def save_signal(self):
         pass
                                                 
@@ -286,22 +299,19 @@ class Controller(QObject):
             self.editable = False
         print(value)
         
-    def change_begsamp(self, value):
-        # disregard empty strings and convert to float
-        if value:
-            value = float(value)
-            if (value > self._model.sec[0]) & (value < self._model.sec[-1]):
-                self._model.begsamp = value
-                print(value)
-        else:
-            self._model.begsamp = np.nan
+    def change_segment(self, values):
+        # check if any of the fields is empty
+        if values[0] and values[1]:
+            begsamp = float(values[0])
+            endsamp = float(values[1])
+            # check if values are inside temporal bounds
+            evalarray = [np.asarray([begsamp, endsamp]) >= self._model.sec[0],
+                         np.asarray([begsamp, endsamp]) <= self._model.sec[-1]]
+            if np.all(evalarray):
+                # check if order is valid
+                if begsamp < endsamp:
+                    print('valid selection {}'.format(values))
+                    self._model.segment = [begsamp, endsamp]
+                else:
+                    print('invalid selection {}'.format(values))
             
-    def change_endsamp(self, value):
-        if value:
-            value = float(value)
-            if (value > self._model.sec[0]) & (value < self._model.sec[-1]):
-                self._model.endsamp = value
-                print(value)
-        else:
-            self._model.endsamp = np.nan
-        
