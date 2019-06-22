@@ -35,6 +35,7 @@ class View(QMainWindow):
 
         self._model = model
         self._controller = controller
+        self.segmentcursor = False
         
         #################################################################
         # define GUI layout and connect input widgets to external slots #
@@ -105,23 +106,37 @@ class View(QMainWindow):
         self.segmenter = QDockWidget('select a segment', self)
         # disable closing such that widget can only be closed by confirming
         # selection
-        self.segmenter.setFeatures(QDockWidget.NoDockWidgetFeatures)        
-        regex = QRegExp('[0-9]+')
+        self.segmenter.setFeatures(QDockWidget.NoDockWidgetFeatures)
+        # limit number of decimals to four
+        regex = QRegExp('[0-9]*\.?[0-9]{2}')
         validator = QRegExpValidator(regex)
+        
         self.startlabel = QLabel('start')
         self.startedit = QLineEdit()
         self.startedit.setValidator(validator)
+        
         self.endlabel = QLabel('end')
         self.endedit = QLineEdit()
         self.endedit.setValidator(validator)
+
+        
+        segmentfromcursor = QAction(QIcon('mouse_icon.png'),
+                                    'select with mouse',
+                                    self)
+        segmentfromcursor.triggered.connect(self.enable_segmentedit)
+        self.startedit.addAction(segmentfromcursor, 1)
+        self.endedit.addAction(segmentfromcursor, 1)
+        
         self.previewedit = QPushButton('update selection')
         self.previewedit.clicked.connect(self.emit_segment)
         # use previosly defined costum signal that sends start and end of
         # selected segment to controllerfrom within emit_segment
         self.segment_updated.connect(self._controller.change_segment)
+        
         self.confirmedit = QPushButton('confirm selection')
         self.confirmedit.clicked.connect(self._controller.segment_signal)
         self.confirmedit.clicked.connect(self.segmentermap.map)
+        
         self.segmentermap.setMapping(self.confirmedit, 0)
         
         self.segmenterlayout= QFormLayout()
@@ -190,6 +205,7 @@ class View(QMainWindow):
         self.canvas.setFocusPolicy(Qt.ClickFocus)
         self.canvas.setFocus()
         self.canvas.mpl_connect('key_press_event', self._controller.edit_peaks)
+        self.canvas.mpl_connect('button_press_event', self.get_xcursor)
         
         # define GUI layout
         self.vlayout0 = QVBoxLayout(self.centwidget)
@@ -251,20 +267,40 @@ class View(QMainWindow):
                                            alpha=0.25)
         self.canvas.draw()
         self.confirmedit.setEnabled(True)
-
+       
+    def display_path(self):
+        self.currentFile.setText(self._model.signalpath)
         
     def toggle_segmenter(self, value):
         if self._model.loaded:
             if value == 1:
                 self.segmenter.setVisible(True)
                 self.confirmedit.setEnabled(False)
+                self.startedit.clear()
+                self.endedit.clear()
             elif value == 0:
                 self.segmenter.setVisible(False)
-
-            
-    def display_path(self):
-        self.currentFile.setText(self._model.signalpath)
         
+    def enable_segmentedit(self):
+        # disable peak editing to avoid interference
+        self.editcheckbox.setCheckState(0)
+        if self.startedit.hasFocus() == True:
+            self.segmentcursor = 'start'
+        elif self.endedit.hasFocus() == True:
+            self.segmentcursor = 'end'
+            
+    def get_xcursor(self, event):
+        if event.button == 1:
+            # limit number of decimal places to two
+            if self.segmentcursor == 'start':
+                self.startedit.selectAll()
+                self.startedit.insert('{:.2f}'.format(event.xdata))
+            elif self.segmentcursor == 'end':
+                self.endedit.selectAll()
+                self.endedit.insert('{:.2f}'.format(event.xdata))
+            # disable segment cursor again after value has been set
+            self.segmentcursor = False  
+            
     def emit_segment(self):
         begsamp = self.startedit.text()
         endsamp = self.endedit.text()
