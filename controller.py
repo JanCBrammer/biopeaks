@@ -43,8 +43,7 @@ class Controller(QObject):
         self.peakpath = None
         self.batchmode = None
         self.modality = None
-        self.channel = None
-        self.editable = False
+        self.peakseditable = False
        
     ###########
     # methods #
@@ -52,16 +51,17 @@ class Controller(QObject):
     def open_signal(self):
         self.fpaths = QFileDialog.getOpenFileNames(None, 'Choose your data',
                                                    '\home')[0]
-        print(self.fpaths)
         if self.fpaths:
-            # reset model before reading new dataset
-            self._model.reset()
             if self.batchmode == 'multiple files':
                 self.get_savepath()
             batch = self.batch_constructor
             self.batch_executer(batch)
+            
+    def open_markers(self):
+        if (self.batchmode == 'single file') and (self._model.loaded):
+            self.read_chan(self._model.signalpath, chantype='markers')
     
-    def read_signal(self, path):
+    def read_chan(self, path, chantype):
         _, self.file_extension = os.path.splitext(path)
         if self.file_extension == '.txt':
             # open file and check if it's encoded in OpenSignals format
@@ -78,34 +78,45 @@ class Controller(QObject):
                     sensors = metadata['sensor']
                     channels = metadata['channels']
                     # select channel and load data
-                    if self.channel[0] == 'A':
-                        sensidx = [i for i, s in enumerate(channels)
-                                    if int(self.channel[1]) == s]
-                    # find the index of the sensor that corresponds to the
-                    # selected modality; it doesn't matter if sensor is
-                    # called <modality>BIT or <modality>BITREV
+                    if chantype == 'signal':
+                        channel = self._model.signalchan
+                    elif chantype == 'markers':
+                        channel = self._model.markerchan
+                    if channel[0] == 'A':
+                        chanidx = [i for i, s in enumerate(channels)
+                                    if int(channel[1]) == s]
+                    elif channel[0] == 'I':
+                        chanidx = int(channel[1])
                     else:
-                        sensidx = [i for i, s in enumerate(sensors)
-                                    if self.channel in s]
-                    if sensidx:
-                        # select only first sensor of the selected modality
-                        # (it is conceivable that multiple sensors of the same
-                        # kind have been recorded)
-                        sensidx = sensidx[0]
-                        # since analog channels start in column 5 (zero based),
-                        # add 5 to sensor index to obtain signal from selected
-                        # modality; load data with pandas for performance
-                        sensidx += 5
-                        signal = pd.read_csv(path, delimiter='\t',
-                                             usecols=[sensidx], header=None,
-                                             comment='#')
-                        siglen = signal.size
-                        sec = np.linspace(0, siglen / sfreq, siglen)
-                        self._model.signal = np.ravel(signal)
-                        self._model.sfreq = sfreq
-                        self._model.sec = sec
-                        self._model.signalpath = path
-                        self._model.loaded = True
+                        # find the index of the sensor that corresponds to the
+                        # selected modality; it doesn't matter if sensor is
+                        # called <modality>BIT or <modality>BITREV
+                        chanidx = [i for i, s in enumerate(sensors)
+                                    if channel in s]
+                    if chanidx:
+                        if channel[0] != 'I':
+                            # select only first sensor of the selected
+                            # modality (it is conceivable that multiple sensors
+                            # of the same kind have been recorded)
+                            chanidx = chanidx[0]
+                            # since analog channels start in column 5 (zero
+                            # based), add 5 to sensor index to obtain signal
+                            # from selected modality
+                            chanidx += 5
+                        # load data with pandas for performance
+                        data = pd.read_csv(path, delimiter='\t',
+                                           usecols=[chanidx], header=None,
+                                           comment='#')
+                        if chantype == 'signal':
+                            datalen = data.size
+                            sec = np.linspace(0, datalen / sfreq, datalen)
+                            self._model.signalpath = path
+                            self._model.signal = np.ravel(data)
+                            self._model.sfreq = sfreq
+                            self._model.sec = sec
+                            self._model.loaded = True
+                        elif chantype == 'markers':
+                            self._model.markers = np.ravel(data)
                         
     def segment_signal(self):
         # convert from seconds to samples
@@ -115,14 +126,15 @@ class Controller(QObject):
         sec = np.linspace(0, siglen / self._model.sfreq, siglen)
         self._model.sec = sec
         self._model.signal = self._model.signal[begsamp:endsamp]
+        if self._model.markers is not None:
+            self._model.markers = self._model.markers[begsamp:endsamp]
         if self._model.peaks is not None:
             peakidcs = np.where((self._model.peaks[:, 0] >= begsamp) &
                                 (self._model.peaks[:, 0] <= endsamp))[0]
             peaks = self._model.peaks[peakidcs, :]
             peaks[:, 0] -= begsamp
             self._model.peaks = peaks
-                                
-            
+        
     def save_signal(self):
         pass
                                                 
@@ -156,11 +168,11 @@ class Controller(QObject):
             peaks = peakfunc(self._model.signal,
                              self._model.sfreq)
             self._model.peaks = peaks
-    
+        
     def edit_peaks(self, event):
         # account for the fact that depending on sensor modality, data.peaks
         # has different shapes; preserve ndarrays throughout editing!
-        if self.editable:
+        if self.peakseditable:
             if self._model.peaks is not None:
                 cursor = int(np.rint(event.xdata * self._model.sfreq))
                 # search peak in a window of 200 msec, centered on selected
@@ -265,7 +277,7 @@ class Controller(QObject):
         for fpath in self.fpaths:
             # reset model before reading new dataset
             self._model.reset()
-            self.read_signal(fpath)
+            self.read_chan(fpath, chantype='signal')
             if self.batchmode == 'multiple files':
                 self.find_peaks()
                 # save peaks to self.savepath with "<fname>_peaks" ending
@@ -284,8 +296,12 @@ class Controller(QObject):
         self.modality = value
         print(value)
         
-    def change_channel(self, value):
-        self.channel = value
+    def change_signalchan(self, value):
+        self._model.signalchan = value
+        print(value)
+        
+    def change_markerchan(self, value):
+        self._model.markerchan = value
         print(value)
         
     def change_batchmode(self, value):
@@ -294,9 +310,9 @@ class Controller(QObject):
         
     def change_editable(self, value):
         if value == 2:
-            self.editable = True
+            self.peakseditable = True
         elif value == 0:
-            self.editable = False
+            self.peakseditable = False
         print(value)
         
     def change_segment(self, values):

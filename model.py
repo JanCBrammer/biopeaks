@@ -13,6 +13,7 @@ class Model(QObject):
     # costum signals
     signal_changed = pyqtSignal()
     peaks_changed = pyqtSignal()
+    markers_changed = pyqtSignal(int)
     path_changed = pyqtSignal()
     segment_changed = pyqtSignal()
 
@@ -33,6 +34,15 @@ class Model(QObject):
     def peaks(self, value):
         self._peaks = value
         self.peaks_changed.emit()
+        
+    @property
+    def markers(self):
+        return self._markers
+
+    @markers.setter
+    def markers(self, value):
+        self._markers = value
+        self.markers_changed.emit(1)
         
     @property
     def signalpath(self):
@@ -58,18 +68,23 @@ class Model(QObject):
 
         self._signal = None
         self._peaks = None
-        self._signalpath = None
+        self._markers = None
         self._segment = None
+        self._signalpath = None
         self.sfreq = None
         self.sec = None
         self.loaded = False
+        self.signalchan = None
+        self.markerchan = None
         
     def reset(self):
         self._signal = None
         self._peaks = None
-        self._signalpath = None
+        self._markers = None
         self._segment = None
+        self._signalpath = None
         self.sfreq = None
         self.sec = None
         self.loaded = False
+        # don't reset channels
         

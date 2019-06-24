@@ -48,12 +48,16 @@ class View(QMainWindow):
         # figure
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
-        self.ax = self.figure.add_subplot(111)
-        self.ax.get_yaxis().set_visible(False)
-        self.ax.set_frame_on(False)
-        self.line = None
-        self.scat = None
-        self.segmentspan = None
+        # axes for signal
+        self.ax0 = self.figure.add_axes([0.05, .4, .9, .55])
+        self.ax0.get_yaxis().set_visible(False)
+        self.ax0.set_frame_on(False)
+        # axes for markers docked below signal axes
+        self.ax1 = self.figure.add_axes([.05, .05, .9, .3],
+                                        sharex=self.ax0)
+        self.ax1.set_frame_on(False)
+        self.ax1.get_xaxis().set_visible(False)
+        self.ax1.get_yaxis().set_visible(False)
         self.navitools = CustomNavigationToolbar(self.canvas, self)
         
         # peak editing
@@ -62,7 +66,7 @@ class View(QMainWindow):
                                                change_editable)
         
         # modality selection
-        self.batchmenulabel = QLabel('processing mode:')
+        self.batchmenulabel = QLabel('processing mode')
         self.batchmenu = QComboBox(self)
         self.batchmenu.addItem('single file')
         self.batchmenu.addItem('multiple files')
@@ -72,7 +76,7 @@ class View(QMainWindow):
         self._controller.change_batchmode(self.batchmenu.currentText())
         
         # modality selection
-        self.modmenulabel = QLabel('modality:')
+        self.modmenulabel = QLabel('modality')
         self.modmenu = QComboBox(self)
         self.modmenu.addItem('ECG')
         self.modmenu.addItem('PPG')
@@ -83,21 +87,36 @@ class View(QMainWindow):
         self._controller.change_modality(self.modmenu.currentText())
         
         # channel selection
-        self.chanmenulabel = QLabel('channel:')
-        self.chanmenu = QComboBox(self)
-        self.chanmenu.addItem('ECG')
-        self.chanmenu.addItem('PPG')
-        self.chanmenu.addItem('RESP')
-        self.chanmenu.addItem('A1')
-        self.chanmenu.addItem('A2')
-        self.chanmenu.addItem('A3')
-        self.chanmenu.addItem('A4')
-        self.chanmenu.addItem('A5')
-        self.chanmenu.addItem('A6')
-        self.chanmenu.currentTextChanged.connect(self._controller.
-                                                 change_channel)
+        self.sigchanmenulabel = QLabel('data channel')
+        self.sigchanmenu = QComboBox(self)
+        self.sigchanmenu.addItem('ECG')
+        self.sigchanmenu.addItem('PPG')
+        self.sigchanmenu.addItem('RESP')
+        self.sigchanmenu.addItem('A1')
+        self.sigchanmenu.addItem('A2')
+        self.sigchanmenu.addItem('A3')
+        self.sigchanmenu.addItem('A4')
+        self.sigchanmenu.addItem('A5')
+        self.sigchanmenu.addItem('A6')
+        self.sigchanmenu.currentTextChanged.connect(self._controller.
+                                                    change_signalchan)
         # initialize with default value
-        self._controller.change_channel(self.chanmenu.currentText())
+        self._controller.change_signalchan(self.sigchanmenu.currentText())
+        
+        self.markerschanmenulabel = QLabel('marker channel')
+        self.markerschanmenu = QComboBox(self)
+        self.markerschanmenu.addItem('I1')
+        self.markerschanmenu.addItem('I2')
+        self.markerschanmenu.addItem('A1')
+        self.markerschanmenu.addItem('A2')
+        self.markerschanmenu.addItem('A3')
+        self.markerschanmenu.addItem('A4')
+        self.markerschanmenu.addItem('A5')
+        self.markerschanmenu.addItem('A6')
+        self.markerschanmenu.currentTextChanged.connect(self._controller.
+                                                        change_markerchan)
+        # initialize with default value
+        self._controller.change_markerchan(self.markerschanmenu.currentText())
         
         # segment selection; this widget can be openend / set visible from
         # the menu and closed from within itself (see mapping of segmentermap);
@@ -118,7 +137,6 @@ class View(QMainWindow):
         self.endlabel = QLabel('end')
         self.endedit = QLineEdit()
         self.endedit.setValidator(validator)
-
         
         segmentfromcursor = QAction(QIcon('mouse_icon.png'),
                                     'select with mouse',
@@ -136,14 +154,18 @@ class View(QMainWindow):
         self.confirmedit = QPushButton('confirm selection')
         self.confirmedit.clicked.connect(self._controller.segment_signal)
         self.confirmedit.clicked.connect(self.segmentermap.map)
-        
         self.segmentermap.setMapping(self.confirmedit, 0)
+        
+        self.abortedit = QPushButton('abort selection')
+        self.abortedit.clicked.connect(self.segmentermap.map)
+        self.segmentermap.setMapping(self.abortedit, 0)
         
         self.segmenterlayout= QFormLayout()
         self.segmenterlayout.addRow(self.startlabel, self.startedit)
         self.segmenterlayout.addRow(self.endlabel, self.endedit)
         self.segmenterlayout.addRow(self.previewedit)
         self.segmenterlayout.addRow(self.confirmedit)
+        self.segmenterlayout.addRow(self.abortedit)
         self.segmenterwidget = QWidget()
         self.segmenterwidget.setLayout(self.segmenterlayout)
         self.segmenter.setWidget(self.segmenterwidget)
@@ -151,7 +173,7 @@ class View(QMainWindow):
         self.segmenter.setVisible(False)
         self.segmenter.setAllowedAreas(Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.RightDockWidgetArea, self.segmenter)
-        
+
         # set up menubar
         menubar = self.menuBar()
         
@@ -161,6 +183,14 @@ class View(QMainWindow):
         openSignal = QAction('load', self)
         openSignal.triggered.connect(self._controller.open_signal)
         signalmenu.addAction(openSignal)
+        
+        markersmenu = signalmenu.addMenu('markers')
+        dockmarkers = QAction('dock', self)
+        dockmarkers.triggered.connect(self._controller.open_markers)
+        markersmenu.addAction(dockmarkers)
+        undockmarkers = QAction('undock', self)
+        undockmarkers.triggered.connect(lambda: self.dock_markers(0))
+        markersmenu.addAction(undockmarkers)
         
         segmentSignal = QAction('select segment', self)
         segmentSignal.triggered.connect(self.segmentermap.map)
@@ -172,7 +202,7 @@ class View(QMainWindow):
         saveSignal = QAction('save', self)
         saveSignal.triggered.connect(self._controller.save_signal)
         signalmenu.addAction(saveSignal)
-    
+        
         # peak menu
         peakmenu = menubar.addMenu('peaks')
         
@@ -209,17 +239,15 @@ class View(QMainWindow):
         
         # define GUI layout
         self.vlayout0 = QVBoxLayout(self.centwidget)
-        self.vlayout1 = QVBoxLayout()
+        self.vlayout1 = QFormLayout()
         self.hlayout0 = QHBoxLayout()
         self.hlayout1 = QHBoxLayout()
 
         self.optionsgroup = QGroupBox('select options')
-        self.vlayout1.addWidget(self.modmenulabel)
-        self.vlayout1.addWidget(self.modmenu)
-        self.vlayout1.addWidget(self.chanmenulabel)
-        self.vlayout1.addWidget(self.chanmenu)
-        self.vlayout1.addWidget(self.batchmenulabel)
-        self.vlayout1.addWidget(self.batchmenu)
+        self.vlayout1.addRow(self.modmenulabel, self.modmenu)
+        self.vlayout1.addRow(self.sigchanmenulabel, self.sigchanmenu)
+        self.vlayout1.addRow(self.markerschanmenulabel, self.markerschanmenu)
+        self.vlayout1.addRow(self.batchmenulabel, self.batchmenu)
         self.optionsgroup.setLayout(self.vlayout1)
         self.hlayout0.addWidget(self.optionsgroup)
         self.hlayout0.addWidget(self.canvas)
@@ -236,6 +264,7 @@ class View(QMainWindow):
         ##############################################
         self._model.signal_changed.connect(self.plot_signal)
         self._model.peaks_changed.connect(self.plot_peaks)
+        self._model.markers_changed.connect(self.dock_markers)
         self._model.path_changed.connect(self.display_path)
         self._model.segment_changed.connect(self.plot_segment)
     
@@ -243,31 +272,47 @@ class View(QMainWindow):
     # methods #
     ###########
     def plot_signal(self):
-        self.ax.clear()
+        self.ax0.clear()
         self.navitools.update()
-        self.line = self.ax.plot(self._model.sec, self._model.signal)
-        self.ax.set_xlabel('seconds', fontsize='x-large', fontweight='heavy')
+        self.line = self.ax0.plot(self._model.sec, self._model.signal)
+        self.ax0.set_xlabel('seconds', fontsize='large', fontweight='heavy')
         self.canvas.draw()
+#        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
+
     
     def plot_peaks(self):
-        if self.scat is not None:
-            # in case of re-plotting, remove the current peaks
-            self.scat.remove()
-        self.scat = self.ax.scatter(self._model.sec[self._model.peaks[:, 0]],
+        # self.scat is listed in ax.collections
+        if self.ax0.collections:
+            self.ax0.collections[0].remove()
+        self.scat = self.ax0.scatter(self._model.sec[self._model.peaks[:, 0]],
                                     self._model.signal[self._model.
                                                        peaks[:, 0]], c='m')
         self.canvas.draw()
-        
+#        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
+
     def plot_segment(self):
-        if self.segmentspan is not None:
-            self.segmentspan.remove()
-        self.segmentspan = self.ax.axvspan(self._model.segment[0],
+        # self.segementspan is listed in ax.patches
+        if self.ax0.patches:
+            self.ax0.patches[0].remove()
+        self.segmentspan = self.ax0.axvspan(self._model.segment[0],
                                            self._model.segment[1],
                                            color='m',
                                            alpha=0.25)
         self.canvas.draw()
         self.confirmedit.setEnabled(True)
-       
+#        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
+        
+    def dock_markers(self, value):
+        if value == 1:
+        # check if markers have correct size
+            if self._model.markers.size == self._model.sec.size:
+                self.ax1.clear()
+                self.markers = self.ax1.plot(self._model.sec,
+                                             self._model.markers)
+        elif value == 0:
+            self.ax1.clear()
+        self.canvas.draw()
+
     def display_path(self):
         self.currentFile.setText(self._model.signalpath)
         
@@ -280,16 +325,19 @@ class View(QMainWindow):
                 self.endedit.clear()
             elif value == 0:
                 self.segmenter.setVisible(False)
+                if self.ax0.patches:
+                    self.ax0.patches[0].remove()
         
     def enable_segmentedit(self):
         # disable peak editing to avoid interference
         self.editcheckbox.setCheckState(0)
-        if self.startedit.hasFocus() == True:
+        if self.startedit.hasFocus():
             self.segmentcursor = 'start'
-        elif self.endedit.hasFocus() == True:
+        elif self.endedit.hasFocus():
             self.segmentcursor = 'end'
             
     def get_xcursor(self, event):
+        # event.button 1 corresponds to left mouse button
         if event.button == 1:
             # limit number of decimal places to two
             if self.segmentcursor == 'start':
