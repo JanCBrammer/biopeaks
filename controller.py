@@ -13,7 +13,8 @@ from scipy.signal import find_peaks
 from ecg_offline import peaks_ecg
 from ppg_offline import peaks_ppg
 from resp_offline import extrema_resp
-from PyQt5.QtCore import QObject, QRunnable, QThreadPool
+from PyQt5.QtCore import (QObject, QRunnable, QThreadPool, QWaitCondition,
+                          QMutex)
 from PyQt5.QtWidgets import QFileDialog
 
 peakfuncs = {'ECG': peaks_ecg,
@@ -27,7 +28,7 @@ class Worker(QRunnable):
     def __init__(self, fn):
         super(Worker, self).__init__()
         self.fn = fn
-        
+
     def run(self):
         self.fn()
         
@@ -39,12 +40,16 @@ class Controller(QObject):
 
         self._model = model
         self.threadpool = QThreadPool()
+        self.mutex = QMutex()
+        self.plot_signal_finished = QWaitCondition()
+        self.plot_peaks_finished = QWaitCondition()
+        
         self.fpaths = None
         self.peakpath = None
         self.batchmode = None
         self.modality = None
         self.peakseditable = False
-       
+
     ###########
     # methods #
     ###########
@@ -54,8 +59,13 @@ class Controller(QObject):
         if self.fpaths:
             if self.batchmode == 'multiple files':
                 self.get_savepath()
-            batch = self.batch_constructor
-            self.batch_executer(batch)
+                batch = self.batch_constructor
+                self.batch_executer(batch)
+            # if single file mode is active, process only first file even if
+            # list of files was selected
+            elif self.batchmode == 'single file':
+                self._model.reset()
+                self.read_chan(self.fpaths[0], chantype='signal')
             
     def open_markers(self):
         if (self.batchmode == 'single file') and (self._model.loaded):
@@ -111,9 +121,12 @@ class Controller(QObject):
                             datalen = data.size
                             sec = np.linspace(0, datalen / sfreq, datalen)
                             self._model.signalpath = path
-                            self._model.signal = np.ravel(data)
-                            self._model.sfreq = sfreq
+                            # important to set seconds PRIOR TO signal,
+                            # otherwise plotting behaves unexpectadly (since 
+                            # plotting is triggered as soon as signal changes)
                             self._model.sec = sec
+                            self._model.signal= np.ravel(data) 
+                            self._model.sfreq = sfreq
                             self._model.loaded = True
                         elif chantype == 'markers':
                             self._model.markers = np.ravel(data)
@@ -227,7 +240,7 @@ class Controller(QObject):
         elif self.batchmode == 'multiple files':
             self.savedir = QFileDialog.getExistingDirectory(None,
                                                             'Choose a '
-                                                            'directory'
+                                                            'directory '
                                                             'for saving '
                                                             'the peaks',
                                                             '\home')
@@ -272,21 +285,32 @@ class Controller(QObject):
                 savearray.to_csv(self.savepath, index=False,
                                  header=['peaks', 'troughs',
                                          'amppeaks', 'amptroughs'])
-    
+            
     def batch_constructor(self):
         for fpath in self.fpaths:
             # reset model before reading new dataset
             self._model.reset()
             self.read_chan(fpath, chantype='signal')
-            if self.batchmode == 'multiple files':
-                self.find_peaks()
-                # save peaks to self.savepath with "<fname>_peaks" ending
-                _, fname = os.path.split(fpath)
-                fpartname, _ = os.path.splitext(fname)
-                self.savepath = os.path.join(self.savedir,
-                                             '{}{}'.format(fpartname,
-                                              '_peaks.csv'))
-                self.save_peaks()
+            # wait for plotting to be done, otherwise processing of the next file
+            # gets initiated before plotting of the current file has finished
+            self.mutex.lock()
+            self.plot_signal_finished.wait(self.mutex)
+            self.mutex.unlock()
+            
+            self.find_peaks()
+            # wait for plotting to be done, otherwise processing of the next file
+            # gets initiated before plotting of the current file has finished
+            self.mutex.lock()
+            self.plot_peaks_finished.wait(self.mutex)
+            self.mutex.unlock()
+            
+            # save peaks to self.savepath with "<fname>_peaks" ending
+            _, fname = os.path.split(fpath)
+            fpartname, _ = os.path.splitext(fname)
+            self.savepath = os.path.join(self.savedir,
+                                         '{}{}'.format(fpartname,
+                                          '_peaks.csv'))
+            self.save_peaks()
                     
     def batch_executer(self, batch):
         worker = Worker(batch)

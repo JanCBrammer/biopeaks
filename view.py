@@ -36,7 +36,7 @@ class View(QMainWindow):
         self._model = model
         self._controller = controller
         self.segmentcursor = False
-        
+                
         #################################################################
         # define GUI layout and connect input widgets to external slots #
         #################################################################
@@ -272,15 +272,19 @@ class View(QMainWindow):
     # methods #
     ###########
     def plot_signal(self):
+        print("plot_signal listening")
         self.ax0.clear()
         self.navitools.update()
         self.line = self.ax0.plot(self._model.sec, self._model.signal)
         self.ax0.set_xlabel('seconds', fontsize='large', fontweight='heavy')
         self.canvas.draw()
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
+        # a running batch processing thread will listen to this
+        self._controller.plot_signal_finished.wakeOne()
 
     
     def plot_peaks(self):
+        print("plot_peaks listening")
         # self.scat is listed in ax.collections
         if self.ax0.collections:
             self.ax0.collections[0].remove()
@@ -289,6 +293,9 @@ class View(QMainWindow):
                                                        peaks[:, 0]], c='m')
         self.canvas.draw()
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
+        # a running batch processing thread will listen to this
+        self._controller.plot_peaks_finished.wakeOne()
+
 
     def plot_segment(self):
         # self.segementspan is listed in ax.patches

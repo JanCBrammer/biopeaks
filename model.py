@@ -68,11 +68,11 @@ class Model(QObject):
 
         self._signal = None
         self._peaks = None
+        self.sec = None
         self._markers = None
         self._segment = None
         self._signalpath = None
         self.sfreq = None
-        self.sec = None
         self.loaded = False
         self.signalchan = None
         self.markerchan = None
@@ -80,11 +80,11 @@ class Model(QObject):
     def reset(self):
         self._signal = None
         self._peaks = None
+        self.sec = None
         self._markers = None
         self._segment = None
         self._signalpath = None
         self.sfreq = None
-        self.sec = None
         self.loaded = False
         # don't reset channels
         
