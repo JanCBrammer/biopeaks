@@ -45,7 +45,10 @@ class Controller(QObject):
         self.plot_peaks_finished = QWaitCondition()
         
         self.fpaths = None
-        self.peakpath = None
+        self.wpathpeaks = None
+        self.wdirpeaks = None
+        self.rpathpeaks = None
+        self.wpathsignal = None
         self.batchmode = None
         self.modality = None
         self.peakseditable = False
@@ -58,7 +61,7 @@ class Controller(QObject):
                                                    '\home')[0]
         if self.fpaths:
             if self.batchmode == 'multiple files':
-                self.get_savepath()
+                self.get_wpathpeaks()
                 batch = self.batch_constructor
                 self.batch_executer(batch)
             # if single file mode is active, process only first file even if
@@ -69,7 +72,7 @@ class Controller(QObject):
             
     def open_markers(self):
         if (self.batchmode == 'single file') and (self._model.loaded):
-            self.read_chan(self._model.signalpath, chantype='markers')
+            self.read_chan(self._model.rpathsignal, chantype='markers')
     
     def read_chan(self, path, chantype):
         _, self.file_extension = os.path.splitext(path)
@@ -120,7 +123,7 @@ class Controller(QObject):
                         if chantype == 'signal':
                             datalen = data.size
                             sec = np.linspace(0, datalen / sfreq, datalen)
-                            self._model.signalpath = path
+                            self._model.rpathsignal = path
                             # important to set seconds PRIOR TO signal,
                             # otherwise plotting behaves unexpectadly (since 
                             # plotting is triggered as soon as signal changes)
@@ -139,25 +142,54 @@ class Controller(QObject):
         sec = np.linspace(0, siglen / self._model.sfreq, siglen)
         self._model.sec = sec
         self._model.signal = self._model.signal[begsamp:endsamp]
-        if self._model.markers is not None:
-            self._model.markers = self._model.markers[begsamp:endsamp]
         if self._model.peaks is not None:
             peakidcs = np.where((self._model.peaks[:, 0] >= begsamp) &
                                 (self._model.peaks[:, 0] <= endsamp))[0]
             peaks = self._model.peaks[peakidcs, :]
             peaks[:, 0] -= begsamp
             self._model.peaks = peaks
+        if self._model.markers is not None:
+            self._model.markers = self._model.markers[begsamp:endsamp]
         
     def save_signal(self):
-        pass
-                                                
+        if self._model.loaded:
+            self.wpathsignal, _ = QFileDialog.getSaveFileName(None,
+                                                              'Save signal',
+                                                              'untitled.txt',
+                                                              'text (*.txt)')
+            if self.wpathsignal:
+                # check if signal has been segmented and apply segmentation to
+                # all channels in the dataset
+                if self._model.segment is not None:
+                    begsamp = int(np.rint(self._model.segment[0] *
+                                          self._model.sfreq))
+                    endsamp = int(np.rint(self._model.segment[1] *
+                                          self._model.sfreq))
+                    # keep first three lines containing header and lines
+                    # pertaining to segment
+                    retainlines = list(range(3)) + list(range(begsamp + 3,
+                                      endsamp + 3))
+                elif self._model.segment is None:
+                    retainlines = list(range(len(self._model.signal) + 3))
+                
+                # since writing retainlines to the new file can take a while,
+                # move the process to a separate thread
+                def workerfun():
+                    with open(self._model.rpathsignal, 'r') as oldfile:
+                        with open(self.wpathsignal, 'w') as newfile:
+                            for i, line in enumerate(oldfile):
+                                if i in retainlines:
+                                    newfile.write(line)
+                worker = Worker(workerfun)
+                self.threadpool.start(worker)
+                
     def read_peaks(self):
         if self._model.loaded and self._model.peaks is None:
-            self.peakpath = QFileDialog.getOpenFileNames(None,
-                                                         'Choose your peaks',
-                                                         '\home')[0][0]
-            if self.peakpath:
-                dfpeaks = pd.read_csv(self.peakpath)
+            self.rpathpeaks = QFileDialog.getOpenFileNames(None,
+                                                           'Choose your peaks',
+                                                           '\home')[0][0]
+            if self.rpathpeaks:
+                dfpeaks = pd.read_csv(self.rpathpeaks)
                 if dfpeaks.shape[1] == 1:
                     peaks = dfpeaks['peaks'].copy()
                     # convert back to samples
@@ -230,27 +262,28 @@ class Controller(QObject):
                                                               insertarr,
                                                               axis=0)                            
     
-    def get_savepath(self):
+    def get_wpathpeaks(self):
         if self.batchmode == 'single file' and self._model.peaks is not None:
-            self.savepath, _ = QFileDialog.getSaveFileName(None,
-                                                           'Save peaks',
-                                                           'untitled.csv',
-                                                           'CSV (*.csv)')
+            self.wpathpeaks, _ = QFileDialog.getSaveFileName(None,
+                                                             'Save peaks',
+                                                             'untitled.csv',
+                                                             'CSV (*.csv)')
             self.save_peaks()
         elif self.batchmode == 'multiple files':
-            self.savedir = QFileDialog.getExistingDirectory(None,
-                                                            'Choose a '
-                                                            'directory '
-                                                            'for saving '
-                                                            'the peaks',
-                                                            '\home')
+            self.wdirpeaks = QFileDialog.getExistingDirectory(None,
+                                                              'Choose a '
+                                                              'directory '
+                                                              'for saving '
+                                                              'the peaks',
+                                                              '\home')
         
     def save_peaks(self):
-        if self.savepath:
+        if self.wpathpeaks:
             # save peaks in seconds
             if self._model.peaks.shape[1] == 1:
                 savearray = pd.DataFrame(self._model.peaks / self._model.sfreq)
-                savearray.to_csv(self.savepath, index=False, header=['peaks'])
+                savearray.to_csv(self.wpathpeaks, index=False,
+                                 header=['peaks'])
             elif self._model.peaks.shape[1] == 2:
                 # check if the alternation of peaks and troughs is
                 # unbroken (it might be at this point due to user edits);
@@ -282,7 +315,7 @@ class Controller(QObject):
                                              amppeaks,
                                              amptroughs))
                 savearray = pd.DataFrame(savearray)
-                savearray.to_csv(self.savepath, index=False,
+                savearray.to_csv(self.wpathpeaks, index=False,
                                  header=['peaks', 'troughs',
                                          'amppeaks', 'amptroughs'])
             
@@ -291,25 +324,27 @@ class Controller(QObject):
             # reset model before reading new dataset
             self._model.reset()
             self.read_chan(fpath, chantype='signal')
-            # wait for plotting to be done, otherwise processing of the next file
-            # gets initiated before plotting of the current file has finished
+            # wait for plotting to be done, otherwise processing of the next
+            # file gets initiated before plotting of the current file has
+            # finished
             self.mutex.lock()
             self.plot_signal_finished.wait(self.mutex)
             self.mutex.unlock()
             
             self.find_peaks()
-            # wait for plotting to be done, otherwise processing of the next file
-            # gets initiated before plotting of the current file has finished
+            # wait for plotting to be done, otherwise processing of the next
+            # file gets initiated before plotting of the current file has
+            # finished
             self.mutex.lock()
             self.plot_peaks_finished.wait(self.mutex)
             self.mutex.unlock()
             
-            # save peaks to self.savepath with "<fname>_peaks" ending
+            # save peaks to self.wpathpeaks with "<fname>_peaks" ending
             _, fname = os.path.split(fpath)
             fpartname, _ = os.path.splitext(fname)
-            self.savepath = os.path.join(self.savedir,
-                                         '{}{}'.format(fpartname,
-                                          '_peaks.csv'))
+            self.wpathpeaks = os.path.join(self.wdirpeaks,
+                                           '{}{}'.format(fpartname,
+                                            '_peaks.csv'))
             self.save_peaks()
                     
     def batch_executer(self, batch):

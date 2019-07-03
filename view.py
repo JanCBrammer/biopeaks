@@ -65,7 +65,7 @@ class View(QMainWindow):
         self.editcheckbox.stateChanged.connect(self._controller.
                                                change_editable)
         
-        # modality selection
+        # processing mode (batch or single file)
         self.batchmenulabel = QLabel('processing mode')
         self.batchmenu = QComboBox(self)
         self.batchmenu.addItem('single file')
@@ -211,7 +211,7 @@ class View(QMainWindow):
         peakmenu.addAction(findPeaks)
         
         savePeaks = QAction('save', self)
-        savePeaks.triggered.connect(self._controller.get_savepath)
+        savePeaks.triggered.connect(self._controller.get_wpathpeaks)
         peakmenu.addAction(savePeaks) 
 
         loadPeaks = QAction('load', self)
@@ -274,6 +274,7 @@ class View(QMainWindow):
     def plot_signal(self):
         print("plot_signal listening")
         self.ax0.clear()
+        self.ax1.clear()
         self.navitools.update()
         self.line = self.ax0.plot(self._model.sec, self._model.signal)
         self.ax0.set_xlabel('seconds', fontsize='large', fontweight='heavy')
@@ -321,7 +322,7 @@ class View(QMainWindow):
         self.canvas.draw()
 
     def display_path(self):
-        self.currentFile.setText(self._model.signalpath)
+        self.currentFile.setText(self._model.rpathsignal)
         
     def toggle_segmenter(self, value):
         if self._model.loaded:

@@ -45,12 +45,12 @@ class Model(QObject):
         self.markers_changed.emit(1)
         
     @property
-    def signalpath(self):
-        return self._signalpath
+    def rpathsignal(self):
+        return self._rpathsignal
 
-    @signalpath.setter
-    def signalpath(self, value):
-        self._signalpath = value
+    @rpathsignal.setter
+    def rpathsignal(self, value):
+        self._rpathsignal = value
         self.path_changed.emit()
         
     @property
@@ -71,7 +71,7 @@ class Model(QObject):
         self.sec = None
         self._markers = None
         self._segment = None
-        self._signalpath = None
+        self._rpathsignal = None
         self.sfreq = None
         self.loaded = False
         self.signalchan = None
@@ -83,7 +83,7 @@ class Model(QObject):
         self.sec = None
         self._markers = None
         self._segment = None
-        self._signalpath = None
+        self._rpathsignal = None
         self.sfreq = None
         self.loaded = False
         # don't reset channels
