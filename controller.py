@@ -10,6 +10,8 @@ import json
 import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks
+from itertools import islice
+from shutil import copyfile
 from ecg_offline import peaks_ecg
 from ppg_offline import peaks_ppg
 from resp_offline import extrema_resp
@@ -158,30 +160,30 @@ class Controller(QObject):
                                                               'untitled.txt',
                                                               'text (*.txt)')
             if self.wpathsignal:
-                # check if signal has been segmented and apply segmentation to
-                # all channels in the dataset
-                if self._model.segment is not None:
+                # if the signal has not been segmented, simply copy it
+                if self._model.segment is None:
+                    copyfile(self._model.rpathsignal, self.wpathsignal)
+                # if signal has been segmented apply segmentation to all
+                # channels in the dataset
+                elif self._model.segment is not None:
                     begsamp = int(np.rint(self._model.segment[0] *
                                           self._model.sfreq))
                     endsamp = int(np.rint(self._model.segment[1] *
                                           self._model.sfreq))
-                    # keep first three lines containing header and lines
-                    # pertaining to segment
-                    retainlines = list(range(3)) + list(range(begsamp + 3,
-                                      endsamp + 3))
-                elif self._model.segment is None:
-                    retainlines = list(range(len(self._model.signal) + 3))
-                
-                # since writing retainlines to the new file can take a while,
-                # move the process to a separate thread
-                def workerfun():
+                    data = pd.read_csv(self._model.rpathsignal, delimiter='\t',
+                                       header=None, comment='#')
+                    data = data.iloc[begsamp:endsamp, :]
                     with open(self._model.rpathsignal, 'r') as oldfile:
-                        with open(self.wpathsignal, 'w') as newfile:
-                            for i, line in enumerate(oldfile):
-                                if i in retainlines:
+                        with open(self.wpathsignal, 'w',
+                                  newline='') as newfile:
+                            # read header (first three lines) and write it to
+                            # new file
+                            for line in islice(oldfile, 3):
                                     newfile.write(line)
-                worker = Worker(workerfun)
-                self.threadpool.start(worker)
+                            # then write the data to the new file
+                            data.to_csv(newfile, sep='\t', header=False,
+                                        index=False)
+                
                 
     def read_peaks(self):
         if self._model.loaded and self._model.peaks is None:
