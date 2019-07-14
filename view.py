@@ -314,6 +314,9 @@ class View(QMainWindow):
         if value == 1:
         # check if markers have correct size
             if self._model.markers.size == self._model.sec.size:
+                # manually restore home view to avoid corrupted scale in 
+                # marker channel plot
+                self.navitools.home()
                 self.ax1.clear()
                 self.markers = self.ax1.plot(self._model.sec,
                                              self._model.markers)
