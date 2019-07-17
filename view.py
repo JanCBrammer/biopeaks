@@ -274,7 +274,9 @@ class View(QMainWindow):
     def plot_signal(self):
         print("plot_signal listening")
         self.ax0.clear()
+        self.ax0.relim()
         self.ax1.clear()
+        self.ax1.relim()
         self.navitools.update()
         self.line = self.ax0.plot(self._model.sec, self._model.signal)
         self.ax0.set_xlabel('seconds', fontsize='large', fontweight='heavy')
