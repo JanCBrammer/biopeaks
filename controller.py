@@ -27,12 +27,13 @@ peakfuncs = {'ECG': peaks_ecg,
 ## multithreading-pyqt-applications-qthreadpool/complete-example/
 class Worker(QRunnable):
     
-    def __init__(self, fn):
+    def __init__(self, fn, **kwargs):
         super(Worker, self).__init__()
         self.fn = fn
+        self.kwargs = kwargs
 
     def run(self):
-        self.fn()
+        self.fn(**self.kwargs)
         
         
 class Controller(QObject):
@@ -42,6 +43,7 @@ class Controller(QObject):
 
         self._model = model
         self.threadpool = QThreadPool()
+        self.threadpool.setMaxThreadCount(1)
         self.mutex = QMutex()
         self.plot_signal_finished = QWaitCondition()
         self.plot_peaks_finished = QWaitCondition()
@@ -70,11 +72,15 @@ class Controller(QObject):
             # list of files was selected
             elif self.batchmode == 'single file':
                 self._model.reset()
-                self.read_chan(self.fpaths[0], chantype='signal')
+                worker = Worker(fn=self.read_chan, path=self.fpaths[0],
+                                chantype='signal')
+                self.threadpool.start(worker)
             
     def open_markers(self):
         if (self.batchmode == 'single file') and (self._model.loaded):
-            self.read_chan(self._model.rpathsignal, chantype='markers')
+            worker = Worker(fn=self.read_chan, path=self._model.rpathsignal,
+                            chantype='markers')
+            self.threadpool.start(worker)
     
     def read_chan(self, path, chantype):
         _, self.file_extension = os.path.splitext(path)
@@ -179,11 +185,10 @@ class Controller(QObject):
                             # read header (first three lines) and write it to
                             # new file
                             for line in islice(oldfile, 3):
-                                    newfile.write(line)
+                                newfile.write(line)
                             # then write the data to the new file
                             data.to_csv(newfile, sep='\t', header=False,
                                         index=False)
-                
                 
     def read_peaks(self):
         if self._model.loaded and self._model.peaks is None:
