@@ -8,7 +8,7 @@ Created on Mon Jun  3 18:47:12 2019
 from PyQt5.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                              QVBoxLayout, QHBoxLayout, QCheckBox,
                              QLabel, QStatusBar, QGroupBox, QDockWidget,
-                             QLineEdit, QFormLayout, QPushButton)
+                             QLineEdit, QFormLayout, QPushButton, QProgressBar)
 from PyQt5.QtCore import Qt, QSignalMapper, QRegExp, pyqtSignal
 from PyQt5.QtGui import QIcon, QRegExpValidator
 from matplotlib.figure import Figure
@@ -221,6 +221,9 @@ class View(QMainWindow):
         # set up status bar to display error messages and current file path
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
+        self.progressBar = QProgressBar(self)
+        self.progressBar.setRange(0, 1)
+        self.statusBar.addPermanentWidget(self.progressBar)
         self.currentFile = QLabel()
         self.statusBar.addPermanentWidget(self.currentFile)
 
@@ -267,6 +270,8 @@ class View(QMainWindow):
         self._model.markers_changed.connect(self.dock_markers)
         self._model.path_changed.connect(self.display_path)
         self._model.segment_changed.connect(self.plot_segment)
+        self._model.status_changed.connect(self.display_status)
+        self._model.progress_changed.connect(self.display_progress)
     
     ###########
     # methods #
@@ -329,6 +334,12 @@ class View(QMainWindow):
 
     def display_path(self):
         self.currentFile.setText(self._model.rpathsignal)
+        
+    def display_status(self, status):
+        self.statusBar.showMessage(status, 10*1000)
+        
+    def display_progress(self, value):
+        self.progressBar.setRange(0, value)
         
     def toggle_segmenter(self, value):
         if self._model.loaded:

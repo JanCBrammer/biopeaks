@@ -16,24 +16,32 @@ from ecg_offline import peaks_ecg
 from ppg_offline import peaks_ppg
 from resp_offline import extrema_resp
 from PyQt5.QtCore import (QObject, QRunnable, QThreadPool, QWaitCondition,
-                          QMutex)
+                          QMutex, pyqtSignal)
 from PyQt5.QtWidgets import QFileDialog
 
 peakfuncs = {'ECG': peaks_ecg,
              'PPG': peaks_ppg,
              'RESP': extrema_resp}
 
-## threading is implemented according to https://pythonguis.com/courses/
-## multithreading-pyqt-applications-qthreadpool/complete-example/
+
+# threading is implemented according to https://pythonguis.com/courses/
+# multithreading-pyqt-applications-qthreadpool/complete-example/
+class WorkerSignals(QObject):
+    progress = pyqtSignal(int)
+    
+    
 class Worker(QRunnable):
     
     def __init__(self, fn, **kwargs):
         super(Worker, self).__init__()
         self.fn = fn
         self.kwargs = kwargs
+        self.signals = WorkerSignals()
 
     def run(self):
+        self.signals.progress.emit(0)
         self.fn(**self.kwargs)
+        self.signals.progress.emit(1)
         
         
 class Controller(QObject):
@@ -56,7 +64,7 @@ class Controller(QObject):
         self.batchmode = None
         self.modality = None
         self.peakseditable = False
-
+                
     ###########
     # methods #
     ###########
@@ -355,8 +363,14 @@ class Controller(QObject):
             self.save_peaks()
         
     def threader(self, fn, **kwargs):
+        # not that the worker's signal must be connected to the controller's 
+        # method each time a new worker is instantiated
         worker = Worker(fn, **kwargs)
+        worker.signals.progress.connect(self.change_progress)
         self.threadpool.start(worker)
+        
+    def change_progress(self, value):
+        self._model.progress = value
         
     def change_modality(self, value):
         self.modality = value
@@ -392,8 +406,8 @@ class Controller(QObject):
             if np.all(evalarray):
                 # check if order is valid
                 if begsamp < endsamp:
-                    print('valid selection {}'.format(values))
+                    self._model.status ='valid selection {}'.format(values)
                     self._model.segment = [begsamp, endsamp]
                 else:
-                    print('invalid selection {}'.format(values))
+                    self._model.status = 'invalid selection {}'.format(values)
             

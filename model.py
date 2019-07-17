@@ -16,6 +16,8 @@ class Model(QObject):
     markers_changed = pyqtSignal(int)
     path_changed = pyqtSignal()
     segment_changed = pyqtSignal()
+    status_changed = pyqtSignal(str)
+    progress_changed = pyqtSignal(int)
 
     @property
     def signal(self):
@@ -34,6 +36,14 @@ class Model(QObject):
     def peaks(self, value):
         self._peaks = value
         self.peaks_changed.emit()
+        
+    @property
+    def sec(self):
+        return self._sec
+
+    @sec.setter
+    def sec(self, value):
+        self._sec = value
         
     @property
     def markers(self):
@@ -62,16 +72,35 @@ class Model(QObject):
         self._segment = value
         self.segment_changed.emit()
         
-
+    @property
+    def status(self):
+        return self._status
+    
+    @ status.setter
+    def status(self, value):
+        self._status = value
+        self.status_changed.emit(value)
+        
+    @property
+    def progress(self):
+        return self._progress
+    
+    @ progress.setter
+    def progress(self, value):
+        self._progress = value
+        self.progress_changed.emit(value)
+        
     def __init__(self):
         super().__init__()
 
         self._signal = None
         self._peaks = None
-        self.sec = None
+        self._sec = None
         self._markers = None
         self._segment = None
         self._rpathsignal = None
+        self._status = None
+        self._progress = None
         self.sfreq = None
         self.loaded = False
         self.signalchan = None
@@ -80,7 +109,7 @@ class Model(QObject):
     def reset(self):
         self._signal = None
         self._peaks = None
-        self.sec = None
+        self._sec = None
         self._markers = None
         self._segment = None
         self._rpathsignal = None
