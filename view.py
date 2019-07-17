@@ -207,7 +207,7 @@ class View(QMainWindow):
         peakmenu = menubar.addMenu('peaks')
         
         findPeaks = QAction('find', self)
-        findPeaks.triggered.connect(self._controller.find_peaks)
+        findPeaks.triggered.connect(self._controller.find_peaks_single)
         peakmenu.addAction(findPeaks)
         
         savePeaks = QAction('save', self)
@@ -324,6 +324,7 @@ class View(QMainWindow):
                                              self._model.markers)
         elif value == 0:
             self.ax1.clear()
+            self.ax1.relim()
         self.canvas.draw()
 
     def display_path(self):

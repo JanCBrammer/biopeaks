@@ -217,6 +217,9 @@ class Controller(QObject):
             peaks = peakfunc(self._model.signal,
                              self._model.sfreq)
             self._model.peaks = peaks
+            
+    def find_peaks_single(self):
+        self.threader(fn=self.find_peaks)
         
     def edit_peaks(self, event):
         # account for the fact that depending on sensor modality, data.peaks
