@@ -66,21 +66,18 @@ class Controller(QObject):
         if self.fpaths:
             if self.batchmode == 'multiple files':
                 self.get_wpathpeaks()
-                batch = self.batch_constructor
-                self.batch_executer(batch)
+                self.threader(fn=self.batch_constructor)
             # if single file mode is active, process only first file even if
             # list of files was selected
             elif self.batchmode == 'single file':
                 self._model.reset()
-                worker = Worker(fn=self.read_chan, path=self.fpaths[0],
-                                chantype='signal')
-                self.threadpool.start(worker)
-            
+                self.threader(fn=self.read_chan, path=self.fpaths[0],
+                              chantype='signal')
+                
     def open_markers(self):
         if (self.batchmode == 'single file') and (self._model.loaded):
-            worker = Worker(fn=self.read_chan, path=self._model.rpathsignal,
-                            chantype='markers')
-            self.threadpool.start(worker)
+            self.threader(fn=self.read_chan, path=self._model.rpathsignal,
+                          chantype='markers')
     
     def read_chan(self, path, chantype):
         _, self.file_extension = os.path.splitext(path)
@@ -353,9 +350,9 @@ class Controller(QObject):
                                            '{}{}'.format(fpartname,
                                             '_peaks.csv'))
             self.save_peaks()
-                    
-    def batch_executer(self, batch):
-        worker = Worker(batch)
+        
+    def threader(self, fn, **kwargs):
+        worker = Worker(fn, **kwargs)
         self.threadpool.start(worker)
         
     def change_modality(self, value):
