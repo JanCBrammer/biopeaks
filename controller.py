@@ -167,9 +167,11 @@ class Controller(QObject):
         
     def save_signal(self):
         if self.wpathsignal:
-            # if the signal has not been segmented, simply copy it
+            # if the signal has not been segmented, simply copy it to new
+            # location
             if self._model.segment is None:
-                copyfile(self._model.rpathsignal, self.wpathsignal)
+                if self._model.rpathsignal != self.wpathsignal:
+                    copyfile(self._model.rpathsignal, self.wpathsignal)
             # if signal has been segmented apply segmentation to all
             # channels in the dataset
             elif self._model.segment is not None:
@@ -180,16 +182,15 @@ class Controller(QObject):
                 data = pd.read_csv(self._model.rpathsignal, delimiter='\t',
                                    header=None, comment='#')
                 data = data.iloc[begsamp:endsamp, :]
-                with open(self._model.rpathsignal, 'r') as oldfile:
-                    with open(self.wpathsignal, 'w',
-                              newline='') as newfile:
-                        # read header (first three lines) and write it to
-                        # new file
-                        for line in islice(oldfile, 3):
-                            newfile.write(line)
-                        # then write the data to the new file
-                        data.to_csv(newfile, sep='\t', header=False,
-                                    index=False)
+                with open(self._model.rpathsignal, 'r') as oldfile, \
+                    open(self.wpathsignal, 'w', newline='') as newfile:
+                    # read header (first three lines) and write it to
+                    # new file
+                    for line in islice(oldfile, 3):
+                        newfile.write(line)
+                    # then write the data to the new file
+                    data.to_csv(newfile, sep='\t', header=False,
+                                index=False)
                 
     def read_peaks(self):
         if self._model.loaded and self._model.peaks is None:
