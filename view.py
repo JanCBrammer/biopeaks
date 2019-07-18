@@ -152,7 +152,9 @@ class View(QMainWindow):
         self.segment_updated.connect(self._controller.change_segment)
         
         self.confirmedit = QPushButton('confirm selection')
-        self.confirmedit.clicked.connect(self._controller.segment_signal)
+        lambdafn = lambda: self._controller.threader(self._controller.
+                                                     segment_signal)
+        self.confirmedit.clicked.connect(lambdafn)
         self.confirmedit.clicked.connect(self.segmentermap.map)
         self.segmentermap.setMapping(self.confirmedit, 0)
         
@@ -200,14 +202,16 @@ class View(QMainWindow):
         self.segmentermap.mapped.connect(self.toggle_segmenter)
         
         saveSignal = QAction('save', self)
-        saveSignal.triggered.connect(self._controller.save_signal)
+        saveSignal.triggered.connect(self._controller.get_wpathsignal)
         signalmenu.addAction(saveSignal)
         
         # peak menu
         peakmenu = menubar.addMenu('peaks')
         
         findPeaks = QAction('find', self)
-        findPeaks.triggered.connect(self._controller.find_peaks_single)
+        lambdafn = lambda: self._controller.threader(self._controller.
+                                                     find_peaks)
+        findPeaks.triggered.connect(lambdafn)
         peakmenu.addAction(findPeaks)
         
         savePeaks = QAction('save', self)

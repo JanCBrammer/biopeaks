@@ -27,6 +27,7 @@ peakfuncs = {'ECG': peaks_ecg,
 # threading is implemented according to https://pythonguis.com/courses/
 # multithreading-pyqt-applications-qthreadpool/complete-example/
 class WorkerSignals(QObject):
+    
     progress = pyqtSignal(int)
     
     
@@ -165,35 +166,30 @@ class Controller(QObject):
             self._model.markers = self._model.markers[begsamp:endsamp]
         
     def save_signal(self):
-        if self._model.loaded:
-            self.wpathsignal, _ = QFileDialog.getSaveFileName(None,
-                                                              'Save signal',
-                                                              'untitled.txt',
-                                                              'text (*.txt)')
-            if self.wpathsignal:
-                # if the signal has not been segmented, simply copy it
-                if self._model.segment is None:
-                    copyfile(self._model.rpathsignal, self.wpathsignal)
-                # if signal has been segmented apply segmentation to all
-                # channels in the dataset
-                elif self._model.segment is not None:
-                    begsamp = int(np.rint(self._model.segment[0] *
-                                          self._model.sfreq))
-                    endsamp = int(np.rint(self._model.segment[1] *
-                                          self._model.sfreq))
-                    data = pd.read_csv(self._model.rpathsignal, delimiter='\t',
-                                       header=None, comment='#')
-                    data = data.iloc[begsamp:endsamp, :]
-                    with open(self._model.rpathsignal, 'r') as oldfile:
-                        with open(self.wpathsignal, 'w',
-                                  newline='') as newfile:
-                            # read header (first three lines) and write it to
-                            # new file
-                            for line in islice(oldfile, 3):
-                                newfile.write(line)
-                            # then write the data to the new file
-                            data.to_csv(newfile, sep='\t', header=False,
-                                        index=False)
+        if self.wpathsignal:
+            # if the signal has not been segmented, simply copy it
+            if self._model.segment is None:
+                copyfile(self._model.rpathsignal, self.wpathsignal)
+            # if signal has been segmented apply segmentation to all
+            # channels in the dataset
+            elif self._model.segment is not None:
+                begsamp = int(np.rint(self._model.segment[0] *
+                                      self._model.sfreq))
+                endsamp = int(np.rint(self._model.segment[1] *
+                                      self._model.sfreq))
+                data = pd.read_csv(self._model.rpathsignal, delimiter='\t',
+                                   header=None, comment='#')
+                data = data.iloc[begsamp:endsamp, :]
+                with open(self._model.rpathsignal, 'r') as oldfile:
+                    with open(self.wpathsignal, 'w',
+                              newline='') as newfile:
+                        # read header (first three lines) and write it to
+                        # new file
+                        for line in islice(oldfile, 3):
+                            newfile.write(line)
+                        # then write the data to the new file
+                        data.to_csv(newfile, sep='\t', header=False,
+                                    index=False)
                 
     def read_peaks(self):
         if self._model.loaded and self._model.peaks is None:
@@ -225,9 +221,6 @@ class Controller(QObject):
             peaks = peakfunc(self._model.signal,
                              self._model.sfreq)
             self._model.peaks = peaks
-            
-    def find_peaks_single(self):
-        self.threader(fn=self.find_peaks)
         
     def edit_peaks(self, event):
         # account for the fact that depending on sensor modality, data.peaks
@@ -283,7 +276,7 @@ class Controller(QObject):
                                                              'Save peaks',
                                                              'untitled.csv',
                                                              'CSV (*.csv)')
-            self.save_peaks()
+            self.threader(fn=self.save_peaks)
         elif self.batchmode == 'multiple files':
             self.wdirpeaks = QFileDialog.getExistingDirectory(None,
                                                               'Choose a '
@@ -291,6 +284,13 @@ class Controller(QObject):
                                                               'for saving '
                                                               'the peaks',
                                                               '\home')
+    def get_wpathsignal(self):
+        if self._model.loaded:
+            self.wpathsignal, _ = QFileDialog.getSaveFileName(None,
+                                                              'Save signal',
+                                                              'untitled.txt',
+                                                              'text (*.txt)')
+            self.threader(self.save_signal)
         
     def save_peaks(self):
         if self.wpathpeaks:
@@ -363,7 +363,7 @@ class Controller(QObject):
             self.save_peaks()
         
     def threader(self, fn, **kwargs):
-        # not that the worker's signal must be connected to the controller's 
+        # note that the worker's signal must be connected to the controller's 
         # method each time a new worker is instantiated
         worker = Worker(fn, **kwargs)
         worker.signals.progress.connect(self.change_progress)
