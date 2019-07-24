@@ -113,6 +113,8 @@ class Model(QObject):
         self._markers = None
         self._segment = None
         self._rpathsignal = None
+        self._status = None
+        self._progress = None
         self.sfreq = None
         self.loaded = False
         # don't reset channels

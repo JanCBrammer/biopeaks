@@ -79,7 +79,7 @@ class View(QMainWindow):
         self.modmenulabel = QLabel('modality')
         self.modmenu = QComboBox(self)
         self.modmenu.addItem('ECG')
-        self.modmenu.addItem('PPG')
+#        self.modmenu.addItem('PPG')
         self.modmenu.addItem('RESP')
         self.modmenu.currentTextChanged.connect(self._controller.
                                                 change_modality)
@@ -90,7 +90,7 @@ class View(QMainWindow):
         self.sigchanmenulabel = QLabel('data channel')
         self.sigchanmenu = QComboBox(self)
         self.sigchanmenu.addItem('ECG')
-        self.sigchanmenu.addItem('PPG')
+#        self.sigchanmenu.addItem('PPG')
         self.sigchanmenu.addItem('RESP')
         self.sigchanmenu.addItem('A1')
         self.sigchanmenu.addItem('A2')
@@ -124,9 +124,9 @@ class View(QMainWindow):
         self.segmentermap = QSignalMapper(self)
         self.segmenter = QDockWidget('select a segment', self)
         # disable closing such that widget can only be closed by confirming
-        # selection
+        # selection or custom button
         self.segmenter.setFeatures(QDockWidget.NoDockWidgetFeatures)
-        # limit number of decimals to four
+        # limit number of decimals to two
         regex = QRegExp('[0-9]*\.?[0-9]{2}')
         validator = QRegExpValidator(regex)
         
@@ -148,11 +148,13 @@ class View(QMainWindow):
         self.previewedit = QPushButton('update selection')
         self.previewedit.clicked.connect(self.emit_segment)
         # use previosly defined costum signal that sends start and end of
-        # selected segment to controllerfrom within emit_segment
+        # selected segment to controller from within emit_segment
         self.segment_updated.connect(self._controller.change_segment)
         
         self.confirmedit = QPushButton('confirm selection')
-        lambdafn = lambda: self._controller.threader(self._controller.
+        lambdafn = lambda: self._controller.threader(status='segmenting'
+                                                     ' signal',
+                                                     fn=self._controller.
                                                      segment_signal)
         self.confirmedit.clicked.connect(lambdafn)
         self.confirmedit.clicked.connect(self.segmentermap.map)
@@ -209,7 +211,8 @@ class View(QMainWindow):
         peakmenu = menubar.addMenu('peaks')
         
         findPeaks = QAction('find', self)
-        lambdafn = lambda: self._controller.threader(self._controller.
+        lambdafn = lambda: self._controller.threader(status='finding peaks',
+                                                     fn=self._controller.
                                                      find_peaks)
         findPeaks.triggered.connect(lambdafn)
         peakmenu.addAction(findPeaks)
@@ -287,27 +290,27 @@ class View(QMainWindow):
         self.ax1.clear()
         self.ax1.relim()
         self.navitools.update()
-        self.line = self.ax0.plot(self._model.sec, self._model.signal)
+        self.line = self.ax0.plot(self._model.sec, self._model.signal,
+                                  zorder=1)
         self.ax0.set_xlabel('seconds', fontsize='large', fontweight='heavy')
         self.canvas.draw()
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
         # a running batch processing thread will listen to this
         self._controller.plot_signal_finished.wakeOne()
 
-    
     def plot_peaks(self):
         print("plot_peaks listening")
         # self.scat is listed in ax.collections
         if self.ax0.collections:
             self.ax0.collections[0].remove()
         self.scat = self.ax0.scatter(self._model.sec[self._model.peaks[:, 0]],
-                                    self._model.signal[self._model.
-                                                       peaks[:, 0]], c='m')
+                                     self._model.signal[self._model.
+                                                        peaks[:, 0]], c='m',
+                                                        zorder=2)
         self.canvas.draw()
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
         # a running batch processing thread will listen to this
         self._controller.plot_peaks_finished.wakeOne()
-
 
     def plot_segment(self):
         # self.segementspan is listed in ax.patches
@@ -332,18 +335,25 @@ class View(QMainWindow):
                 self.markers = self.ax1.plot(self._model.sec,
                                              self._model.markers)
         elif value == 0:
+            self.statusBar.showMessage('undocking markers')
             self.ax1.clear()
             self.ax1.relim()
+            self.statusBar.clearMessage()
         self.canvas.draw()
 
     def display_path(self):
         self.currentFile.setText(self._model.rpathsignal)
         
     def display_status(self, status):
-        self.statusBar.showMessage(status, 10*1000)
+        # display status until new status is set
+        self.statusBar.showMessage(status)
         
     def display_progress(self, value):
+        # if value is 0, the progressbar indicates a busy state
         self.progressBar.setRange(0, value)
+        # if the worker is finished, clear the status message
+        if value == 1:
+            self.statusBar.clearMessage()
         
     def toggle_segmenter(self, value):
         if self._model.loaded:

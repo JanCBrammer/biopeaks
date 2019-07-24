@@ -75,17 +75,20 @@ class Controller(QObject):
         if self.fpaths:
             if self.batchmode == 'multiple files':
                 self.get_wpathpeaks()
-                self.threader(fn=self.batch_constructor)
+                self.threader(status='processing files',
+                              fn=self.batch_constructor)
             # if single file mode is active, process only first file even if
             # list of files was selected
             elif self.batchmode == 'single file':
                 self._model.reset()
-                self.threader(fn=self.read_chan, path=self.fpaths[0],
+                self.threader(status='loading file',
+                              fn=self.read_chan, path=self.fpaths[0],
                               chantype='signal')
                 
     def open_markers(self):
         if (self.batchmode == 'single file') and (self._model.loaded):
-            self.threader(fn=self.read_chan, path=self._model.rpathsignal,
+            self.threader(status='docking markers',
+                          fn=self.read_chan, path=self._model.rpathsignal,
                           chantype='markers')
     
     def read_chan(self, path, chantype):
@@ -277,7 +280,7 @@ class Controller(QObject):
                                                              'Save peaks',
                                                              'untitled.csv',
                                                              'CSV (*.csv)')
-            self.threader(fn=self.save_peaks)
+            self.threader(status='saving peaks', fn=self.save_peaks)
         elif self.batchmode == 'multiple files':
             self.wdirpeaks = QFileDialog.getExistingDirectory(None,
                                                               'Choose a '
@@ -291,7 +294,7 @@ class Controller(QObject):
                                                               'Save signal',
                                                               'untitled.txt',
                                                               'text (*.txt)')
-            self.threader(self.save_signal)
+            self.threader(status='saving signal', fn=self.save_signal)
         
     def save_peaks(self):
         if self.wpathpeaks:
@@ -363,9 +366,10 @@ class Controller(QObject):
                                             '_peaks.csv'))
             self.save_peaks()
         
-    def threader(self, fn, **kwargs):
+    def threader(self, status, fn, **kwargs):
         # note that the worker's signal must be connected to the controller's 
         # method each time a new worker is instantiated
+        self._model.status = status
         worker = Worker(fn, **kwargs)
         worker.signals.progress.connect(self.change_progress)
         self.threadpool.start(worker)
