@@ -222,7 +222,7 @@ class View(QMainWindow):
         peakmenu.addAction(savePeaks) 
 
         loadPeaks = QAction('load', self)
-        loadPeaks.triggered.connect(self._controller.read_peaks)
+        loadPeaks.triggered.connect(self._controller.get_rpathpeaks)
         peakmenu.addAction(loadPeaks) 
         
         # set up status bar to display error messages and current file path

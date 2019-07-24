@@ -196,28 +196,24 @@ class Controller(QObject):
                                 index=False)
                 
     def read_peaks(self):
-        if self._model.loaded and self._model.peaks is None:
-            self.rpathpeaks = QFileDialog.getOpenFileNames(None,
-                                                           'Choose your peaks',
-                                                           '\home')[0][0]
-            if self.rpathpeaks:
-                dfpeaks = pd.read_csv(self.rpathpeaks)
-                if dfpeaks.shape[1] == 1:
-                    peaks = dfpeaks['peaks'].copy()
-                    # convert back to samples
-                    peaks = peaks * self._model.sfreq
-                    # reshape to a format understood by plotting function
-                    # (ndarray of type int)
-                    peaks = np.rint(peaks[:, np.newaxis]).astype(int)
-                    self._model.peaks = peaks
-                elif dfpeaks.shape[1] == 4:
-                    # mergesort peaks and troughs
-                    extrema = np.concatenate((dfpeaks['peaks'].copy(),
-                                              dfpeaks['troughs'].copy()))
-                    extrema.sort(kind='mergesort')
-                    extrema = extrema * self._model.sfreq
-                    extrema = np.rint(extrema[:, np.newaxis]).astype(int)
-                    self._model.peaks = extrema
+        if self.rpathpeaks:
+            dfpeaks = pd.read_csv(self.rpathpeaks)
+            if dfpeaks.shape[1] == 1:
+                peaks = dfpeaks['peaks'].copy()
+                # convert back to samples
+                peaks = peaks * self._model.sfreq
+                # reshape to a format understood by plotting function
+                # (ndarray of type int)
+                peaks = np.rint(peaks[:, np.newaxis]).astype(int)
+                self._model.peaks = peaks
+            elif dfpeaks.shape[1] == 4:
+                # mergesort peaks and troughs
+                extrema = np.concatenate((dfpeaks['peaks'].copy(),
+                                          dfpeaks['troughs'].copy()))
+                extrema.sort(kind='mergesort')
+                extrema = extrema * self._model.sfreq
+                extrema = np.rint(extrema[:, np.newaxis]).astype(int)
+                self._model.peaks = extrema
             
     def find_peaks(self):
         if self._model.loaded and self._model.peaks is None:
@@ -274,6 +270,13 @@ class Controller(QObject):
                                                               insertarr,
                                                               axis=0)                            
     
+    def get_rpathpeaks(self):
+        if self._model.loaded and self._model.peaks is None:
+            self.rpathpeaks = QFileDialog.getOpenFileNames(None,
+                                                           'Choose your peaks',
+                                                           '\home')[0][0]
+            self.threader(status='loading peaks', fn=self.read_peaks)
+            
     def get_wpathpeaks(self):
         if self.batchmode == 'single file' and self._model.peaks is not None:
             self.wpathpeaks, _ = QFileDialog.getSaveFileName(None,
