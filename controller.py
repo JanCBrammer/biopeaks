@@ -89,7 +89,7 @@ class Controller(QObject):
                 self.threader(status='docking markers', fn=self.read_chan,
                               path=self._model.rpathsignal, chantype='markers')
             else:
-                print('error: no data available')
+                self._model.status = 'error: no data available'
     
     def read_chan(self, path, chantype):
         _, self.file_extension = os.path.splitext(path)
@@ -151,11 +151,11 @@ class Controller(QObject):
                         elif chantype == 'markers':
                             self._model.markers = np.ravel(data)
                     else:
-                        print('error: channel not found')
+                        self._model.status = 'error: channel not found'
                 else:
-                    print('error: wrong file format')
+                    self._model.status = 'error: wrong file format'
         else:
-            print('error: wrong file format')
+            self._model.status = 'error: wrong file format'
                         
     def segment_signal(self):
         # convert from seconds to samples
@@ -227,9 +227,9 @@ class Controller(QObject):
                                  self._model.sfreq)
                 self._model.peaks = peaks
             else:
-                print('error: peaks already in memory')
+                self._model.status = 'error: peaks already in memory'
         else:
-            print('error: no data available')
+            self._model.status = 'error: no data available'
         
     def edit_peaks(self, event):
         # account for the fact that depending on sensor modality, data.peaks
@@ -327,7 +327,7 @@ class Controller(QObject):
             if self.wpathsignal:
                 self.threader(status='saving signal', fn=self.save_signal)
         else:
-            print('error: no data available')
+            self._model.status = 'error: no data available'
             
     def get_rpathpeaks(self):
         if self._model.loaded:
@@ -339,9 +339,9 @@ class Controller(QObject):
                 if self.rpathpeaks:
                     self.threader(status='loading peaks', fn=self.read_peaks)
             else:
-                print('error: peaks already in memory')
+                self._model.status = 'error: peaks already in memory'
         else:
-            print('error: no data available')
+            self._model.status = 'error: no data available'
             
     def get_wpathpeaks(self):
         if self.batchmode == 'single file':
@@ -354,7 +354,7 @@ class Controller(QObject):
                 if self.wpathpeaks:
                     self.threader(status='saving peaks', fn=self.save_peaks)
             else:
-                print('error: no peaks available')
+                self._model.status = 'error: no peaks available'
         elif self.batchmode == 'multiple files':
             self.wdirpeaks = QFileDialog.getExistingDirectory(None,
                                                               'Choose a '
@@ -435,4 +435,4 @@ class Controller(QObject):
                     self._model.segment = [begsamp, endsamp]
                 else:
                     self._model.status = 'invalid selection {}'.format(values)
-            
+                    

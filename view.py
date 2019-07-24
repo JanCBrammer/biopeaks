@@ -351,9 +351,6 @@ class View(QMainWindow):
     def display_progress(self, value):
         # if value is 0, the progressbar indicates a busy state
         self.progressBar.setRange(0, value)
-        # if the worker is finished, clear the status message
-        if value == 1:
-            self.statusBar.clearMessage()
         
     def toggle_segmenter(self, value):
         if self._model.loaded:
