@@ -73,23 +73,23 @@ class Controller(QObject):
         self.fpaths = QFileDialog.getOpenFileNames(None, 'Choose your data',
                                                    '\home')[0]
         if self.fpaths:
-            if self.batchmode == 'multiple files':
+            if self.batchmode == 'multiple files' and len(self.fpaths) >= 1:
                 self.get_wpathpeaks()
-                self.threader(status='processing files',
-                              fn=self.batch_constructor)
-            # if single file mode is active, process only first file even if
-            # list of files was selected
-            elif self.batchmode == 'single file':
+                if self.wdirpeaks:
+                    self.threader(status='processing files',
+                                  fn=self.batch_constructor)
+            elif self.batchmode == 'single file' and len(self.fpaths) == 1:
                 self._model.reset()
-                self.threader(status='loading file',
-                              fn=self.read_chan, path=self.fpaths[0],
-                              chantype='signal')
+                self.threader(status='loading file', fn=self.read_chan,
+                              path=self.fpaths[0], chantype='signal')
                 
     def open_markers(self):
-        if (self.batchmode == 'single file') and (self._model.loaded):
-            self.threader(status='docking markers',
-                          fn=self.read_chan, path=self._model.rpathsignal,
-                          chantype='markers')
+        if self.batchmode == 'single file':
+            if self._model.loaded:
+                self.threader(status='docking markers', fn=self.read_chan,
+                              path=self._model.rpathsignal, chantype='markers')
+            else:
+                print('error: no data available')
     
     def read_chan(self, path, chantype):
         _, self.file_extension = os.path.splitext(path)
@@ -150,6 +150,12 @@ class Controller(QObject):
                             self._model.loaded = True
                         elif chantype == 'markers':
                             self._model.markers = np.ravel(data)
+                    else:
+                        print('error: channel not found')
+                else:
+                    print('error: wrong file format')
+        else:
+            print('error: wrong file format')
                         
     def segment_signal(self):
         # convert from seconds to samples
@@ -169,58 +175,61 @@ class Controller(QObject):
             self._model.markers = self._model.markers[begsamp:endsamp]
         
     def save_signal(self):
-        if self.wpathsignal:
-            # if the signal has not been segmented, simply copy it to new
-            # location
-            if self._model.segment is None:
-                if self._model.rpathsignal != self.wpathsignal:
-                    copyfile(self._model.rpathsignal, self.wpathsignal)
-            # if signal has been segmented apply segmentation to all
-            # channels in the dataset
-            elif self._model.segment is not None:
-                begsamp = int(np.rint(self._model.segment[0] *
-                                      self._model.sfreq))
-                endsamp = int(np.rint(self._model.segment[1] *
-                                      self._model.sfreq))
-                data = pd.read_csv(self._model.rpathsignal, delimiter='\t',
-                                   header=None, comment='#')
-                data = data.iloc[begsamp:endsamp, :]
-                with open(self._model.rpathsignal, 'r') as oldfile, \
-                    open(self.wpathsignal, 'w', newline='') as newfile:
-                    # read header (first three lines) and write it to
-                    # new file
-                    for line in islice(oldfile, 3):
-                        newfile.write(line)
-                    # then write the data to the new file
-                    data.to_csv(newfile, sep='\t', header=False,
-                                index=False)
+        # if the signal has not been segmented, simply copy it to new
+        # location
+        if self._model.segment is None:
+            if self._model.rpathsignal != self.wpathsignal:
+                copyfile(self._model.rpathsignal, self.wpathsignal)
+        # if signal has been segmented apply segmentation to all
+        # channels in the dataset
+        elif self._model.segment is not None:
+            begsamp = int(np.rint(self._model.segment[0] *
+                                  self._model.sfreq))
+            endsamp = int(np.rint(self._model.segment[1] *
+                                  self._model.sfreq))
+            data = pd.read_csv(self._model.rpathsignal, delimiter='\t',
+                               header=None, comment='#')
+            data = data.iloc[begsamp:endsamp, :]
+            with open(self._model.rpathsignal, 'r') as oldfile, \
+                open(self.wpathsignal, 'w', newline='') as newfile:
+                # read header (first three lines) and write it to
+                # new file
+                for line in islice(oldfile, 3):
+                    newfile.write(line)
+                # then write the data to the new file
+                data.to_csv(newfile, sep='\t', header=False,
+                            index=False)
                 
     def read_peaks(self):
-        if self.rpathpeaks:
-            dfpeaks = pd.read_csv(self.rpathpeaks)
-            if dfpeaks.shape[1] == 1:
-                peaks = dfpeaks['peaks'].copy()
-                # convert back to samples
-                peaks = peaks * self._model.sfreq
-                # reshape to a format understood by plotting function
-                # (ndarray of type int)
-                peaks = np.rint(peaks[:, np.newaxis]).astype(int)
-                self._model.peaks = peaks
-            elif dfpeaks.shape[1] == 4:
-                # mergesort peaks and troughs
-                extrema = np.concatenate((dfpeaks['peaks'].copy(),
-                                          dfpeaks['troughs'].copy()))
-                extrema.sort(kind='mergesort')
-                extrema = extrema * self._model.sfreq
-                extrema = np.rint(extrema[:, np.newaxis]).astype(int)
-                self._model.peaks = extrema
+        dfpeaks = pd.read_csv(self.rpathpeaks)
+        if dfpeaks.shape[1] == 1:
+            peaks = dfpeaks['peaks'].copy()
+            # convert back to samples
+            peaks = peaks * self._model.sfreq
+            # reshape to a format understood by plotting function
+            # (ndarray of type int)
+            peaks = np.rint(peaks[:, np.newaxis]).astype(int)
+            self._model.peaks = peaks
+        elif dfpeaks.shape[1] == 4:
+            # mergesort peaks and troughs
+            extrema = np.concatenate((dfpeaks['peaks'].copy(),
+                                      dfpeaks['troughs'].copy()))
+            extrema.sort(kind='mergesort')
+            extrema = extrema * self._model.sfreq
+            extrema = np.rint(extrema[:, np.newaxis]).astype(int)
+            self._model.peaks = extrema
             
     def find_peaks(self):
-        if self._model.loaded and self._model.peaks is None:
-            peakfunc = peakfuncs[self.modality]
-            peaks = peakfunc(self._model.signal,
-                             self._model.sfreq)
-            self._model.peaks = peaks
+        if self._model.loaded:
+            if self._model.peaks is None:
+                peakfunc = peakfuncs[self.modality]
+                peaks = peakfunc(self._model.signal,
+                                 self._model.sfreq)
+                self._model.peaks = peaks
+            else:
+                print('error: peaks already in memory')
+        else:
+            print('error: no data available')
         
     def edit_peaks(self, event):
         # account for the fact that depending on sensor modality, data.peaks
@@ -268,22 +277,84 @@ class Controller(QObject):
                                 self._model.peaks = np.insert(self._model.
                                                               peaks, insertidx,
                                                               insertarr,
-                                                              axis=0)                            
+                                                              axis=0)
+    def save_peaks(self):
+        # save peaks in seconds
+        if self._model.peaks.shape[1] == 1:
+            savearray = pd.DataFrame(self._model.peaks / self._model.sfreq)
+            savearray.to_csv(self.wpathpeaks, index=False, header=['peaks'])
+        elif self._model.peaks.shape[1] == 2:
+            # check if the alternation of peaks and troughs is
+            # unbroken (it might be at this point due to user edits);
+            # if alternation of sign in extdiffs is broken, remove
+            # the extreme (or extrema) that cause(s) the break(s)
+            extdiffs = np.sign(np.diff(self._model.peaks[:, 1]))
+            extdiffs = np.add(extdiffs[0:-1], extdiffs[1:])
+            removeext = np.where(extdiffs != 0)[0] + 1
+            # work on local copy of extrema to avoid call to plotting
+            # function
+            extrema = np.delete(self._model.peaks, removeext, axis=0)
+            # determine if series starts with peak or trough to be able
+            # to save peaks and troughs separately (as well as the
+            # corresponding amplitudes)
+            if extrema[0, 1] > extrema[1, 1]:
+                peaks = extrema[0:-3:2, 0]
+                troughs = extrema[1:-2:2, 0]
+                amppeaks = extrema[0:-3:2, 1]
+                amptroughs = extrema[1:-2:2, 1]
+            elif extrema[0, 1] < extrema[1, 1]:
+                peaks = extrema[1:-2:2, 0]
+                troughs = extrema[0:-3:2, 0]
+                amppeaks = extrema[1:-2:2, 1]
+                amptroughs = extrema[0:-3:2, 1]
+            # make sure extrema are float: IMPORTANT, if seconds are
+            # saved as int, rounding errors (i.e. misplaced peaks) occur
+            savearray = np.column_stack((peaks / self._model.sfreq,
+                                         troughs / self._model.sfreq,
+                                         amppeaks,
+                                         amptroughs))
+            savearray = pd.DataFrame(savearray)
+            savearray.to_csv(self.wpathpeaks, index=False,
+                             header=['peaks', 'troughs',
+                                     'amppeaks', 'amptroughs'])
     
+    def get_wpathsignal(self):
+        if self._model.loaded:
+            self.wpathsignal, _ = QFileDialog.getSaveFileName(None,
+                                                              'Save signal',
+                                                              'untitled.txt',
+                                                              'text (*.txt)')
+            if self.wpathsignal:
+                self.threader(status='saving signal', fn=self.save_signal)
+        else:
+            print('error: no data available')
+            
     def get_rpathpeaks(self):
-        if self._model.loaded and self._model.peaks is None:
-            self.rpathpeaks = QFileDialog.getOpenFileNames(None,
-                                                           'Choose your peaks',
-                                                           '\home')[0][0]
-            self.threader(status='loading peaks', fn=self.read_peaks)
+        if self._model.loaded:
+            if self._model.peaks is None:
+                self.rpathpeaks = QFileDialog.getOpenFileNames(None,
+                                                               'Choose your'
+                                                               'peaks',
+                                                               '\home')[0][0]
+                if self.rpathpeaks:
+                    self.threader(status='loading peaks', fn=self.read_peaks)
+            else:
+                print('error: peaks already in memory')
+        else:
+            print('error: no data available')
             
     def get_wpathpeaks(self):
-        if self.batchmode == 'single file' and self._model.peaks is not None:
-            self.wpathpeaks, _ = QFileDialog.getSaveFileName(None,
-                                                             'Save peaks',
-                                                             'untitled.csv',
-                                                             'CSV (*.csv)')
-            self.threader(status='saving peaks', fn=self.save_peaks)
+        if self.batchmode == 'single file':
+            if self._model.peaks is not None:
+                self.wpathpeaks, _ = QFileDialog.getSaveFileName(None,
+                                                                 'Save peaks',
+                                                                 'untitled'
+                                                                 '.csv',
+                                                                 'CSV (*.csv)')
+                if self.wpathpeaks:
+                    self.threader(status='saving peaks', fn=self.save_peaks)
+            else:
+                print('error: no peaks available')
         elif self.batchmode == 'multiple files':
             self.wdirpeaks = QFileDialog.getExistingDirectory(None,
                                                               'Choose a '
@@ -291,55 +362,6 @@ class Controller(QObject):
                                                               'for saving '
                                                               'the peaks',
                                                               '\home')
-    def get_wpathsignal(self):
-        if self._model.loaded:
-            self.wpathsignal, _ = QFileDialog.getSaveFileName(None,
-                                                              'Save signal',
-                                                              'untitled.txt',
-                                                              'text (*.txt)')
-            self.threader(status='saving signal', fn=self.save_signal)
-        
-    def save_peaks(self):
-        if self.wpathpeaks:
-            # save peaks in seconds
-            if self._model.peaks.shape[1] == 1:
-                savearray = pd.DataFrame(self._model.peaks / self._model.sfreq)
-                savearray.to_csv(self.wpathpeaks, index=False,
-                                 header=['peaks'])
-            elif self._model.peaks.shape[1] == 2:
-                # check if the alternation of peaks and troughs is
-                # unbroken (it might be at this point due to user edits);
-                # if alternation of sign in extdiffs is broken, remove
-                # the extreme (or extrema) that cause(s) the break(s)
-                extdiffs = np.sign(np.diff(self._model.peaks[:, 1]))
-                extdiffs = np.add(extdiffs[0:-1], extdiffs[1:])
-                removeext = np.where(extdiffs != 0)[0] + 1
-                # work on local copy of extrema to avoid call to plotting
-                # function
-                extrema = np.delete(self._model.peaks, removeext, axis=0)
-                # determine if series starts with peak or trough to be able
-                # to save peaks and troughs separately (as well as the
-                # corresponding amplitudes)
-                if extrema[0, 1] > extrema[1, 1]:
-                    peaks = extrema[0:-3:2, 0]
-                    troughs = extrema[1:-2:2, 0]
-                    amppeaks = extrema[0:-3:2, 1]
-                    amptroughs = extrema[1:-2:2, 1]
-                elif extrema[0, 1] < extrema[1, 1]:
-                    peaks = extrema[1:-2:2, 0]
-                    troughs = extrema[0:-3:2, 0]
-                    amppeaks = extrema[1:-2:2, 1]
-                    amptroughs = extrema[0:-3:2, 1]
-                # make sure extrema are float: IMPORTANT, if seconds are
-                # saved as int, rounding errors (i.e. misplaced peaks) occur
-                savearray = np.column_stack((peaks / self._model.sfreq,
-                                             troughs / self._model.sfreq,
-                                             amppeaks,
-                                             amptroughs))
-                savearray = pd.DataFrame(savearray)
-                savearray.to_csv(self.wpathpeaks, index=False,
-                                 header=['peaks', 'troughs',
-                                         'amppeaks', 'amptroughs'])
             
     def batch_constructor(self):
         for fpath in self.fpaths:
@@ -382,26 +404,21 @@ class Controller(QObject):
         
     def change_modality(self, value):
         self.modality = value
-        print(value)
         
     def change_signalchan(self, value):
         self._model.signalchan = value
-        print(value)
         
     def change_markerchan(self, value):
         self._model.markerchan = value
-        print(value)
         
     def change_batchmode(self, value):
         self.batchmode = value
-        print(value)
         
     def change_editable(self, value):
         if value == 2:
             self.peakseditable = True
         elif value == 0:
             self.peakseditable = False
-        print(value)
         
     def change_segment(self, values):
         # check if any of the fields is empty
