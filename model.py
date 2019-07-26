@@ -18,6 +18,7 @@ class Model(QObject):
     segment_changed = pyqtSignal()
     status_changed = pyqtSignal(str)
     progress_changed = pyqtSignal(int)
+    model_reset = pyqtSignal()
 
     @property
     def signal(self):
@@ -118,4 +119,6 @@ class Model(QObject):
         self.sfreq = None
         self.loaded = False
         # don't reset channels
+        
+        self.model_reset.emit()
         

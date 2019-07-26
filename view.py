@@ -279,6 +279,7 @@ class View(QMainWindow):
         self._model.segment_changed.connect(self.plot_segment)
         self._model.status_changed.connect(self.display_status)
         self._model.progress_changed.connect(self.display_progress)
+        self._model.model_reset.connect(self.reset_plot)
     
     ###########
     # methods #
@@ -305,7 +306,8 @@ class View(QMainWindow):
             self.ax0.collections[0].remove()
         self.scat = self.ax0.scatter(self._model.sec[self._model.peaks[:, 0]],
                                      self._model.signal[self._model.
-                                                        peaks[:, 0]], c='m',
+                                                        peaks[:, 0]],
+                                                        c='m',
                                                         zorder=2)
         self.canvas.draw()
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
@@ -390,3 +392,11 @@ class View(QMainWindow):
         endsamp = self.endedit.text()
         self.segment_updated.emit([begsamp, endsamp])
         
+    def reset_plot(self):
+        self.ax0.clear()
+        self.ax0.relim()
+        self.ax1.clear()
+        self.ax1.relim()
+        self.canvas.draw()
+        self.navitools.update()
+        self.currentFile.clear()
