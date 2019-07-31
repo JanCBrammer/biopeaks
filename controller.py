@@ -435,4 +435,6 @@ class Controller(QObject):
                     self._model.segment = [begsamp, endsamp]
                 else:
                     self._model.status = 'invalid selection {}'.format(values)
+            else:
+                self._model.status = 'invalid selection {}'.format(values)
                     
