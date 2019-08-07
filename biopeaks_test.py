@@ -61,51 +61,62 @@ class Tests:
         self._controller = controller
         
     
-    def wait_for_thread(self, signal):
-        # whenever a thread is started during the test (by using the
-        # controller's threader method), halt test execution until the thread
-        # is finished as announced by signal
+    def wait_for_signal(self, signal, value):
+        # halt the execution of the test until either only signal (in this
+        # value must be None), or a specific value associated with signal
+        # is emitted; spy.wait() runs an event loop until it registers the
+        # signal
         spy = QSignalSpy(signal)
-        # this will run an event loop until signal is emitted
-        spy.wait()
+        if value == None:
+            spy.wait()
+        else:
+            while True:
+                # if a signal can emit different values, the while loop runs
+                # until the signal emits the desired value; every emitted value
+                # is appended to spy (last value is most recently emitted one)
+                spy.wait()
+#                print(len(spy), spy[-1][0])
+                if spy[-1][0] == value:
+                    break
         
     def run(self):
-        # 1. load signal
-        ################
-#        QTest.qWait(1000)
+        
+        # 1. change signal channel
         QTest.keyClicks(self._view.sigchanmenu, 'A1')
+        # 2. load signal
+        ################
         self._controller.threader(status='loading file',
                                   fn=self._controller.read_chan,
                                   path='ECG_testdata_long.txt',
                                   chantype='signal')
-        self.wait_for_thread(self._model.signal_changed)
+        self.wait_for_thread(self._model.progress_changed, 1)
 #        # give a human reviewer some time to confirm the execution visually
 #        QTest.qWait(1000)
         assert np.size(self._model.signal) == 7925550, ('failed to load '
                                                           'signal')
         print('loaded signal successfully')
-        # 2. segment signal
+        # 3. segment signal
         ###################
         # preview segment
         self._controller.threader(status='changing segment',
                                   fn=self._controller.change_segment,
                                   values = [1, 1000])
-        self.wait_for_thread(self._model.segment_changed)
+        self.wait_for_thread(self._model.progress_changed, 1)
         # give a human reviewer some time to confirm the execution visually
 #        QTest.qWait(2000)
         # prune signal to segment
         self._controller.threader(status='segmenting signal',
                                   fn=self._controller.segment_signal)
-        self.wait_for_thread(self._model.signal_changed)
+        self.wait_for_thread(self._model.progress_changed, 1)
 #        # give a human reviewer some time to confirm the execution visually
 ##        QTest.qWait(1000)
-        # 3. find peaks
+        # 4. find peaks
         ###############
         self._controller.threader(status='finding peaks',
                                   fn=self._controller.find_peaks)
-        self.wait_for_thread(self._model.peaks_changed)
+        self.wait_for_thread(self._model.progress_changed, 1)
 
-        
+
 if __name__ == '__main__':
     app = TestApplication(sys.argv)
     sys.exit(app.exec_())
