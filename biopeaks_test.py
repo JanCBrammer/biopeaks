@@ -40,6 +40,7 @@ how to assert correctness / passing of tests? what is the criterion?
 '''
 
 import sys
+import os
 import numpy as np
 from PyQt5.QtTest import QTest, QSignalSpy
 from PyQt5.QtWidgets import QApplication
@@ -94,8 +95,6 @@ class Tests:
                     break
         
     def run(self):
-        
-        print(self._view.canvas.geometry(), self._view.canvas.pos(), self._view.canvas.width())
         # single file ECG #####################################################
         #######################################################################
         
@@ -110,48 +109,61 @@ class Tests:
                                   path='ECG_testdata_long.txt',
                                   chantype='signal')
         self.wait_for_signal(self._model.progress_changed, 1)
-#        # give a human reviewer some time to confirm the execution visually
-#        QTest.qWait(1000)
-        assert np.size(self._model.signal) == 7925550, ('failed to load '
-                                                          'signal')
+        # give a human reviewer some time to confirm the execution visually
+        QTest.qWait(2000)
+        assert np.size(self._model.signal) == 7925550, \
+                'failed to load signal'
         print('loaded signal successfully')
         
-#        # 3. load markers
-#        #################
-#        self._controller.open_markers()
-#        # open_markers starts thread
-#        self.wait_for_signal(self._model.progress_changed, 1)
+        # 3. load markers
+        #################
+        self._controller.open_markers()
+        # open_markers starts thread
+        self.wait_for_signal(self._model.progress_changed, 1)
+        QTest.qWait(2000)
+        assert np.size(self._model.markers) == 7925550, \
+                'failed to load markers'
+        print('loaded markers successfully')
         
         # 4. segment signal
         ###################
         # preview segment
+        segment = [1, 60]
         self._controller.threader(status='changing segment',
                                   fn=self._controller.change_segment,
-                                  values = [1, 60])
+                                  values = segment)
         self.wait_for_signal(self._model.progress_changed, 1)
-        # give a human reviewer some time to confirm the execution visually
-#        QTest.qWait(2000)
+        QTest.qWait(2000)
         # prune signal to segment
         self._controller.threader(status='segmenting signal',
                                   fn=self._controller.segment_signal)
         self.wait_for_signal(self._model.progress_changed, 1)
+        assert np.size(self._model.signal) == int((segment[1] - segment[0]) *
+                       self._model.sfreq), ('failed to load signal')
+        print('segmented signal successfully')
 #        # give a human reviewer some time to confirm the execution visually
 #        QTest.qWait(1000)
         
-#        # 5. save segmented signal
-#        ##########################
-#        # set path for saving signal
-#        self._controller.wpathsignal = './ECG_testdata_long_segmented.txt'
-#        # save signal
-#        self._controller.threader(status='saving signal',
-#                                  fn=self._controller.save_signal)
-#        self.wait_for_signal(self._model.progress_changed, 1)
+        # 5. save segmented signal
+        ##########################
+        # set path for saving signal
+        self._controller.wpathsignal = './ECG_testdata_long_segmented.txt'
+        # save signal
+        self._controller.threader(status='saving signal',
+                                  fn=self._controller.save_signal)
+        self.wait_for_signal(self._model.progress_changed, 1)
+        assert os.path.isfile('./ECG_testdata_long_segmented.txt'), \
+                'failed to save segmented signal'
+        print('segmented signal successfully')
 
         # 6. find peaks
         ###############
         self._controller.threader(status='finding peaks',
                                   fn=self._controller.find_peaks)
         self.wait_for_signal(self._model.progress_changed, 1)
+        QTest.qWait(2000)
+        assert np.size(self._model.peaks) == 66, 'failed to find peaks'
+        print('found peaks successfully')
         
         # 7. edit peaks
         ###############
@@ -164,24 +176,54 @@ class Tests:
         # method is called with a mocked KeyEvent; to demonstrate edit_peaks
         # delete the first peak and then add it again
         demopeak = self._model.peaks[0][0] / self._model.sfreq
-        mock_key_event = MockKeyEvent(key='d',
-                                      xdata=demopeak)
+        mock_key_event = MockKeyEvent(key='d', xdata=demopeak)
         self._controller.edit_peaks(mock_key_event)
+        assert self._model.peaks[0][0] / self._model.sfreq > demopeak, \
+            'failed to delete first peak'
+        print('deleted first peak successfully')
         # give user some time to perceive the change
         QTest.qWait(2000)
-        mock_key_event = MockKeyEvent(key='a',
-                                      xdata=demopeak)
+        mock_key_event = MockKeyEvent(key='a', xdata=demopeak)
         self._controller.edit_peaks(mock_key_event)
+        print(self._model.peaks[0][0] / self._model.sfreq, self._model.peaks[0][0] / self._model.sfreq == demopeak)
+        # note that edit_peaks places the peak in the middle of the plateau in
+        # case of a flat peak, hence discrepancies of a few msecs can arise;
+        # set tolerance for deviation of re-inserted peak to 10 msec
+        assert abs(self._model.peaks[0][0] / self._model.sfreq - 
+                   demopeak) <= 0.010, 'failed to re-insert first peak'
+        print('re-inserted first peaks successfully')
         
         # 8. save peaks
         ###############
+        # set path for saving peaks
+        self._controller.wpathpeaks = './ECG_testdata_long_segmented_peaks.txt'
+        # save signal
+        self._controller.threader(status='saving peaks',
+                                  fn=self._controller.save_peaks)
+        self.wait_for_signal(self._model.progress_changed, 1)
+        QTest.qWait(2000)
+        assert os.path.isfile('./ECG_testdata_long_segmented_peaks.txt'), \
+                'failed to save peaks'
+        print('saved peaks successfully')
         
         # 9. load segmented signal
         ##########################
+        self._controller.threader(status='loading file',
+                                  fn=self._controller.read_chan,
+                                  path='ECG_testdata_long_segmented.txt',
+                                  chantype='signal')
+        self.wait_for_signal(self._model.progress_changed, 1)
+        QTest.qWait(2000)
+        assert np.size(self._model.signal) == 59000, 'failed to load signal'
+        print('re-loaded signal successfully')
         
         # 10. load peaks found for segmented signal
         ##########################################
-        
+        self._controller.rpathpeaks = './ECG_testdata_long_segmented_peaks.txt'
+        self._controller.threader(status='loading peaks',
+                                  fn=self._controller.read_peaks)
+        assert np.size(self._model.peaks) == 66, 'failed to re-load peaks'
+        print('re-loaded peaks successfully')
         
         
         # single file respiration #############################################
@@ -202,11 +244,3 @@ class Tests:
 if __name__ == '__main__':
     app = TestApplication(sys.argv)
     sys.exit(app.exec_())
-
-
-
-
-    
-    
-    
-    
