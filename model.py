@@ -27,7 +27,10 @@ class Model(QObject):
     @signal.setter
     def signal(self, value):
         self._signal = value
-        self.signal_changed.emit()
+        # check if attribute is reset to None, in that case do not emit its
+        # signal
+        if value is not None:
+            self.signal_changed.emit()
         
     @property
     def peaks(self):
@@ -36,7 +39,8 @@ class Model(QObject):
     @peaks.setter
     def peaks(self, value):
         self._peaks = value
-        self.peaks_changed.emit()
+        if value is not None:
+            self.peaks_changed.emit()
         
     @property
     def sec(self):
@@ -53,7 +57,8 @@ class Model(QObject):
     @markers.setter
     def markers(self, value):
         self._markers = value
-        self.markers_changed.emit(1)
+        if value is not None:
+            self.markers_changed.emit(1)
         
     @property
     def rpathsignal(self):
@@ -62,7 +67,8 @@ class Model(QObject):
     @rpathsignal.setter
     def rpathsignal(self, value):
         self._rpathsignal = value
-        self.path_changed.emit()
+        if value is not None:
+            self.path_changed.emit()
         
     @property
     def segment(self):
@@ -71,7 +77,8 @@ class Model(QObject):
     @ segment.setter
     def segment(self, value):
         self._segment = value
-        self.segment_changed.emit()
+        if value is not None:
+            self.segment_changed.emit()
         
     @property
     def status(self):
@@ -80,7 +87,8 @@ class Model(QObject):
     @ status.setter
     def status(self, value):
         self._status = value
-        self.status_changed.emit(value)
+        if value is not None:
+            self.status_changed.emit(value)
         
     @property
     def progress(self):
@@ -89,7 +97,8 @@ class Model(QObject):
     @ progress.setter
     def progress(self, value):
         self._progress = value
-        self.progress_changed.emit(value)
+        if value is not None:
+            self.progress_changed.emit(value)
         
     def __init__(self):
         super().__init__()
@@ -119,6 +128,5 @@ class Model(QObject):
         self.sfreq = None
         self.loaded = False
         # don't reset channels
-        
         self.model_reset.emit()
         

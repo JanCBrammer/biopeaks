@@ -162,6 +162,8 @@ class View(QMainWindow):
         
         self.abortedit = QPushButton('abort selection')
         self.abortedit.clicked.connect(self.segmentermap.map)
+        # reset the segment to None
+        self.abortedit.clicked.connect(self._controller.reset_segment)
         self.segmentermap.setMapping(self.abortedit, 0)
         
         self.segmenterlayout= QFormLayout()
@@ -193,7 +195,7 @@ class View(QMainWindow):
         dockmarkers.triggered.connect(self._controller.open_markers)
         markersmenu.addAction(dockmarkers)
         undockmarkers = QAction('undock', self)
-        undockmarkers.triggered.connect(lambda: self.dock_markers(0))
+        undockmarkers.triggered.connect(lambda: self.dock_markers(0))        
         markersmenu.addAction(undockmarkers)
         
         segmentSignal = QAction('select segment', self)
@@ -328,7 +330,7 @@ class View(QMainWindow):
         
     def dock_markers(self, value):
         if value == 1:
-        # check if markers have correct size
+            # check if markers have correct size
             if self._model.markers.size == self._model.sec.size:
                 # manually restore home view to avoid corrupted scale in 
                 # marker channel plot
@@ -337,6 +339,9 @@ class View(QMainWindow):
                 self.markers = self.ax1.plot(self._model.sec,
                                              self._model.markers)
         elif value == 0:
+            # reset markers, otherwise they are replotted, e.g. after
+            # segmentation of the signal
+            self._model.markers = None
             self.statusBar.showMessage('undocking markers')
             self.ax1.clear()
             self.ax1.relim()
