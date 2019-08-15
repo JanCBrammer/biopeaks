@@ -399,6 +399,9 @@ class Controller(QObject):
         worker.signals.progress.connect(self.change_progress)
         self.threadpool.start(worker)
         
+    def reset_segment(self):
+        self._model.segment = None
+        
     def change_progress(self, value):
         self._model.progress = value
         
