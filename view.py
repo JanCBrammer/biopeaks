@@ -163,8 +163,7 @@ class View(QMainWindow):
         self.abortedit = QPushButton('abort selection')
         self.abortedit.clicked.connect(self.segmentermap.map)
         # reset the segment to None
-        self.abortedit.clicked.connect(self._controller.reset_segment)
-        self.segmentermap.setMapping(self.abortedit, 0)
+        self.segmentermap.setMapping(self.abortedit, 2)
         
         self.segmenterlayout= QFormLayout()
         self.segmenterlayout.addRow(self.startlabel, self.startedit)
@@ -330,14 +329,14 @@ class View(QMainWindow):
         
     def dock_markers(self, value):
         if value == 1:
-            # check if markers have correct size
-            if self._model.markers.size == self._model.sec.size:
-                # manually restore home view to avoid corrupted scale in 
-                # marker channel plot
-                self.navitools.home()
-                self.ax1.clear()
-                self.markers = self.ax1.plot(self._model.sec,
-                                             self._model.markers)
+#            # check if markers have correct size
+#            if self._model.markers.size == self._model.sec.size:
+            # manually restore home view to avoid corrupted scale in 
+            # marker channel plot
+            self.navitools.home()
+            self.ax1.clear()
+            self.markers = self.ax1.plot(self._model.sec,
+                                         self._model.markers)
         elif value == 0:
             # reset markers, otherwise they are replotted, e.g. after
             # segmentation of the signal
@@ -361,16 +360,25 @@ class View(QMainWindow):
         
     def toggle_segmenter(self, value):
         if self._model.loaded:
+            # open segmenter when called from signalmenu
             if value == 1:
                 self.segmenter.setVisible(True)
                 self.confirmedit.setEnabled(False)
                 self.startedit.clear()
                 self.endedit.clear()
+            # close segmenter after segment has been confirmed
             elif value == 0:
                 self.segmenter.setVisible(False)
                 if self.ax0.patches:
                     self.ax0.patches[0].remove()
-        
+            # close segmenter after segmentation has been aborted (reset
+            # segment)
+            elif value == 2:
+                self._model.segment = None
+                self.segmenter.setVisible(False)
+                if self.ax0.patches:
+                    self.ax0.patches[0].remove()
+                
     def enable_segmentedit(self):
         # disable peak editing to avoid interference
         self.editcheckbox.setCheckState(0)
