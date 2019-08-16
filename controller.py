@@ -23,7 +23,6 @@ peakfuncs = {'ECG': peaks_ecg,
              'PPG': peaks_ppg,
              'RESP': extrema_resp}
 
-
 # threading is implemented according to https://pythonguis.com/courses/
 # multithreading-pyqt-applications-qthreadpool/complete-example/
 class WorkerSignals(QObject):
@@ -85,7 +84,9 @@ class Controller(QObject):
                 
     def open_markers(self):
         if self.batchmode == 'single file':
-            if self._model.loaded:
+            # only read markerss from file if file has been loaded and signal
+            # has not been segmented yet
+            if self._model.loaded and self._model.segment is None:
                 self.threader(status='docking markers', fn=self.read_chan,
                               path=self._model.rpathsignal, chantype='markers')
             else:
@@ -398,9 +399,6 @@ class Controller(QObject):
         worker = Worker(fn, **kwargs)
         worker.signals.progress.connect(self.change_progress)
         self.threadpool.start(worker)
-        
-    def reset_segment(self):
-        self._model.segment = None
         
     def change_progress(self, value):
         self._model.progress = value
