@@ -59,7 +59,16 @@ class TestApplication(QApplication):
         self._view = View(self._model, self._controller)
         self._tests = Tests(self._model, self._view, self._controller)
         self._view.show()
-        self._tests.run()
+        self._tests.single_file(modality='ECG',
+                                sigchan='A1',
+                                markerchan='A2',
+                                mode='single file',
+                                sigpathorig='ECG_testdata_long.txt',
+                                sigpathseg='ECG_testdata_long_segmented.txt',
+                                peakpath='ECG_testdata_long_segmented_peaks.txt',
+                                siglen=7925550,
+                                peaklen=66,
+                                segment=[1, 60])
         
         
 class MockKeyEvent(object):
@@ -94,24 +103,26 @@ class Tests:
                 if spy[-1][0] == value:
                     break
         
-    def run(self):
-        # single file ECG #####################################################
-        #######################################################################
-        
-        # 1. change signal channel and marker channel
-        QTest.keyClicks(self._view.sigchanmenu, 'A1')
-        QTest.keyClicks(self._view.markerschanmenu, 'A3')
+    def single_file(self, modality, sigchan, markerchan, mode, sigpathorig,
+                    sigpathseg, peakpath, siglen, peaklen, segment):
+    
+        # 1. set options
+        ################
+        QTest.keyClicks(self._view.modmenu, modality)
+        QTest.keyClicks(self._view.sigchanmenu, sigchan)
+        QTest.keyClicks(self._view.markerschanmenu, markerchan)
+        QTest.keyClicks(self._view.batchmenu, mode)
         
         # 2. load signal
         ################
         self._controller.threader(status='loading file',
                                   fn=self._controller.read_chan,
-                                  path='ECG_testdata_long.txt',
+                                  path=sigpathorig,
                                   chantype='signal')
         self.wait_for_signal(self._model.progress_changed, 1)
         # give a human reviewer some time to confirm the execution visually
         QTest.qWait(2000)
-        assert np.size(self._model.signal) == 7925550, \
+        assert np.size(self._model.signal) == siglen, \
                 'failed to load signal'
         print('loaded signal successfully')
         
@@ -121,14 +132,14 @@ class Tests:
         # open_markers starts thread
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
-        assert np.size(self._model.markers) == 7925550, \
+        assert np.size(self._model.markers) == siglen, \
                 'failed to load markers'
         print('loaded markers successfully')
         
         # 4. segment signal
         ###################
         # preview segment
-        segment = [1, 60]
+        segment = segment
         self._controller.threader(status='changing segment',
                                   fn=self._controller.change_segment,
                                   values = segment)
@@ -138,21 +149,20 @@ class Tests:
         self._controller.threader(status='segmenting signal',
                                   fn=self._controller.segment_signal)
         self.wait_for_signal(self._model.progress_changed, 1)
-        assert np.size(self._model.signal) == int((segment[1] - segment[0]) *
-                       self._model.sfreq), ('failed to load signal')
+        siglenseg = int((segment[1] - segment[0]) * self._model.sfreq)
+        assert np.size(self._model.signal) == siglenseg, \
+                'failed to load signal'
         print('segmented signal successfully')
-#        # give a human reviewer some time to confirm the execution visually
-#        QTest.qWait(1000)
         
         # 5. save segmented signal
         ##########################
         # set path for saving signal
-        self._controller.wpathsignal = './ECG_testdata_long_segmented.txt'
+        self._controller.wpathsignal = sigpathseg
         # save signal
         self._controller.threader(status='saving signal',
                                   fn=self._controller.save_signal)
         self.wait_for_signal(self._model.progress_changed, 1)
-        assert os.path.isfile('./ECG_testdata_long_segmented.txt'), \
+        assert os.path.isfile('./'+sigpathseg), \
                 'failed to save segmented signal'
         print('segmented signal successfully')
 
@@ -162,7 +172,7 @@ class Tests:
                                   fn=self._controller.find_peaks)
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
-        assert np.size(self._model.peaks) == 66, 'failed to find peaks'
+        assert np.size(self._model.peaks) == peaklen, 'failed to find peaks'
         print('found peaks successfully')
         
         # 7. edit peaks
@@ -185,7 +195,6 @@ class Tests:
         QTest.qWait(2000)
         mock_key_event = MockKeyEvent(key='a', xdata=demopeak)
         self._controller.edit_peaks(mock_key_event)
-        print(self._model.peaks[0][0] / self._model.sfreq, self._model.peaks[0][0] / self._model.sfreq == demopeak)
         # note that edit_peaks places the peak in the middle of the plateau in
         # case of a flat peak, hence discrepancies of a few msecs can arise;
         # set tolerance for deviation of re-inserted peak to 10 msec
@@ -196,49 +205,35 @@ class Tests:
         # 8. save peaks
         ###############
         # set path for saving peaks
-        self._controller.wpathpeaks = './ECG_testdata_long_segmented_peaks.txt'
-        # save signal
+        self._controller.wpathpeaks = './'+peakpath
         self._controller.threader(status='saving peaks',
                                   fn=self._controller.save_peaks)
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
-        assert os.path.isfile('./ECG_testdata_long_segmented_peaks.txt'), \
-                'failed to save peaks'
+        assert os.path.isfile('./'+peakpath), 'failed to save peaks'
         print('saved peaks successfully')
         
         # 9. load segmented signal
         ##########################
         self._controller.threader(status='loading file',
                                   fn=self._controller.read_chan,
-                                  path='ECG_testdata_long_segmented.txt',
+                                  path=sigpathseg,
                                   chantype='signal')
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
-        assert np.size(self._model.signal) == 59000, 'failed to load signal'
+        assert np.size(self._model.signal) == siglenseg, 'failed to load signal'
         print('re-loaded signal successfully')
         
         # 10. load peaks found for segmented signal
         ##########################################
-        self._controller.rpathpeaks = './ECG_testdata_long_segmented_peaks.txt'
+        self._controller.rpathpeaks = peakpath
         self._controller.threader(status='loading peaks',
                                   fn=self._controller.read_peaks)
-        assert np.size(self._model.peaks) == 66, 'failed to re-load peaks'
+        assert np.size(self._model.peaks) == peaklen, 'failed to re-load peaks'
         print('re-loaded peaks successfully')
         
-        
-        # single file respiration #############################################
-        #######################################################################
-        
-        
-        
-        
-        # batch processing ECG ################################################
-        #######################################################################
-        
-        
-        
-        # batch processing respiration ########################################
-        #######################################################################
+    def batch_file(self):
+        pass
 
 
 if __name__ == '__main__':
