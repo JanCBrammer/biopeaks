@@ -212,14 +212,23 @@ class Controller(QObject):
             peaks = np.rint(peaks[:, np.newaxis]).astype(int)
             self._model.peaks = peaks
         elif dfpeaks.shape[1] == 4:
-            # mergesort peaks and troughs
             extrema = np.concatenate((dfpeaks['peaks'].copy(),
                                       dfpeaks['troughs'].copy()))
-            extrema.sort(kind='mergesort')
-            extrema = extrema * self._model.sfreq
-            extrema = np.rint(extrema[:, np.newaxis]).astype(int)
-            self._model.peaks = extrema
-            
+            amps = np.concatenate((dfpeaks['amppeaks'].copy(),
+                                   dfpeaks['amptroughs'].copy()))
+            # mergesort extrema and corresponding amplitudes
+            sortidcs = extrema.argsort(kind='mergesort')
+            extrema = extrema[sortidcs]
+            amps = amps[sortidcs]
+            # remove NANs that have eventually been appended in case of odd
+            # number of extrema (see save_peaks)
+            extrema = extrema[~np.isnan(extrema)]
+            amps = amps[~np.isnan(amps)]
+            # convert extrema from seconds to samples
+            extrema = np.rint(extrema * self._model.sfreq)
+            # convert to biopeaks array format
+            self._model.peaks = np.column_stack((extrema, amps)).astype(int)
+
     def find_peaks(self):
         if self._model.loaded:
             if self._model.peaks is None:
@@ -295,19 +304,25 @@ class Controller(QObject):
             # work on local copy of extrema to avoid call to plotting
             # function
             extrema = np.delete(self._model.peaks, removeext, axis=0)
+            # pad extrema with NAN in order to simulate equal number of peaks
+            # and troughs if needed
+            if np.remainder(extrema.shape[0], 2) != 0:
+                padding = np.ndarray((1, 2))
+                padding.fill(np.nan)
+                extrema = np.append(extrema, padding, axis=0)
             # determine if series starts with peak or trough to be able
             # to save peaks and troughs separately (as well as the
             # corresponding amplitudes)
             if extrema[0, 1] > extrema[1, 1]:
-                peaks = extrema[0:-3:2, 0]
-                troughs = extrema[1:-2:2, 0]
-                amppeaks = extrema[0:-3:2, 1]
-                amptroughs = extrema[1:-2:2, 1]
+                peaks = extrema[0:-1:2, 0]
+                troughs = extrema[1::2, 0]
+                amppeaks = extrema[0:-1:2, 1]
+                amptroughs = extrema[1::2, 1]
             elif extrema[0, 1] < extrema[1, 1]:
-                peaks = extrema[1:-2:2, 0]
-                troughs = extrema[0:-3:2, 0]
-                amppeaks = extrema[1:-2:2, 1]
-                amptroughs = extrema[0:-3:2, 1]
+                peaks = extrema[1::2, 0]
+                troughs = extrema[0:-1:2, 0]
+                amppeaks = extrema[1::2, 1]
+                amptroughs = extrema[0:-1:2, 1]
             # make sure extrema are float: IMPORTANT, if seconds are
             # saved as int, rounding errors (i.e. misplaced peaks) occur
             savearray = np.column_stack((peaks / self._model.sfreq,
@@ -317,7 +332,7 @@ class Controller(QObject):
             savearray = pd.DataFrame(savearray)
             savearray.to_csv(self.wpathpeaks, index=False,
                              header=['peaks', 'troughs',
-                                     'amppeaks', 'amptroughs'])
+                                     'amppeaks', 'amptroughs'], na_rep='nan')
     
     def get_wpathsignal(self):
         if self._model.loaded:
