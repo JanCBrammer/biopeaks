@@ -220,8 +220,8 @@ class Controller(QObject):
             sortidcs = extrema.argsort(kind='mergesort')
             extrema = extrema[sortidcs]
             amps = amps[sortidcs]
-            # remove NANs that have eventually been appended in case of odd
-            # number of extrema (see save_peaks)
+            # remove NANs that may have been appended in case of odd number of
+            # extrema (see save_peaks)
             extrema = extrema[~np.isnan(extrema)]
             amps = amps[~np.isnan(amps)]
             # convert extrema from seconds to samples
@@ -384,28 +384,31 @@ class Controller(QObject):
             # reset model before reading new dataset
             self._model.reset()
             self.read_chan(fpath, chantype='signal')
-            # wait for plotting to be done, otherwise processing of the next
-            # file gets initiated before plotting of the current file has
-            # finished
-            self.mutex.lock()
-            self.plot_signal_finished.wait(self.mutex)
-            self.mutex.unlock()
-            
-            self.find_peaks()
-            # wait for plotting to be done, otherwise processing of the next
-            # file gets initiated before plotting of the current file has
-            # finished
-            self.mutex.lock()
-            self.plot_peaks_finished.wait(self.mutex)
-            self.mutex.unlock()
-            
-            # save peaks to self.wpathpeaks with "<fname>_peaks" ending
-            _, fname = os.path.split(fpath)
-            fpartname, _ = os.path.splitext(fname)
-            self.wpathpeaks = os.path.join(self.wdirpeaks,
-                                           '{}{}'.format(fpartname,
-                                            '_peaks.csv'))
-            self.save_peaks()
+            # in case the file cannot be loaded successfully (e.g., wrong
+            # format or non-existing channel), move on to next file
+            if self._model.loaded:
+                # wait for plotting to be done, otherwise processing of the 
+                # next file gets initiated before plotting of the current file
+                # has finished
+                self.mutex.lock()
+                self.plot_signal_finished.wait(self.mutex)
+                self.mutex.unlock()
+                
+                self.find_peaks()
+                # wait for plotting to be done, otherwise processing of the 
+                # next file gets initiated before plotting of the current file
+                # has finished
+                self.mutex.lock()
+                self.plot_peaks_finished.wait(self.mutex)
+                self.mutex.unlock()
+                
+                # save peaks to self.wpathpeaks with "<fname>_peaks" ending
+                _, fname = os.path.split(fpath)
+                fpartname, _ = os.path.splitext(fname)
+                self.wpathpeaks = os.path.join(self.wdirpeaks,
+                                               '{}{}'.format(fpartname,
+                                                '_peaks.csv'))
+                self.save_peaks()
         
     def threader(self, status, fn, **kwargs):
         # note that the worker's signal must be connected to the controller's 
