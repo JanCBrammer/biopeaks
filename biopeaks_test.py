@@ -59,6 +59,7 @@ class TestApplication(QApplication):
         self._view = View(self._model, self._controller)
         self._tests = Tests(self._model, self._view, self._controller)
         self._view.show()
+        
         self._tests.single_file(modality='ECG',
                                 sigchan='A1',
                                 markerchan='A2',
@@ -69,6 +70,17 @@ class TestApplication(QApplication):
                                 siglen=7925550,
                                 peaklen=66,
                                 segment=[1, 60])
+        
+        self._tests.single_file(modality='RESP',
+                                sigchan='RESP',
+                                markerchan='I1',
+                                mode='single file',
+                                sigpathorig='RESP_testdata.txt',
+                                sigpathseg='RESP_testdata_segmented.txt',
+                                peakpath='RESP_testdata_segmented_peaks.txt',
+                                siglen=210150,
+                                peaklen=53,
+                                segment=[1, 150])
         
         
 class MockKeyEvent(object):
@@ -172,7 +184,7 @@ class Tests:
                                   fn=self._controller.find_peaks)
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
-        assert np.size(self._model.peaks) == peaklen, 'failed to find peaks'
+        assert self._model.peaks.shape[0] == peaklen, 'failed to find peaks'
         print('found peaks successfully')
         
         # 7. edit peaks
@@ -221,7 +233,8 @@ class Tests:
                                   chantype='signal')
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
-        assert np.size(self._model.signal) == siglenseg, 'failed to load signal'
+        assert np.size(self._model.signal) == siglenseg, \
+                'failed to load signal'
         print('re-loaded signal successfully')
         
         # 10. load peaks found for segmented signal
@@ -229,8 +242,17 @@ class Tests:
         self._controller.rpathpeaks = peakpath
         self._controller.threader(status='loading peaks',
                                   fn=self._controller.read_peaks)
-        assert np.size(self._model.peaks) == peaklen, 'failed to re-load peaks'
+        self.wait_for_signal(self._model.progress_changed, 1)
+        QTest.qWait(2000)
+        assert self._model.peaks.shape[0] == peaklen, 'failed to re-load peaks'
         print('re-loaded peaks successfully')
+        
+        # clean-up in case consecutive test are executed
+        # reset model
+        self._model.reset()
+        # disable editing
+        QTest.mouseClick(self._view.editcheckbox, Qt.LeftButton)
+        
         
     def batch_file(self):
         pass
