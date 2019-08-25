@@ -28,8 +28,9 @@ class Model(QObject):
     def signal(self, value):
         self._signal = value
         # check if attribute is reset to None, in that case do not emit its
-        # signal
-        if value is not None:
+        # signal, also do not emit signal if plotting is not desired (e.g.,
+        # during batch processing)
+        if value is not None and self.plotting:
             self.signal_changed.emit()
         
     @property
@@ -39,7 +40,7 @@ class Model(QObject):
     @peaks.setter
     def peaks(self, value):
         self._peaks = value
-        if value is not None:
+        if value is not None and self.plotting:
             self.peaks_changed.emit()
         
     @property
@@ -102,7 +103,7 @@ class Model(QObject):
         
     def __init__(self):
         super().__init__()
-
+        
         self._signal = None
         self._peaks = None
         self._sec = None
@@ -113,6 +114,7 @@ class Model(QObject):
         self._progress = None
         self.sfreq = None
         self.loaded = False
+        self.plotting = True
         self.signalchan = None
         self.markerchan = None
         
@@ -127,6 +129,6 @@ class Model(QObject):
         self._progress = None
         self.sfreq = None
         self.loaded = False
-        # don't reset channels
+        # don't reset channels and plotting
         self.model_reset.emit()
         

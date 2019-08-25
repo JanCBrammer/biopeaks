@@ -15,8 +15,7 @@ from shutil import copyfile
 from ecg_offline import peaks_ecg
 from ppg_offline import peaks_ppg
 from resp_offline import extrema_resp
-from PyQt5.QtCore import (QObject, QRunnable, QThreadPool, QWaitCondition,
-                          QMutex, pyqtSignal)
+from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
 
 peakfuncs = {'ECG': peaks_ecg,
@@ -28,7 +27,7 @@ peakfuncs = {'ECG': peaks_ecg,
 class WorkerSignals(QObject):
     
     progress = pyqtSignal(int)
-    
+
     
 class Worker(QRunnable):
     
@@ -44,6 +43,19 @@ class Worker(QRunnable):
         self.signals.progress.emit(1)
         
         
+class BatchWorker(QRunnable):
+    
+    def __init__(self, model, controller):
+        super(BatchWorker, self).__init__()
+        self._model = model
+        self._controller = controller
+        self.signals = WorkerSignals()
+        
+    def run(self):
+        
+                self.signals.progress.emit(1)
+        
+        
 class Controller(QObject):
     
     def __init__(self, model):
@@ -52,9 +64,6 @@ class Controller(QObject):
         self._model = model
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
-        self.mutex = QMutex()
-        self.plot_signal_finished = QWaitCondition()
-        self.plot_peaks_finished = QWaitCondition()
         
         self.fpaths = None
         self.wpathpeaks = None
@@ -146,7 +155,7 @@ class Controller(QObject):
                             # otherwise plotting behaves unexpectadly (since 
                             # plotting is triggered as soon as signal changes)
                             self._model.sec = sec
-                            self._model.signal= np.ravel(data) 
+                            self._model.signal = np.ravel(data)
                             self._model.sfreq = sfreq
                             self._model.loaded = True
                         elif chantype == 'markers':
@@ -378,8 +387,14 @@ class Controller(QObject):
                                                               'for saving '
                                                               'the peaks',
                                                               '\home')
-            
-    def batch_constructor(self):
+        
+    def batch_processor(self):
+        # disable plotting during batch processing, since matplotlib cannot
+        # update the canvas fast enough when multiple plotting operations must
+        # be executed in rapid succession (i.e., when small files are
+        # processed); the user can still get an impression of the progress
+        # since the current file path is displayed
+        self._model.plotting = False
         for fpath in self.fpaths:
             # reset model before reading new dataset
             self._model.reset()
@@ -387,21 +402,9 @@ class Controller(QObject):
             # in case the file cannot be loaded successfully (e.g., wrong
             # format or non-existing channel), move on to next file
             if self._model.loaded:
-                # wait for plotting to be done, otherwise processing of the 
-                # next file gets initiated before plotting of the current file
-                # has finished
-                self.mutex.lock()
-                self.plot_signal_finished.wait(self.mutex)
-                self.mutex.unlock()
-                
+                 
                 self.find_peaks()
-                # wait for plotting to be done, otherwise processing of the 
-                # next file gets initiated before plotting of the current file
-                # has finished
-                self.mutex.lock()
-                self.plot_peaks_finished.wait(self.mutex)
-                self.mutex.unlock()
-                
+
                 # save peaks to self.wpathpeaks with "<fname>_peaks" ending
                 _, fname = os.path.split(fpath)
                 fpartname, _ = os.path.splitext(fname)
@@ -409,7 +412,9 @@ class Controller(QObject):
                                                '{}{}'.format(fpartname,
                                                 '_peaks.csv'))
                 self.save_peaks()
-        
+        # enable plotting again once the batch is done
+        self._model.plotting = True
+    
     def threader(self, status, fn, **kwargs):
         # note that the worker's signal must be connected to the controller's 
         # method each time a new worker is instantiated
@@ -456,4 +461,4 @@ class Controller(QObject):
                     self._model.status = 'invalid selection {}'.format(values)
             else:
                 self._model.status = 'invalid selection {}'.format(values)
-                    
+            
