@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                              QVBoxLayout, QHBoxLayout, QCheckBox,
                              QLabel, QStatusBar, QGroupBox, QDockWidget,
                              QLineEdit, QFormLayout, QPushButton, QProgressBar)
-from PyQt5.QtCore import Qt, QSignalMapper, QRegExp, pyqtSignal
+from PyQt5.QtCore import (Qt, QSignalMapper, QRegExp, pyqtSignal)
 from PyQt5.QtGui import QIcon, QRegExpValidator
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
@@ -21,8 +21,8 @@ class CustomNavigationToolbar(NavigationToolbar):
     # only retain desired functionality of navitoolbar
     toolitems = [t for t in NavigationToolbar.toolitems if t[0] in
                  ('Home', 'Pan', 'Zoom', 'Back', 'Forward')]
-    
-    
+        
+        
 class View(QMainWindow):
     
     # define costum signals here, since "they must be part of the class
@@ -36,7 +36,8 @@ class View(QMainWindow):
         self._model = model
         self._controller = controller
         self.segmentcursor = False
-                
+        
+                        
         #################################################################
         # define GUI layout and connect input widgets to external slots #
         #################################################################
@@ -285,8 +286,8 @@ class View(QMainWindow):
     ###########
     # methods #
     ###########
+
     def plot_signal(self):
-        print("plot_signal listening")
         self.ax0.clear()
         self.ax0.relim()
         self.ax1.clear()
@@ -296,12 +297,10 @@ class View(QMainWindow):
                                   zorder=1)
         self.ax0.set_xlabel('seconds', fontsize='large', fontweight='heavy')
         self.canvas.draw()
+        print("plot_signal listening")
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
-        # a running batch processing thread will listen to this
-        self._controller.plot_signal_finished.wakeOne()
 
     def plot_peaks(self):
-        print("plot_peaks listening")
         # self.scat is listed in ax.collections
         if self.ax0.collections:
             self.ax0.collections[0].remove()
@@ -311,9 +310,8 @@ class View(QMainWindow):
                                                         c='m',
                                                         zorder=2)
         self.canvas.draw()
+        print("plot_peaks listening")
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
-        # a running batch processing thread will listen to this
-        self._controller.plot_peaks_finished.wakeOne()
 
     def plot_segment(self):
         # self.segementspan is listed in ax.patches
@@ -329,8 +327,6 @@ class View(QMainWindow):
         
     def dock_markers(self, value):
         if value == 1:
-#            # check if markers have correct size
-#            if self._model.markers.size == self._model.sec.size:
             # manually restore home view to avoid corrupted scale in 
             # marker channel plot
             self.navitools.home()
