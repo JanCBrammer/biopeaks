@@ -49,7 +49,6 @@ from model import Model
 from view import View
 from controller import Controller
 
-
 class TestApplication(QApplication):
     def __init__(self, sys_argv):
         super(TestApplication, self).__init__(sys_argv)
@@ -60,27 +59,40 @@ class TestApplication(QApplication):
         self._tests = Tests(self._model, self._view, self._controller)
         self._view.show()
         
+        # single file with ECG data
         self._tests.single_file(modality='ECG',
                                 sigchan='A1',
                                 markerchan='A2',
                                 mode='single file',
                                 sigpathorig='ECG_testdata_long.txt',
                                 sigpathseg='ECG_testdata_long_segmented.txt',
-                                peakpath='ECG_testdata_long_segmented_peaks.txt',
+                                peakpath='ECG_testdata_long_segmented_peaks.csv',
                                 siglen=7925550,
                                 peaklen=66,
                                 segment=[1, 60])
         
+        # single file with breathing data
         self._tests.single_file(modality='RESP',
                                 sigchan='RESP',
                                 markerchan='I1',
                                 mode='single file',
                                 sigpathorig='RESP_testdata.txt',
                                 sigpathseg='RESP_testdata_segmented.txt',
-                                peakpath='RESP_testdata_segmented_peaks.txt',
+                                peakpath='RESP_testdata_segmented_peaks.csv',
                                 siglen=210150,
                                 peaklen=53,
                                 segment=[1, 150])
+        
+        # batch processing with ECG data
+        sigpaths = ['montage1A.txt', 'montage1J.txt', 'montage2A.txt',
+                    'montage2J.txt', 'montage3A.txt', 'montage3J.txt']
+        peaklens = [313, 314, 266, 313, 304, 312]
+        self._tests.batch_file(modality='ECG',
+                               sigchan='ECG',
+                               mode='multiple files',
+                               sigpaths=sigpaths,
+                               peakdir=os.getcwd(),
+                               peaklens=peaklens)
         
         
 class MockKeyEvent(object):
@@ -106,14 +118,17 @@ class Tests:
         if value == None:
             spy.wait()
         else:
-            while True:
+            # wait for x*5 seconds (spy.wait() loops for 5 seconds)
+            for i in range(4):
                 # if a signal can emit different values, the while loop runs
                 # until the signal emits the desired value; every emitted value
                 # is appended to spy (last value is most recently emitted one)
                 spy.wait()
-#                print(len(spy), spy[-1][0])
+                print(len(spy), spy[-1][0])
                 if spy[-1][0] == value:
+                    print('break spy')
                     break
+                
         
     def single_file(self, modality, sigchan, markerchan, mode, sigpathorig,
                     sigpathseg, peakpath, siglen, peaklen, segment):
@@ -253,10 +268,54 @@ class Tests:
         # disable editing
         QTest.mouseClick(self._view.editcheckbox, Qt.LeftButton)
         
+        # remove all files that have been saved during the test
+        os.remove('./'+peakpath)
+        os.remove('./'+sigpathseg)
         
-    def batch_file(self):
-        pass
+        
+    def batch_file(self, modality, sigchan, mode, sigpaths, peakdir,
+                   peaklens):
+        
+        # 1. set options and set paths
+        ##############################
+        QTest.keyClicks(self._view.modmenu, modality)
+        QTest.keyClicks(self._view.sigchanmenu, sigchan)
+        QTest.keyClicks(self._view.batchmenu, mode)
+        self._controller.fpaths = sigpaths
+        self._controller.wdirpeaks = peakdir
+        
+        # 2. process batch
+        ##################
+        self._controller.threader(status='processing files',
+                                  fn=self._controller.batch_processor)
+        self.wait_for_signal(self._model.progress_changed, 1)
 
+
+        # 3. check peaks
+        ################
+        # load each peak file saved during batch processing and assess if
+        # peaks have been identified correctly
+        for sigpath, peaklen in zip(sigpaths, peaklens):
+            # load signal
+            self._controller.threader(status='loading file',
+                                      fn=self._controller.read_chan,
+                                      path=sigpath,
+                                      chantype='signal')
+            self.wait_for_signal(self._model.progress_changed, 1)
+            # load peaks
+            _, fname = os.path.split(sigpath)
+            fpartname, _ = os.path.splitext(fname)
+            self._controller.rpathpeaks = fpartname + '_peaks.csv'
+            self._controller.threader(status='loading peaks',
+                                      fn=self._controller.read_peaks)
+            self.wait_for_signal(self._model.progress_changed, 1)
+            assert self._model.peaks.shape[0] == peaklen, \
+                    'failed to re-load peaks'
+            print('loaded peaks for {} successfully'.format(sigpath))
+            
+            # remove all files that have been saved during the test
+            os.remove(self._controller.rpathpeaks)
+            
 
 if __name__ == '__main__':
     app = TestApplication(sys.argv)
