@@ -292,6 +292,7 @@ class View(QMainWindow):
         self.ax0.relim()
         self.ax1.clear()
         self.ax1.relim()
+        # reset navitools history
         self.navitools.update()
         self.line = self.ax0.plot(self._model.sec, self._model.signal,
                                   zorder=1)
@@ -333,6 +334,8 @@ class View(QMainWindow):
             self.ax1.clear()
             self.markers = self.ax1.plot(self._model.sec,
                                          self._model.markers)
+            # reset navitools history
+            self.navitools.update()
         elif value == 0:
             # reset markers, otherwise they are replotted, e.g. after
             # segmentation of the signal
