@@ -61,27 +61,27 @@ class TestApplication(QApplication):
         
         # single file with ECG data
         self._tests.single_file(modality='ECG',
-                                sigchan='A1',
-                                markerchan='A2',
+                                sigchan='ECG',
+                                markerchan='I1',
                                 mode='single file',
-                                sigpathorig='ECG_testdata_long.txt',
-                                sigpathseg='ECG_testdata_long_segmented.txt',
-                                peakpath='ECG_testdata_long_segmented_peaks.csv',
-                                siglen=7925550,
-                                peaklen=66,
-                                segment=[1, 60])
+                                sigpathorig='testdata.txt',
+                                sigpathseg='testdatasegmented.txt',
+                                peakpath='testdata_segmented_peaks.csv',
+                                siglen=5100000,
+                                peaklen=92,
+                                segment=[760, 860])
         
         # single file with breathing data
         self._tests.single_file(modality='RESP',
                                 sigchan='RESP',
                                 markerchan='I1',
                                 mode='single file',
-                                sigpathorig='RESP_testdata.txt',
-                                sigpathseg='RESP_testdata_segmented.txt',
-                                peakpath='RESP_testdata_segmented_peaks.csv',
-                                siglen=210150,
-                                peaklen=53,
-                                segment=[1, 150])
+                                sigpathorig='testdata.txt',
+                                sigpathseg='testdata_segmented.txt',
+                                peakpath='testdata_segmented_peaks.csv',
+                                siglen=5100000,
+                                peaklen=108,
+                                segment=[3200, 3400])
         
         # batch processing with ECG data
         sigpaths = ['montage1A.txt', 'montage1J.txt', 'montage2A.txt',
@@ -199,6 +199,7 @@ class Tests:
                                   fn=self._controller.find_peaks)
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
+        print(self._model.peaks.shape[0])
         assert self._model.peaks.shape[0] == peaklen, 'failed to find peaks'
         print('found peaks successfully')
         
@@ -226,7 +227,7 @@ class Tests:
         # case of a flat peak, hence discrepancies of a few msecs can arise;
         # set tolerance for deviation of re-inserted peak to 10 msec
         assert abs(self._model.peaks[0][0] / self._model.sfreq - 
-                   demopeak) <= 0.010, 'failed to re-insert first peak'
+                   demopeak) <= 0.015, 'failed to re-insert first peak'
         print('re-inserted first peaks successfully')
         
         # 8. save peaks
