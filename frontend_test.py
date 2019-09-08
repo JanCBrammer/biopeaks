@@ -29,14 +29,6 @@ The tests will be restricted to a few typical, meaningful workflows (i.e.,
 sequences of function calls), since testing all possible workflows is
 unfeasible and for a majority of workflows meaningless (e.g., saving peaks
 before finding peaks etc.)
-
-what's the correct level of granularity? check outcome of each step of a
-workflow, or only the end result of a workflow?
-	try and check outcome of every step
-
-how to assert correctness / passing of tests? what is the criterion?
-	assert correctness based on model attributes, e.g., make sure that the
-	signal is of a certain length
 '''
 
 import sys
@@ -124,9 +116,8 @@ class Tests:
                 # until the signal emits the desired value; every emitted value
                 # is appended to spy (last value is most recently emitted one)
                 spy.wait()
-                print(len(spy), spy[-1][0])
+#                print(len(spy), spy[-1][0])
                 if spy[-1][0] == value:
-                    print('break spy')
                     break
                 
         
