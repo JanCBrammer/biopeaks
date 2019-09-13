@@ -8,7 +8,7 @@ Created on Fri Jan 18 11:01:04 2019
 import numpy as np
 import matplotlib.pyplot as plt
 from filters import butter_highpass_filter
-from scipy.signal import peak_prominences, find_peaks
+from scipy.signal import find_peaks
 
 def moving_average(signal, window_size):
     
@@ -28,8 +28,8 @@ def peaks_ecg(signal, sfreq, enable_plot=False):
     grad = np.gradient(filt)
     absgrad = np.abs(grad)
     smoothgrad = moving_average(absgrad, int(np.rint(0.125 * sfreq)))
-    avggrad = moving_average(smoothgrad, int(np.rint(3 * sfreq)) )
-    gradthreshold = 1.75 * avggrad
+    avggrad = moving_average(smoothgrad, int(np.rint(1 * sfreq)))
+    gradthreshold = 1.5 * avggrad
     
     # visualize thresholding
     if enable_plot is True:
@@ -44,7 +44,7 @@ def peaks_ecg(signal, sfreq, enable_plot=False):
     # throw out QRS-ends that precede first QRS-start
     end_qrs = end_qrs[end_qrs > beg_qrs[0]]
     
-    # identify R-peaks within QRS (ignore QRS that are too short)
+    # identify R-peaks within QRS (ignore QRS that are too short
     num_qrs = min(beg_qrs.size, end_qrs.size)
     min_len = np.mean(end_qrs[:num_qrs] - beg_qrs[:num_qrs]) * 0.4
     peaks = []
@@ -53,17 +53,19 @@ def peaks_ecg(signal, sfreq, enable_plot=False):
         
         beg = beg_qrs[i]
         end = end_qrs[i]
+        len_qrs = end - beg
                 
-        if (end - beg) > min_len:
+        if len_qrs > min_len:
             
             # visualize QRS intervals
             if enable_plot is True:
                 ax2.axvspan(beg, end, facecolor='m', alpha=0.5)
             
             data = filt[beg:end]
-            locmax, promax = find_peaks(data, prominence=0)
-            locmin, promin = find_peaks(data * -1, prominence=0)
+            locmax, _ = find_peaks(data)
+            locmin, _ = find_peaks(data * -1)
             extrema = np.concatenate((locmax, locmin))
+            extrema.sort(kind='mergesort')
             
             if extrema.size > 0:
                 peakidx = np.argmax(np.square(data[extrema]))
@@ -72,17 +74,6 @@ def peaks_ecg(signal, sfreq, enable_plot=False):
             
     if enable_plot is True:
         ax1.scatter(np.arange(filt.size)[peaks], filt[peaks], c='r')
-            
-        
-#    # weed out potential false positives by applying a prominence threshold
-#    proms = peak_prominences(np.square(filt), peaks)[0]
-#    q1, q3 = np.percentile(proms, [25, 75])
-#    iqr = q3 - q1
-#    lower_bound = q1 - (1.5 * iqr) 
-#    retain_idcs = np.where(proms > lower_bound)[0]
-#            
-#    peaks = np.asarray(peaks)
-#    peaks = peaks[retain_idcs]
 
     # prepare data for handling in biopeaks gui (must be ndarray to allow
     # homogeneous handling with respiratory data)
@@ -91,4 +82,4 @@ def peaks_ecg(signal, sfreq, enable_plot=False):
     returnarray = returnarray.astype(int)
 
     return returnarray
-        
+
