@@ -78,7 +78,7 @@ class TestApplication(QApplication):
         # batch processing with ECG data
         sigpaths = ['montage1A.txt', 'montage1J.txt', 'montage2A.txt',
                     'montage2J.txt', 'montage3A.txt', 'montage3J.txt']
-        peaklens = [313, 314, 266, 313, 304, 312]
+        peaklens = [312, 313, 257, 312, 305, 312]
         self._tests.batch_file(modality='ECG',
                                sigchan='ECG',
                                mode='multiple files',
@@ -190,7 +190,6 @@ class Tests:
                                   fn=self._controller.find_peaks)
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
-        print(self._model.peaks.shape[0])
         assert self._model.peaks.shape[0] == peaklen, 'failed to find peaks'
         print('found peaks successfully')
         
