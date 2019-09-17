@@ -13,13 +13,11 @@ from scipy.signal import find_peaks
 from itertools import islice
 from shutil import copyfile
 from ecg_offline import peaks_ecg
-from ppg_offline import peaks_ppg
 from resp_offline import extrema_resp
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
 
 peakfuncs = {'ECG': peaks_ecg,
-             'PPG': peaks_ppg,
              'RESP': extrema_resp}
 
 # threading is implemented according to https://pythonguis.com/courses/
@@ -41,19 +39,6 @@ class Worker(QRunnable):
         self.signals.progress.emit(0)
         self.fn(**self.kwargs)
         self.signals.progress.emit(1)
-        
-        
-class BatchWorker(QRunnable):
-    
-    def __init__(self, model, controller):
-        super(BatchWorker, self).__init__()
-        self._model = model
-        self._controller = controller
-        self.signals = WorkerSignals()
-        
-    def run(self):
-        
-                self.signals.progress.emit(1)
         
         
 class Controller(QObject):
@@ -85,7 +70,7 @@ class Controller(QObject):
                 self.get_wpathpeaks()
                 if self.wdirpeaks:
                     self.threader(status='processing files',
-                                  fn=self.batch_constructor)
+                                  fn=self.batch_processor)
             elif self.batchmode == 'single file' and len(self.fpaths) == 1:
                 self._model.reset()
                 self.threader(status='loading file', fn=self.read_chan,
@@ -150,7 +135,7 @@ class Controller(QObject):
                         if chantype == 'signal':
                             datalen = data.size
                             sec = np.linspace(0, datalen / sfreq, datalen)
-                            self._model.rpathsignal = path
+                            _, self._model.rpathsignal = os.path.split(path)
                             # important to set seconds PRIOR TO signal,
                             # otherwise plotting behaves unexpectadly (since 
                             # plotting is triggered as soon as signal changes)
