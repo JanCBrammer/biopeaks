@@ -13,6 +13,7 @@ class Model(QObject):
     # costum signals
     signal_changed = pyqtSignal()
     peaks_changed = pyqtSignal()
+    rrinterp_changed = pyqtSignal()
     markers_changed = pyqtSignal(int)
     path_changed = pyqtSignal()
     segment_changed = pyqtSignal()
@@ -42,6 +43,24 @@ class Model(QObject):
         self._peaks = value
         if value is not None and self.plotting:
             self.peaks_changed.emit()
+            
+    @property
+    def rr(self):
+        return self._rr
+
+    @rr.setter
+    def rr(self, value):
+        self._rr = value
+        
+    @property
+    def rrinterp(self):
+        return self._rrinterp
+
+    @rrinterp.setter
+    def rrinterp(self, value):
+        self._rr_interp = value
+        if value is not None and self.plotting:
+            self.rrinterp_changed.emit()
         
     @property
     def sec(self):
@@ -106,6 +125,8 @@ class Model(QObject):
         
         self._signal = None
         self._peaks = None
+        self._rr = None
+        self._rrinterp = None
         self._sec = None
         self._markers = None
         self._segment = None
@@ -121,6 +142,8 @@ class Model(QObject):
     def reset(self):
         self._signal = None
         self._peaks = None
+        self._rr = None
+        self._rrinterp = None
         self._sec = None
         self._markers = None
         self._segment = None

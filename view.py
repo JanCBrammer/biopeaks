@@ -25,9 +25,9 @@ class CustomNavigationToolbar(NavigationToolbar):
         
 class View(QMainWindow):
     
-    # define costum signals here, since "they must be part of the class
+    # define costum signals here, since they must be part of the class
     # definition and cannot be dynamically added as class attributes after
-    # the class has been defined "
+    # the class has been defined
     segment_updated = pyqtSignal(object)
 
     def __init__(self, model, controller):
@@ -50,15 +50,20 @@ class View(QMainWindow):
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
         # axes for signal
-        self.ax0 = self.figure.add_axes([0.05, .4, .9, .55])
+        self.ax0 = self.figure.add_axes([.05, .55, .9, .4])
         self.ax0.get_yaxis().set_visible(False)
         self.ax0.set_frame_on(False)
         # axes for markers docked below signal axes
-        self.ax1 = self.figure.add_axes([.05, .05, .9, .3],
+        self.ax1 = self.figure.add_axes([.05, .275, .9, .225],
                                         sharex=self.ax0)
         self.ax1.set_frame_on(False)
         self.ax1.get_xaxis().set_visible(False)
         self.ax1.get_yaxis().set_visible(False)
+        # axes for rate or amplitude docked below markers
+        self.ax2 = self.figure.add_axes([.05, .05, .9, .225],
+                                        sharex=self.ax0)
+        self.ax2.set_frame_on(False)
+        self.ax2.get_xaxis().set_visible(False)
         self.navitools = CustomNavigationToolbar(self.canvas, self)
         
         # peak editing
@@ -225,7 +230,18 @@ class View(QMainWindow):
 
         loadPeaks = QAction('load', self)
         loadPeaks.triggered.connect(self._controller.get_rpathpeaks)
-        peakmenu.addAction(loadPeaks) 
+        peakmenu.addAction(loadPeaks)
+        
+        # analysis menu
+        analyzemenu = menubar.addMenu('analysis')
+        
+        rate = QAction('rate', self)
+        rate.triggered.connect(self._controller.calculate_rate)
+        analyzemenu.addAction(rate)
+        
+        breathamp = QAction('breathing amplitude', self)
+        breathamp.triggered.connect(self._controller.calculate_breathamp)
+        analyzemenu.addAction(breathamp)
         
         # set up status bar to display error messages and current file path
         self.statusBar = QStatusBar()
@@ -276,6 +292,7 @@ class View(QMainWindow):
         ##############################################
         self._model.signal_changed.connect(self.plot_signal)
         self._model.peaks_changed.connect(self.plot_peaks)
+        self._model.rrinterp_changed.connect(self.plot_stats)
         self._model.markers_changed.connect(self.dock_markers)
         self._model.path_changed.connect(self.display_path)
         self._model.segment_changed.connect(self.plot_segment)
@@ -325,6 +342,9 @@ class View(QMainWindow):
         self.canvas.draw()
         self.confirmedit.setEnabled(True)
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
+        
+    def plot_stats(self):
+        pass
         
     def dock_markers(self, value):
         if value == 1:

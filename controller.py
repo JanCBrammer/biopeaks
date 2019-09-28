@@ -14,6 +14,7 @@ from itertools import islice
 from shutil import copyfile
 from ecg_offline import peaks_ecg
 from resp_offline import extrema_resp
+from analysis_utils import get_rr, interp_rr
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
 
@@ -23,12 +24,12 @@ peakfuncs = {'ECG': peaks_ecg,
 # threading is implemented according to https://pythonguis.com/courses/
 # multithreading-pyqt-applications-qthreadpool/complete-example/
 class WorkerSignals(QObject):
-    
+
     progress = pyqtSignal(int)
 
-    
+
 class Worker(QRunnable):
-    
+
     def __init__(self, fn, **kwargs):
         super(Worker, self).__init__()
         self.fn = fn
@@ -39,17 +40,17 @@ class Worker(QRunnable):
         self.signals.progress.emit(0)
         self.fn(**self.kwargs)
         self.signals.progress.emit(1)
-        
-        
+
+
 class Controller(QObject):
-    
+
     def __init__(self, model):
         super().__init__()
 
         self._model = model
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
-        
+
         self.fpaths = None
         self.wpathpeaks = None
         self.wdirpeaks = None
@@ -58,7 +59,7 @@ class Controller(QObject):
         self.batchmode = None
         self.modality = None
         self.peakseditable = False
-                
+
     ###########
     # methods #
     ###########
@@ -75,7 +76,7 @@ class Controller(QObject):
                 self._model.reset()
                 self.threader(status='loading file', fn=self.read_chan,
                               path=self.fpaths[0], chantype='signal')
-                
+
     def open_markers(self):
         if self.batchmode == 'single file':
             # only read markerss from file if file has been loaded and signal
@@ -85,73 +86,73 @@ class Controller(QObject):
                               path=self._model.rpathsignal, chantype='markers')
             else:
                 self._model.status = 'error: no data available'
-    
+
     def read_chan(self, path, chantype):
         _, self.file_extension = os.path.splitext(path)
-        if self.file_extension == '.txt':
-            # open file and check if it's encoded in OpenSignals format
-            with open(path, 'r') as f:
-                # read first line and check if user provided an OpenSignals
-                # file
-                if 'OpenSignals' in f.readline():
-                    # read second line and convert json header to dict (only
-                    # selects first device / MAC adress)
-                    metadata = json.loads(f.readline()[1:])
-                    metadata = metadata[list(metadata.keys())[0]]
-                    # parse header and extract relevant metadata
-                    sfreq = metadata['sampling rate']
-                    sensors = metadata['sensor']
-                    channels = metadata['channels']
-                    # select channel and load data
-                    if chantype == 'signal':
-                        channel = self._model.signalchan
-                    elif chantype == 'markers':
-                        channel = self._model.markerchan
-                    if channel[0] == 'A':
-                        chanidx = [i for i, s in enumerate(channels)
-                                    if int(channel[1]) == s]
-                    elif channel[0] == 'I':
-                        chanidx = int(channel[1])
-                    else:
-                        # find the index of the sensor that corresponds to the
-                        # selected modality; it doesn't matter if sensor is
-                        # called <modality>BIT or <modality>BITREV
-                        chanidx = [i for i, s in enumerate(sensors)
-                                    if channel in s]
-                    if chanidx:
-                        if channel[0] != 'I':
-                            # select only first sensor of the selected
-                            # modality (it is conceivable that multiple sensors
-                            # of the same kind have been recorded)
-                            chanidx = chanidx[0]
-                            # since analog channels start in column 5 (zero
-                            # based), add 5 to sensor index to obtain signal
-                            # from selected modality
-                            chanidx += 5
-                        # load data with pandas for performance
-                        data = pd.read_csv(path, delimiter='\t',
-                                           usecols=[chanidx], header=None,
-                                           comment='#')
-                        if chantype == 'signal':
-                            datalen = data.size
-                            sec = np.linspace(0, datalen / sfreq, datalen)
-                            _, self._model.rpathsignal = os.path.split(path)
-                            # important to set seconds PRIOR TO signal,
-                            # otherwise plotting behaves unexpectadly (since 
-                            # plotting is triggered as soon as signal changes)
-                            self._model.sec = sec
-                            self._model.signal = np.ravel(data)
-                            self._model.sfreq = sfreq
-                            self._model.loaded = True
-                        elif chantype == 'markers':
-                            self._model.markers = np.ravel(data)
-                    else:
-                        self._model.status = 'error: channel not found'
-                else:
-                    self._model.status = 'error: wrong file format'
-        else:
+        if self.file_extension != '.txt':
             self._model.status = 'error: wrong file format'
-                        
+            return
+        # open file and check if it's encoded in OpenSignals format
+        with open(path, 'r') as f:
+            # read first line and check if user provided an OpenSignals
+            # file
+            if 'OpenSignals' in f.readline():
+                # read second line and convert json header to dict (only
+                # selects first device / MAC adress)
+                metadata = json.loads(f.readline()[1:])
+                metadata = metadata[list(metadata.keys())[0]]
+                # parse header and extract relevant metadata
+                sfreq = metadata['sampling rate']
+                sensors = metadata['sensor']
+                channels = metadata['channels']
+                # select channel and load data
+                if chantype == 'signal':
+                    channel = self._model.signalchan
+                elif chantype == 'markers':
+                    channel = self._model.markerchan
+                if channel[0] == 'A':
+                    chanidx = [i for i, s in enumerate(channels)
+                                if int(channel[1]) == s]
+                elif channel[0] == 'I':
+                    chanidx = int(channel[1])
+                else:
+                    # find the index of the sensor that corresponds to the
+                    # selected modality; it doesn't matter if sensor is
+                    # called <modality>BIT or <modality>BITREV
+                    chanidx = [i for i, s in enumerate(sensors)
+                                if channel in s]
+                if not chanidx:
+                    self._model.status = 'error: channel not found'
+                    return
+                if channel[0] != 'I':
+                    # select only first sensor of the selected
+                    # modality (it is conceivable that multiple sensors
+                    # of the same kind have been recorded)
+                    chanidx = chanidx[0]
+                    # since analog channels start in column 5 (zero
+                    # based), add 5 to sensor index to obtain signal
+                    # from selected modality
+                    chanidx += 5
+                # load data with pandas for performance
+                data = pd.read_csv(path, delimiter='\t', usecols=[chanidx],
+                                   header=None, comment='#')
+                if chantype == 'signal':
+                    datalen = data.size
+                    sec = np.linspace(0, datalen / sfreq, datalen)
+                    _, self._model.rpathsignal = os.path.split(path)
+                    # important to set seconds PRIOR TO signal,
+                    # otherwise plotting behaves unexpectadly (since
+                    # plotting is triggered as soon as signal changes)
+                    self._model.sec = sec
+                    self._model.signal = np.ravel(data)
+                    self._model.sfreq = sfreq
+                    self._model.loaded = True
+                elif chantype == 'markers':
+                    self._model.markers = np.ravel(data)
+            else:
+                self._model.status = 'error: wrong file format'
+           
+
     def segment_signal(self):
         # convert from seconds to samples
         begsamp = int(np.rint(self._model.segment[0] * self._model.sfreq))
@@ -168,7 +169,7 @@ class Controller(QObject):
             self._model.peaks = peaks
         if self._model.markers is not None:
             self._model.markers = self._model.markers[begsamp:endsamp]
-        
+
     def save_signal(self):
         # if the signal has not been segmented, simply copy it to new
         # location
@@ -194,7 +195,7 @@ class Controller(QObject):
                 # then write the data to the new file
                 data.to_csv(newfile, sep='\t', header=False,
                             index=False)
-                
+
     def read_peaks(self):
         dfpeaks = pd.read_csv(self.rpathpeaks)
         if dfpeaks.shape[1] == 1:
@@ -234,54 +235,48 @@ class Controller(QObject):
                 self._model.status = 'error: peaks already in memory'
         else:
             self._model.status = 'error: no data available'
-        
+
     def edit_peaks(self, event):
         # account for the fact that depending on sensor modality, data.peaks
         # has different shapes; preserve ndarrays throughout editing!
-        if self.peakseditable:
-            if self._model.peaks is not None:
-                cursor = int(np.rint(event.xdata * self._model.sfreq))
-                # search peak in a window of 200 msec, centered on selected
-                # x coordinate of cursor position
-                extend = int(np.rint(self._model.sfreq * 0.1))
-                searchrange = np.arange(cursor - extend,
-                                        cursor + extend)
-                if event.key == 'd':
-                    peakidx = np.argmin(np.abs(self._model.peaks[:, 0] -
-                                               cursor))
-                    # only delete peaks that are within search range
-                    if np.any(searchrange == self._model.peaks[peakidx, 0]): 
-                        self._model.peaks = np.delete(self._model.peaks,
-                                                      peakidx, axis=0)
-                elif event.key == 'a':
-                    searchsignal = self._model.signal[searchrange]
-                    # use find_peaks to also detect local extrema that are
-                    # plateaus
-                    locmax, _ = find_peaks(searchsignal)
-                    locmin, _ = find_peaks(searchsignal * -1)
-                    locext = np.concatenate((locmax, locmin))
-                    locext.sort(kind='mergesort')
-                    if locext.size > 0:
-                        peakidx = np.argmin(np.abs(searchrange[locext] -
-                                                   cursor))
-                        newpeak = searchrange[0] + locext[peakidx]
-                        # only add new peak if it doesn't exist already
-                        if np.all(self._model.peaks[:, 0] != newpeak):
-                            insertidx = np.searchsorted(self._model.
-                                                        peaks[:, 0], newpeak)
-                            if self._model.peaks.shape[1] == 1:
-                                insertarr = [newpeak]
-                                self._model.peaks = np.insert(self._model.
-                                                              peaks, insertidx,
-                                                              insertarr,
-                                                              axis=0)
-                            elif self._model.peaks.shape[1] == 2:
-                                insertarr = [newpeak,
-                                             self._model.signal[newpeak]]
-                                self._model.peaks = np.insert(self._model.
-                                                              peaks, insertidx,
-                                                              insertarr,
-                                                              axis=0)
+        if not self.peakseditable:
+            return
+        if self._model.peaks is None:
+            return
+        cursor = int(np.rint(event.xdata * self._model.sfreq))
+        # search peak in a window of 200 msec, centered on selected
+        # x coordinate of cursor position
+        extend = int(np.rint(self._model.sfreq * 0.1))
+        searchrange = np.arange(cursor - extend, cursor + extend)
+        if event.key == 'd':
+            peakidx = np.argmin(np.abs(self._model.peaks[:, 0] - cursor))
+            # only delete peaks that are within search range
+            if np.any(searchrange == self._model.peaks[peakidx, 0]):
+                self._model.peaks = np.delete(self._model.peaks, peakidx,
+                                              axis=0)
+        elif event.key == 'a':
+            searchsignal = self._model.signal[searchrange]
+            # use find_peaks to also detect local extrema that are
+            # plateaus
+            locmax, _ = find_peaks(searchsignal)
+            locmin, _ = find_peaks(searchsignal * -1)
+            locext = np.concatenate((locmax, locmin))
+            locext.sort(kind='mergesort')
+            if locext.size < 1:
+                return
+            peakidx = np.argmin(np.abs(searchrange[locext] - cursor))
+            newpeak = searchrange[0] + locext[peakidx]
+            # only add new peak if it doesn't exist already
+            if np.all(self._model.peaks[:, 0] != newpeak):
+                insertidx = np.searchsorted(self._model.peaks[:, 0], newpeak)
+                if self._model.peaks.shape[1] == 1:
+                    insertarr = [newpeak]
+                    self._model.peaks = np.insert(self._model.peaks, insertidx,
+                                                  insertarr, axis=0)
+                elif self._model.peaks.shape[1] == 2:
+                    insertarr = [newpeak, self._model.signal[newpeak]]
+                    self._model.peaks = np.insert(self._model.peaks, insertidx,
+                                                  insertarr, axis=0)
     def save_peaks(self):
         # save peaks in seconds
         if self._model.peaks.shape[1] == 1:
@@ -321,13 +316,26 @@ class Controller(QObject):
             # saved as int, rounding errors (i.e. misplaced peaks) occur
             savearray = np.column_stack((peaks / self._model.sfreq,
                                          troughs / self._model.sfreq,
-                                         amppeaks,
-                                         amptroughs))
+                                         amppeaks, amptroughs))
             savearray = pd.DataFrame(savearray)
             savearray.to_csv(self.wpathpeaks, index=False,
                              header=['peaks', 'troughs',
                                      'amppeaks', 'amptroughs'], na_rep='nan')
+                    
+    def calculate_rate(self):
+        if self._model.peaks is None:
+            return
+        if self.modality == 'ECG':
+            self._model.peaks, self._model.rr = get_rr(self._model.peaks)
+#            self._model.rrinterp = interp_rr(self._model.rr, interfreq=4)
+#            self._model.hr = get_hrinterp(self._model.rrinterp)
+            
+        elif self.modality == 'RESP':
+            pass
     
+    def calculate_breathamp(self):
+        pass
+
     def get_wpathsignal(self):
         if self._model.loaded:
             self.wpathsignal, _ = QFileDialog.getSaveFileName(None,
@@ -338,7 +346,7 @@ class Controller(QObject):
                 self.threader(status='saving signal', fn=self.save_signal)
         else:
             self._model.status = 'error: no data available'
-            
+
     def get_rpathpeaks(self):
         if self._model.loaded:
             if self._model.peaks is None:
@@ -352,7 +360,7 @@ class Controller(QObject):
                 self._model.status = 'error: peaks already in memory'
         else:
             self._model.status = 'error: no data available'
-            
+
     def get_wpathpeaks(self):
         if self.batchmode == 'single file':
             if self._model.peaks is not None:
@@ -372,7 +380,7 @@ class Controller(QObject):
                                                               'for saving '
                                                               'the peaks',
                                                               '\home')
-        
+
     def batch_processor(self):
         # disable plotting during batch processing, since matplotlib cannot
         # update the canvas fast enough when multiple plotting operations must
@@ -387,7 +395,7 @@ class Controller(QObject):
             # in case the file cannot be loaded successfully (e.g., wrong
             # format or non-existing channel), move on to next file
             if self._model.loaded:
-                 
+
                 self.find_peaks()
 
                 # save peaks to self.wpathpeaks with "<fname>_peaks" ending
@@ -399,36 +407,36 @@ class Controller(QObject):
                 self.save_peaks()
         # enable plotting again once the batch is done
         self._model.plotting = True
-    
+
     def threader(self, status, fn, **kwargs):
-        # note that the worker's signal must be connected to the controller's 
+        # note that the worker's signal must be connected to the controller's
         # method each time a new worker is instantiated
         self._model.status = status
         worker = Worker(fn, **kwargs)
         worker.signals.progress.connect(self.change_progress)
         self.threadpool.start(worker)
-        
+
     def change_progress(self, value):
         self._model.progress = value
-        
+
     def change_modality(self, value):
         self.modality = value
-        
+
     def change_signalchan(self, value):
         self._model.signalchan = value
-        
+
     def change_markerchan(self, value):
         self._model.markerchan = value
-        
+
     def change_batchmode(self, value):
         self.batchmode = value
-        
+
     def change_editable(self, value):
         if value == 2:
             self.peakseditable = True
         elif value == 0:
             self.peakseditable = False
-        
+
     def change_segment(self, values):
         # check if any of the fields is empty
         if values[0] and values[1]:
@@ -446,4 +454,3 @@ class Controller(QObject):
                     self._model.status = 'invalid selection {}'.format(values)
             else:
                 self._model.status = 'invalid selection {}'.format(values)
-            
