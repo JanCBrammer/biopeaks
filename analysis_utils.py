@@ -10,6 +10,7 @@ import numpy as np
 #import matplotlib.pyplot as plt
 from scipy.signal import medfilt
 from scipy.stats import iqr
+from scipy.interpolate import interp1d
 
 
 def threshold_normalization(data, alpha, window_half):
@@ -19,15 +20,12 @@ def threshold_normalization(data, alpha, window_half):
     if data.size <= 2 * wh:
         th[:] = alpha * (iqr(np.abs(data)) / 2)
     else:
-        for i in range(data.size):
-            if i <= wh:
-                th[i] = alpha * (iqr(np.abs(data[:i + wh])) / 2)
-            elif np.logical_and(i > wh, i < data.size - wh):
-                th[i] = alpha * (iqr(np.abs(data[i - wh:i + wh])) / 2)
-            elif i >= (data.size - wh):
-                th[i] = alpha * (iqr(np.abs(data[i - wh:])) / 2)
-    # normalize data by threshold
-    return np.divide(data, th), th
+        data_pad = np.pad(data, wh, 'reflect')
+        for i in np.arange(wh, wh + data.size):
+            th[i - wh] = alpha * (iqr(np.abs(data_pad[i - wh:i + wh])) / 2)     
+    # normalize data by threshold (remove padding)
+    data_th = np.divide(data_pad[wh:wh + data.size], th)
+    return data_th, th
 
 def update_indices(source_idcs, update_idcs, update):
     '''
@@ -44,66 +42,79 @@ def update_indices(source_idcs, update_idcs, update):
 #        print('update_idcs: {}'.format(update_idcs_buffer))
     return update_idcs_buffer
 
+def interp_rr(peaks, rate, nsamp):
+    # interpolate RR over the entire duration of the signal: samples up
+    # until first peak and from last peak to end of signal are assigned the
+    # the mean of all RRs
+    f = interp1d(np.ravel(peaks), rate, kind='cubic',
+                 bounds_error=False, fill_value=([rate[0]], [rate[-1]]))
+    # internally, for consistency in plotting etc., keep original sampling
+    # rate, convert sampling rates during saving
+    samples = np.arange(0, nsamp)
+    rrinterp = f(samples)
+    
+    return rrinterp
+
 '''
 implementation of Jukka A. Lipponen & Mika P. Tarvainen (2019): A robust
 algorithm for heart rate variability time series artefact correction using
 novel beat classification, Journal of Medical Engineering & Technology,
 DOI: 10.1080/03091902.2019.1640306
 '''
-def get_rr(peaks):
+def get_rr(peaks, sfreq, nsamp):
+    
+    peaks = np.ravel(peaks)
 
     # set free parameters
     c1 = 0.13
     c2 = 0.17
     alpha = 5.2
     window_half = 45
-
-    # compute RR series (make sure it has same numer of elements as peaks)
-    rr = np.ediff1d(peaks, to_begin=0)
+    medfilt_order = 11
+    
+    # compute RR series (make sure it has same numer of elements as peaks);
+    # peaks are in samples, convert to seconds
+    rr = np.ediff1d(peaks, to_begin=0) / sfreq
+    # for subsequent analysis it is important that the first element has
+    # a value in a realistic range (e.g., for median filtering)
+    rr[0] = np.mean(rr)
 
     # compute differences of consecutive RRs
     drrs = np.ediff1d(rr, to_begin=0)
+    drrs[0] = np.mean(drrs)
     # normalize by threshold
     drrs, _ = threshold_normalization(drrs, alpha, window_half)
 
+    # pad drrs with one element
+    padding = 2
+    drrs_pad = np.pad(drrs, padding, 'reflect')
     # cast drrs to two-dimesnional subspace s1
     s12 = np.zeros(drrs.size)
-    for d in range(drrs.size):
-
-        if np.logical_and(d > 0, d < drrs.size - 1):
-            if drrs[d] > 0:
-                s12[d] = np.max([drrs[d - 1], drrs[d + 1]])
-            elif drrs[d] < 0:
-                s12[d] = np.min([drrs[d - 1], drrs[d + 1]])
-        elif d == 0:
-            if drrs[d] > 0:
-                s12[d] = np.max(drrs[:d + 1])
-            elif drrs[d] < 0:
-                s12[d] = np.min(drrs[:d + 1])
-        elif d == drrs.size:
-            if drrs[d] > 0:
-                s12[d] = np.max(drrs[d - 1:])
-            elif drrs[d] < 0:
-                s12[d] = np.min(drrs[d - 1:])
+    for d in np.arange(padding, padding + drrs.size):
+        
+        if drrs_pad[d] > 0:
+            s12[d - padding] = np.max([drrs_pad[d - 1], drrs_pad[d + 1]])
+        elif drrs_pad[d] < 0:
+            s12[d - padding] = np.min([drrs_pad[d - 1], drrs_pad[d + 1]])
 
     # cast drrs to two-dimensional subspace s2 (looping over d a second
     # consecutive time is choice to be explicit rather than efficient)
     s22 = np.zeros(drrs.size)
-    for d in range(drrs.size):
+    for d in np.arange(padding, padding + drrs.size):
 
-        if d < drrs.size - 2:
-            if drrs[d] > 0:
-                s22[d] = np.max([drrs[d + 1], drrs[d + 2]])
-            elif drrs[d] < 0:
-                s22[d] = np.min([drrs[d + 1], drrs[d + 2]])
-        elif d >= drrs.size - 2:
-            if drrs[d] > 0:
-                s22[d] = np.max(drrs[d:])
-            elif drrs[d] < 0:
-                s22[d] = np.min(drrs[d:])
-
+        if drrs_pad[d] > 0:
+            s22[d - padding] = np.max([drrs_pad[d + 1], drrs_pad[d + 2]])
+        elif drrs_pad[d] < 0:
+            s22[d - padding] = np.min([drrs_pad[d + 1], drrs_pad[d + 2]])
+        
+        
     # compute deviation of RRs from median RRs
-    medrr = medfilt(rr, 11)
+    # pad RR series before filtering
+    padding = medfilt_order // 2
+    rr_pad = np.pad(rr, padding, 'reflect')
+    medrr = medfilt(rr_pad, medfilt_order)
+    # remove padding
+    medrr = medrr[padding:padding + rr.size]
     mrrs = rr - medrr
     mrrs[mrrs < 0] = mrrs[mrrs < 0] * 2
     # normalize by threshold
@@ -199,12 +210,14 @@ def get_rr(peaks):
     # all other index lists by 1; likewise, for each added beat, increment the
     # indices following that beat in all other lists by 1
 
+    print('before: {}{}'.format(peaks[:5], rr[:5]))
     # delete extra peaks
     if extra_idcs:
         # delete the extra peaks
         peaks = np.delete(peaks, extra_idcs)
         # re-calculate the RR series
-        rr = np.ediff1d(peaks, to_begin=0)
+        rr = np.ediff1d(peaks, to_begin=0) / sfreq
+        print('extra: {}{}'.format(peaks[:5], rr[:5]))
         # update remaining indices
         missed_idcs = update_indices(extra_idcs, missed_idcs, -1)
         etopic_idcs = update_indices(extra_idcs, etopic_idcs, -1)
@@ -214,12 +227,13 @@ def get_rr(peaks):
     if missed_idcs:
         # calculate the position(s) of new beat(s)
         prev_peaks = peaks[[i - 1 for i in missed_idcs]]
-        next_peaks = peaks[[i + 1 for i in missed_idcs]]
+        next_peaks = peaks[missed_idcs]
         added_peaks = prev_peaks + (next_peaks - prev_peaks) / 2
         # add the new peaks
         peaks = np.insert(peaks, missed_idcs, added_peaks)
         # re-calculate the RR series
-        rr = np.ediff1d(peaks, to_begin=0)
+        rr = np.ediff1d(peaks, to_begin=0) / sfreq
+        print('missed: {}{}'.format(peaks[:5], rr[:5]))
         # update remaining indices
         etopic_idcs = update_indices(missed_idcs, etopic_idcs, 1)
         longshort_idcs = update_indices(missed_idcs, longshort_idcs, 1)
@@ -232,17 +246,29 @@ def get_rr(peaks):
         # ignore the artifacts during interpolation
         x = np.delete(np.arange(0, rr.size), interp_idcs)
         # interpolate artifacts
-        interp_rr = np.interp(interp_idcs, x, rr[x])
-        rr[interp_idcs] = interp_rr
+        interp_artifacts = np.interp(interp_idcs, x, rr[x])
+        rr[interp_idcs] = interp_artifacts
+        print('interpolated: {}{}'.format(peaks[:5], rr[:5]))
 #        plt.figure(0)
 #        plt.plot(rr)
 
-    return peaks, rr
+    # interpolate rr at the signals sampling rate for plotting;
+    # skip the first element in RR since it's zero
+    rrinterp = interp_rr(peaks[:-1], rr[1:], nsamp)
+
+    # prepare data for handling in biopeaks gui (must be ndarray to allow
+    # homogeneous handling with respiratory data)
+    returnarray = np.ndarray((np.size(peaks), 1))
+    returnarray[:, 0] = peaks
+    returnarray = returnarray.astype(int)
+
+    return returnarray, rr, rrinterp
 
 #path = r'C:\Users\JohnDoe\Desktop\beats.csv'
 #peaks = np.ravel(pd.read_csv(path))
 #
-#correct_rr(peaks)
+#get_rr(peaks, 1000, 100)
 #
 #savearray = pd.DataFrame(peaks)
 #savearray.to_csv(r'C:\Users\JohnDoe\Desktop\beats_corrected.csv', index=False, header=['peaks'])
+    
