@@ -236,7 +236,10 @@ class View(QMainWindow):
         analyzemenu = menubar.addMenu('analysis')
         
         rate = QAction('rate', self)
-        rate.triggered.connect(self._controller.calculate_rate)
+        lambdafn = lambda: self._controller.threader(status='calculating rate',
+                                                     fn=self._controller.
+                                                     calculate_rate)
+        rate.triggered.connect(lambdafn)
         analyzemenu.addAction(rate)
         
         breathamp = QAction('breathing amplitude', self)
@@ -292,7 +295,7 @@ class View(QMainWindow):
         ##############################################
         self._model.signal_changed.connect(self.plot_signal)
         self._model.peaks_changed.connect(self.plot_peaks)
-        self._model.rrinterp_changed.connect(self.plot_stats)
+        self._model.stats_changed.connect(self.plot_stats)
         self._model.markers_changed.connect(self.dock_markers)
         self._model.path_changed.connect(self.display_path)
         self._model.segment_changed.connect(self.plot_segment)
@@ -311,8 +314,8 @@ class View(QMainWindow):
         self.ax1.relim()
         # reset navitools history
         self.navitools.update()
-        self.line = self.ax0.plot(self._model.sec, self._model.signal,
-                                  zorder=1)
+        self.line0 = self.ax0.plot(self._model.sec, self._model.signal,
+                                   zorder=1)
         self.ax0.set_xlabel('seconds', fontsize='large', fontweight='heavy')
         self.canvas.draw()
         print("plot_signal listening")
@@ -343,8 +346,15 @@ class View(QMainWindow):
         self.confirmedit.setEnabled(True)
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
         
-    def plot_stats(self):
-        pass
+    def plot_stats(self, stats):
+        self.ax2.clear()
+        self.ax2.relim()
+        self.navitools.home()
+        self.line1 = self.ax2.plot(self._model.sec, stats)
+        self.ax2.set_ylim(bottom=min(stats), top=max(stats))
+        self.navitools.update()
+        self.canvas.draw()
+        print('plot_stats listening')
         
     def dock_markers(self, value):
         if value == 1:

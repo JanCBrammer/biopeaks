@@ -14,7 +14,7 @@ from itertools import islice
 from shutil import copyfile
 from ecg_offline import peaks_ecg
 from resp_offline import extrema_resp
-from analysis_utils import get_rr, interp_rr
+from analysis_utils import get_rr
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
 
@@ -228,9 +228,8 @@ class Controller(QObject):
         if self._model.loaded:
             if self._model.peaks is None:
                 peakfunc = peakfuncs[self.modality]
-                peaks = peakfunc(self._model.signal,
-                                 self._model.sfreq)
-                self._model.peaks = peaks
+                self._model.peaks = peakfunc(self._model.signal,
+                                             self._model.sfreq)
             else:
                 self._model.status = 'error: peaks already in memory'
         else:
@@ -326,9 +325,12 @@ class Controller(QObject):
         if self._model.peaks is None:
             return
         if self.modality == 'ECG':
-            self._model.peaks, self._model.rr = get_rr(self._model.peaks)
-#            self._model.rrinterp = interp_rr(self._model.rr, interfreq=4)
-#            self._model.hr = get_hrinterp(self._model.rrinterp)
+            (self._model.peaks,
+             self._model.rr,
+             self._model.rrinterp) = get_rr(peaks=self._model.peaks,
+                                            sfreq=self._model.sfreq,
+                                            nsamp=self._model.signal.size)
+            self._model.hrinterp = 60 / self._model.rrinterp
             
         elif self.modality == 'RESP':
             pass
