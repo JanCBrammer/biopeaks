@@ -45,8 +45,10 @@ def update_indices(source_idcs, update_idcs, update):
 def interp_rr(peaks, rate, nsamp):
     # interpolate RR over the entire duration of the signal: samples up
     # until first peak and from last peak to end of signal are assigned the
-    # the mean of all RRs
-    f = interp1d(np.ravel(peaks), rate, kind='cubic',
+    # the mean of all RRs; linear (2nd order) interpolation is chosen since
+    # cubic (4th order) interpolation can lead to biologically implausible
+    # interpolated values and erratic fluctuations due to overfitting
+    f = interp1d(np.ravel(peaks), rate, kind='slinear',
                  bounds_error=False, fill_value=([rate[0]], [rate[-1]]))
     # internally, for consistency in plotting etc., keep original sampling
     # rate, convert sampling rates during saving
