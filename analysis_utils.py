@@ -147,8 +147,10 @@ def get_rr(peaks, sfreq, nsamp):
         # if none of the two equations is true
         # based on figure 2b
         if np.logical_or(np.abs(drrs[i]) > 1, np.abs(mrrs[i]) > 3):
+            # long
             eq3 = np.logical_and(drrs[i] > 1, s22[i] < -1)
             eq4 = np.abs(mrrs[i]) > 3
+            # short
             eq5 = np.logical_and(drrs[i] < -1, s22[i] > 1)
 
         if ~np.any([eq3, eq4, eq5]):
@@ -157,21 +159,27 @@ def get_rr(peaks, sfreq, nsamp):
 
         # if any of the three equations is true: check for missing or extra
         # peaks
+        # missing
         eq6 = np.abs(rr[i] / 2 - medrr[i]) < th2[i]
+        # extra
         eq7 = np.abs(rr[i] + rr[i + 1] - medrr[i]) < th2[i]
 
+        # check if short or extra
         if np.any([eq3, eq4]):
-            longshort_idcs.append(i)
-            if np.abs(drrs[i + 1]) < np.abs(drrs[i + 2]):
-                longshort_idcs.append(i + 1)
+            if eq7:
+                extra_idcs.append(i)
+            else:
+                longshort_idcs.append(i)
+                if np.abs(drrs[i + 1]) < np.abs(drrs[i + 2]):
+                    longshort_idcs.append(i + 1)
+        # check if long or missing
         if eq5:
-            longshort_idcs.append(i)
-            if np.abs(drrs[i + 1]) < np.abs(drrs[i + 2]):
-                longshort_idcs.append(i + 1)
-        if eq6:
-            missed_idcs.append(i)
-        if eq7:
-            extra_idcs.append(i)
+            if eq6:
+                missed_idcs.append(i)
+            else:
+                longshort_idcs.append(i)
+                if np.abs(drrs[i + 1]) < np.abs(drrs[i + 2]):
+                    longshort_idcs.append(i + 1)
 
 #    # visualize artifact type indices
 #    plt.figure(0)
@@ -210,14 +218,13 @@ def get_rr(peaks, sfreq, nsamp):
     # all other index lists by 1; likewise, for each added beat, increment the
     # indices following that beat in all other lists by 1
 
-    print('before: {}{}'.format(peaks[:5], rr[:5]))
     # delete extra peaks
     if extra_idcs:
         # delete the extra peaks
         peaks = np.delete(peaks, extra_idcs)
         # re-calculate the RR series
         rr = np.ediff1d(peaks, to_begin=0) / sfreq
-        print('extra: {}{}'.format(peaks[:5], rr[:5]))
+        print('extra: {}'.format(peaks[extra_idcs]))
         # update remaining indices
         missed_idcs = update_indices(extra_idcs, missed_idcs, -1)
         etopic_idcs = update_indices(extra_idcs, etopic_idcs, -1)
@@ -233,14 +240,14 @@ def get_rr(peaks, sfreq, nsamp):
         peaks = np.insert(peaks, missed_idcs, added_peaks)
         # re-calculate the RR series
         rr = np.ediff1d(peaks, to_begin=0) / sfreq
-        print('missed: {}{}'.format(peaks[:5], rr[:5]))
+        print('missed: {}'.format(peaks[missed_idcs]))
         # update remaining indices
         etopic_idcs = update_indices(missed_idcs, etopic_idcs, 1)
         longshort_idcs = update_indices(missed_idcs, longshort_idcs, 1)
 
     # interpolate etopic as well as long or short peaks (important to do this
     # after peaks are deleted and/or added)
-    interp_idcs = np.concatenate((etopic_idcs, longshort_idcs))
+    interp_idcs = np.concatenate((etopic_idcs, longshort_idcs)).astype(int)
     if interp_idcs.size > 0:
         interp_idcs.sort(kind='mergesort')
         # ignore the artifacts during interpolation
@@ -248,13 +255,14 @@ def get_rr(peaks, sfreq, nsamp):
         # interpolate artifacts
         interp_artifacts = np.interp(interp_idcs, x, rr[x])
         rr[interp_idcs] = interp_artifacts
-        print('interpolated: {}{}'.format(peaks[:5], rr[:5]))
-#        plt.figure(0)
-#        plt.plot(rr)
+        print('interpolated: {}'.format(peaks[interp_idcs]))
+##        plt.figure(0)
+##        plt.plot(rr)
 
-    # interpolate rr at the signals sampling rate for plotting;
-    # skip the first element in RR since it's zero
-    rrinterp = interp_rr(peaks[:-1], rr[1:], nsamp)
+    # interpolate rr at the signals sampling rate for plotting; the rate 
+    # corresponding to the first peak is set to the mean RR
+    rr[0] = np.mean(rr)
+    rrinterp = interp_rr(peaks, rr, nsamp)
 
     # prepare data for handling in biopeaks gui (must be ndarray to allow
     # homogeneous handling with respiratory data)
