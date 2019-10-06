@@ -9,6 +9,29 @@ import numpy as np
 from scipy.signal import welch, find_peaks, argrelextrema
 from filters import butter_lowpass_filter
 
+def rate_resp(peaks):
+    # check if the alternation of peaks and troughs is
+    # unbroken (it might be due to user edits);
+    # if alternation of sign in extdiffs is broken, remove
+    # the extreme (or extrema) that cause(s) the break(s)
+    extdiffs = np.sign(np.diff(peaks[:, 1]))
+    extdiffs = np.add(extdiffs[0:-1], extdiffs[1:])
+    removeext = np.where(extdiffs != 0)[0] + 1
+    peaks = np.delete(peaks, removeext, axis=0)
+    
+    # determine if series starts with peak or trough to be able
+    # to save peaks and troughs separately (as well as the
+    # corresponding amplitudes)
+    if extrema[0, 1] > extrema[1, 1]:
+        peaks = extrema[0:-1:2, 0]
+        troughs = extrema[1::2, 0]
+        amppeaks = extrema[0:-1:2, 1]
+        amptroughs = extrema[1::2, 1]
+    elif extrema[0, 1] < extrema[1, 1]:
+        peaks = extrema[1::2, 0]
+        troughs = extrema[0:-1:2, 0]
+        amppeaks = extrema[1::2, 1]
+        amptroughs = extrema[0:-1:2, 1]
 
 def extrema_resp(signal, sfreq):
 
@@ -150,9 +173,10 @@ def extrema_resp(signal, sfreq):
         adjusted_peaks.append(adjusted_p)
 
     # prepare data for handling in biopeaks gui
-    returnextrema = np.concatenate((adjusted_peaks, adjusted_troughs))
-    returnextrema.sort(kind='mergesort')
-    returnamps = signal[returnextrema]
-    returnarray = np.column_stack((returnextrema, returnamps)).astype(int)
+    returnarray = np.concatenate((adjusted_peaks,
+                                  adjusted_troughs)).astype(int)
+    returnarray.sort(kind='mergesort')
+    
 
     return returnarray
+        

@@ -162,13 +162,15 @@ class Controller(QObject):
         self._model.sec = sec
         self._model.signal = self._model.signal[begsamp:endsamp]
         if self._model.peaks is not None:
-            peakidcs = np.where((self._model.peaks[:, 0] >= begsamp) &
-                                (self._model.peaks[:, 0] <= endsamp))[0]
-            peaks = self._model.peaks[peakidcs, :]
-            peaks[:, 0] -= begsamp
+            peakidcs = np.where((self._model.peaks >= begsamp) &
+                                (self._model.peaks <= endsamp))[0]
+            peaks = self._model.peaks[peakidcs]
+            peaks -= begsamp
             self._model.peaks = peaks
         if self._model.markers is not None:
             self._model.markers = self._model.markers[begsamp:endsamp]
+        if self._model.hrinterp is not None:
+            self._model.hrinterp = self._model.hrinterp[begsamp:endsamp]
 
     def save_signal(self):
         # if the signal has not been segmented, simply copy it to new
@@ -204,25 +206,21 @@ class Controller(QObject):
             peaks = peaks * self._model.sfreq
             # reshape to a format understood by plotting function
             # (ndarray of type int)
-            peaks = np.rint(peaks[:, np.newaxis]).astype(int)
+            peaks = np.rint(peaks).astype(int)
             self._model.peaks = peaks
-        elif dfpeaks.shape[1] == 4:
+        elif dfpeaks.shape[1] == 2:
             extrema = np.concatenate((dfpeaks['peaks'].copy(),
                                       dfpeaks['troughs'].copy()))
-            amps = np.concatenate((dfpeaks['amppeaks'].copy(),
-                                   dfpeaks['amptroughs'].copy()))
-            # mergesort extrema and corresponding amplitudes
+            # mergesort extrema
             sortidcs = extrema.argsort(kind='mergesort')
             extrema = extrema[sortidcs]
-            amps = amps[sortidcs]
             # remove NANs that may have been appended in case of odd number of
             # extrema (see save_peaks)
             extrema = extrema[~np.isnan(extrema)]
-            amps = amps[~np.isnan(amps)]
             # convert extrema from seconds to samples
             extrema = np.rint(extrema * self._model.sfreq)
             # convert to biopeaks array format
-            self._model.peaks = np.column_stack((extrema, amps)).astype(int)
+            self._model.peaks = extrema.astype(int)
 
     def find_peaks(self):
         if self._model.loaded:
@@ -248,11 +246,10 @@ class Controller(QObject):
         extend = int(np.rint(self._model.sfreq * 0.1))
         searchrange = np.arange(cursor - extend, cursor + extend)
         if event.key == 'd':
-            peakidx = np.argmin(np.abs(self._model.peaks[:, 0] - cursor))
+            peakidx = np.argmin(np.abs(self._model.peaks - cursor))
             # only delete peaks that are within search range
-            if np.any(searchrange == self._model.peaks[peakidx, 0]):
-                self._model.peaks = np.delete(self._model.peaks, peakidx,
-                                              axis=0)
+            if np.any(searchrange == self._model.peaks[peakidx]):
+                self._model.peaks = np.delete(self._model.peaks, peakidx)
         elif event.key == 'a':
             searchsignal = self._model.signal[searchrange]
             # use find_peaks to also detect local extrema that are
@@ -266,63 +263,53 @@ class Controller(QObject):
             peakidx = np.argmin(np.abs(searchrange[locext] - cursor))
             newpeak = searchrange[0] + locext[peakidx]
             # only add new peak if it doesn't exist already
-            if np.all(self._model.peaks[:, 0] != newpeak):
-                insertidx = np.searchsorted(self._model.peaks[:, 0], newpeak)
-                if self._model.peaks.shape[1] == 1:
-                    insertarr = [newpeak]
-                    self._model.peaks = np.insert(self._model.peaks, insertidx,
-                                                  insertarr, axis=0)
-                elif self._model.peaks.shape[1] == 2:
-                    insertarr = [newpeak, self._model.signal[newpeak]]
-                    self._model.peaks = np.insert(self._model.peaks, insertidx,
-                                                  insertarr, axis=0)
+            if np.all(self._model.peaks != newpeak):
+                insertidx = np.searchsorted(self._model.peaks, newpeak)
+                insertarr = [newpeak]
+                self._model.peaks = np.insert(self._model.peaks, insertidx,
+                                              insertarr)
+                
     def save_peaks(self):
         # save peaks in seconds
-        if self._model.peaks.shape[1] == 1:
+        if self.modality == 'ECG':
             savearray = pd.DataFrame(self._model.peaks / self._model.sfreq)
             savearray.to_csv(self.wpathpeaks, index=False, header=['peaks'])
-        elif self._model.peaks.shape[1] == 2:
+        elif self.modality == 'RESP':
             # check if the alternation of peaks and troughs is
             # unbroken (it might be at this point due to user edits);
             # if alternation of sign in extdiffs is broken, remove
             # the extreme (or extrema) that cause(s) the break(s)
-            extdiffs = np.sign(np.diff(self._model.peaks[:, 1]))
+            amps = self._model.signal[self._model.peaks]
+            extdiffs = np.sign(np.diff(amps))
             extdiffs = np.add(extdiffs[0:-1], extdiffs[1:])
             removeext = np.where(extdiffs != 0)[0] + 1
             # work on local copy of extrema to avoid call to plotting
             # function
-            extrema = np.delete(self._model.peaks, removeext, axis=0)
+            extrema = np.delete(self._model.peaks, removeext)
             # pad extrema with NAN in order to simulate equal number of peaks
             # and troughs if needed
-            if np.remainder(extrema.shape[0], 2) != 0:
-                padding = np.ndarray((1, 2))
-                padding.fill(np.nan)
-                extrema = np.append(extrema, padding, axis=0)
+            if np.remainder(extrema.size, 2) != 0:
+                extrema = np.append(extrema, np.nan0)
             # determine if series starts with peak or trough to be able
-            # to save peaks and troughs separately (as well as the
-            # corresponding amplitudes)
-            if extrema[0, 1] > extrema[1, 1]:
-                peaks = extrema[0:-1:2, 0]
-                troughs = extrema[1::2, 0]
-                amppeaks = extrema[0:-1:2, 1]
-                amptroughs = extrema[1::2, 1]
-            elif extrema[0, 1] < extrema[1, 1]:
-                peaks = extrema[1::2, 0]
-                troughs = extrema[0:-1:2, 0]
-                amppeaks = extrema[1::2, 1]
-                amptroughs = extrema[0:-1:2, 1]
+            # to save peaks and troughs separately
+            amps = self._model.signal[extrema]
+            if extrema[0] > extrema[1]:
+                peaks = extrema[0:-1:2]
+                troughs = extrema[1::2]
+            elif extrema[0] < extrema[1]:
+                peaks = extrema[1::2]
+                troughs = extrema[0:-1:2]
             # make sure extrema are float: IMPORTANT, if seconds are
             # saved as int, rounding errors (i.e. misplaced peaks) occur
             savearray = np.column_stack((peaks / self._model.sfreq,
-                                         troughs / self._model.sfreq,
-                                         amppeaks, amptroughs))
+                                         troughs / self._model.sfreq))
             savearray = pd.DataFrame(savearray)
             savearray.to_csv(self.wpathpeaks, index=False,
-                             header=['peaks', 'troughs',
-                                     'amppeaks', 'amptroughs'], na_rep='nan')
+                             header=['peaks', 'troughs'], na_rep='nan')
                     
     def calculate_rate(self):
         if self._model.peaks is None:
+            self._model.status = 'error: no peaks available'
             return
         if self.modality == 'ECG':
             (self._model.peaks,
@@ -331,7 +318,7 @@ class Controller(QObject):
                                             sfreq=self._model.sfreq,
                                             nsamp=self._model.signal.size)
             self._model.hrinterp = 60 / self._model.rrinterp
-            
+            print(np.around(np.mean(self._model.hrinterp), 4))
         elif self.modality == 'RESP':
             pass
     

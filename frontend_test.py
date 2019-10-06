@@ -61,6 +61,7 @@ class TestApplication(QApplication):
                                 peakpath='testdata_segmented_peaks.csv',
                                 siglen=5100000,
                                 peaklen=92,
+                                avgrate=55.0913,
                                 segment=[760, 860])
         
         # single file with breathing data
@@ -73,6 +74,7 @@ class TestApplication(QApplication):
                                 peakpath='testdata_segmented_peaks.csv',
                                 siglen=5100000,
                                 peaklen=108,
+                                avgrate=None,
                                 segment=[3200, 3400])
         
         # batch processing with ECG data
@@ -122,7 +124,7 @@ class Tests:
                 
         
     def single_file(self, modality, sigchan, markerchan, mode, sigpathorig,
-                    sigpathseg, peakpath, siglen, peaklen, segment):
+                    sigpathseg, peakpath, siglen, peaklen, avgrate, segment):
     
         # 1. set options
         ################
@@ -190,7 +192,7 @@ class Tests:
                                   fn=self._controller.find_peaks)
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
-        assert self._model.peaks.shape[0] == peaklen, 'failed to find peaks'
+        assert self._model.peaks.size == peaklen, 'failed to find peaks'
         print('found peaks successfully')
         
         # 7. edit peaks
@@ -203,10 +205,10 @@ class Tests:
         # coordinates to qt coordinates, the controllers edit_peaks 
         # method is called with a mocked KeyEvent; to demonstrate edit_peaks
         # delete the first peak and then add it again
-        demopeak = self._model.peaks[0][0] / self._model.sfreq
+        demopeak = self._model.peaks[0] / self._model.sfreq
         mock_key_event = MockKeyEvent(key='d', xdata=demopeak)
         self._controller.edit_peaks(mock_key_event)
-        assert self._model.peaks[0][0] / self._model.sfreq > demopeak, \
+        assert self._model.peaks[0] / self._model.sfreq > demopeak, \
             'failed to delete first peak'
         print('deleted first peak successfully')
         # give user some time to perceive the change
@@ -216,7 +218,7 @@ class Tests:
         # note that edit_peaks places the peak in the middle of the plateau in
         # case of a flat peak, hence discrepancies of a few msecs can arise;
         # set tolerance for deviation of re-inserted peak to 10 msec
-        assert abs(self._model.peaks[0][0] / self._model.sfreq - 
+        assert abs(self._model.peaks[0] / self._model.sfreq - 
                    demopeak) <= 0.015, 'failed to re-insert first peak'
         print('re-inserted first peaks successfully')
         
@@ -244,14 +246,23 @@ class Tests:
         print('re-loaded signal successfully')
         
         # 10. load peaks found for segmented signal
-        ##########################################
+        ###########################################
         self._controller.rpathpeaks = peakpath
         self._controller.threader(status='loading peaks',
                                   fn=self._controller.read_peaks)
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
-        assert self._model.peaks.shape[0] == peaklen, 'failed to re-load peaks'
+        assert self._model.peaks.size == peaklen, 'failed to re-load peaks'
         print('re-loaded peaks successfully')
+        
+#        # 11. calculate rate
+#        ##########################
+#        self._controller.threader(status='calculating rate',
+#                                  fn=self._controller.calculate_rate)
+#        self.wait_for_signal(self._model.progress_changed, 1)
+#        assert np.around(np.mean(self._model.hrinterp), 4) == avgrate, \
+#                'failed to calculate rate'
+#        print('calculated rate successfully')
         
         # clean-up in case consecutive test are executed
         # reset model
@@ -300,7 +311,7 @@ class Tests:
             self._controller.threader(status='loading peaks',
                                       fn=self._controller.read_peaks)
             self.wait_for_signal(self._model.progress_changed, 1)
-            assert self._model.peaks.shape[0] == peaklen, \
+            assert self._model.peaks.size == peaklen, \
                     'failed to re-load peaks'
             print('loaded peaks for {} successfully'.format(sigpath))
             

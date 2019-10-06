@@ -325,9 +325,8 @@ class View(QMainWindow):
         # self.scat is listed in ax.collections
         if self.ax0.collections:
             self.ax0.collections[0].remove()
-        self.scat = self.ax0.scatter(self._model.sec[self._model.peaks[:, 0]],
-                                     self._model.signal[self._model.
-                                                        peaks[:, 0]],
+        self.scat = self.ax0.scatter(self._model.sec[self._model.peaks],
+                                     self._model.signal[self._model.peaks],
                                                         c='m',
                                                         zorder=2)
         self.canvas.draw()
@@ -439,6 +438,8 @@ class View(QMainWindow):
         self.ax0.relim()
         self.ax1.clear()
         self.ax1.relim()
+        self.ax2.clear()
+        self.ax2.relim()
         self.canvas.draw()
         self.navitools.update()
         self.currentFile.clear()

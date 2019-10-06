@@ -75,11 +75,7 @@ def peaks_ecg(signal, sfreq, enable_plot=False):
     if enable_plot is True:
         ax1.scatter(np.arange(filt.size)[peaks], filt[peaks], c='r')
 
-    # prepare data for handling in biopeaks gui (must be ndarray to allow
-    # homogeneous handling with respiratory data)
-    returnarray = np.ndarray((np.size(peaks), 1))
-    returnarray[:, 0] = peaks
-    returnarray = returnarray.astype(int)
+    returnarray = np.asarray(peaks).astype(int)
 
     return returnarray
 
