@@ -74,7 +74,7 @@ class TestApplication(QApplication):
                                 peakpath='testdata_segmented_peaks.csv',
                                 siglen=5100000,
                                 peaklen=108,
-                                avgrate=None,
+                                avgrate=16.5735,
                                 segment=[3200, 3400])
         
         # batch processing with ECG data
@@ -255,14 +255,14 @@ class Tests:
         assert self._model.peaks.size == peaklen, 'failed to re-load peaks'
         print('re-loaded peaks successfully')
         
-#        # 11. calculate rate
-#        ##########################
-#        self._controller.threader(status='calculating rate',
-#                                  fn=self._controller.calculate_rate)
-#        self.wait_for_signal(self._model.progress_changed, 1)
-#        assert np.around(np.mean(self._model.hrinterp), 4) == avgrate, \
-#                'failed to calculate rate'
-#        print('calculated rate successfully')
+        # 11. calculate rate
+        ##########################
+        self._controller.threader(status='calculating rate',
+                                  fn=self._controller.calculate_rate)
+        self.wait_for_signal(self._model.progress_changed, 1)
+        assert np.around(np.mean(self._model.rateintp), 4) == avgrate, \
+                'failed to calculate rate'
+        print('calculated rate successfully')
         
         # clean-up in case consecutive test are executed
         # reset model

@@ -8,32 +8,10 @@ Created on Wed Dec  5 17:33:13 2018
 import numpy as np
 from scipy.signal import welch, find_peaks, argrelextrema
 from filters import butter_lowpass_filter
+from analysis_utils import interp_period
 
-def rate_resp(peaks):
-    # check if the alternation of peaks and troughs is
-    # unbroken (it might be due to user edits);
-    # if alternation of sign in extdiffs is broken, remove
-    # the extreme (or extrema) that cause(s) the break(s)
-    extdiffs = np.sign(np.diff(peaks[:, 1]))
-    extdiffs = np.add(extdiffs[0:-1], extdiffs[1:])
-    removeext = np.where(extdiffs != 0)[0] + 1
-    peaks = np.delete(peaks, removeext, axis=0)
-    
-    # determine if series starts with peak or trough to be able
-    # to save peaks and troughs separately (as well as the
-    # corresponding amplitudes)
-    if extrema[0, 1] > extrema[1, 1]:
-        peaks = extrema[0:-1:2, 0]
-        troughs = extrema[1::2, 0]
-        amppeaks = extrema[0:-1:2, 1]
-        amptroughs = extrema[1::2, 1]
-    elif extrema[0, 1] < extrema[1, 1]:
-        peaks = extrema[1::2, 0]
-        troughs = extrema[0:-1:2, 0]
-        amppeaks = extrema[1::2, 1]
-        amptroughs = extrema[0:-1:2, 1]
 
-def extrema_resp(signal, sfreq):
+def resp_extrema(signal, sfreq):
 
     N = np.size(signal)
     # get an initial estimate of dominant breathing rate; assume rate ranging
@@ -179,4 +157,41 @@ def extrema_resp(signal, sfreq):
     
 
     return returnarray
+
+
+def resp_period(extrema, signal, sfreq):
+    # check if the alternation of peaks and troughs is
+    # unbroken (it might be due to user edits);
+    # if alternation of sign in extdiffs is broken, remove
+    # the extreme (or extrema) that cause(s) the break(s)
+    amplitudes = signal[extrema]
+    extdiffs = np.sign(np.diff(amplitudes))
+    extdiffs = np.add(extdiffs[0:-1], extdiffs[1:])
+    removeext = np.where(extdiffs != 0)[0] + 1
+    extrema = np.delete(extrema, removeext)
+    amplitudes = np.delete(amplitudes, removeext)
+    
+    # determine if series starts with peak or trough to be able
+    # to save peaks and troughs separately (as well as the
+    # corresponding amplitudes)
+    if amplitudes[0] > amplitudes[1]:
+        peaks = extrema[0:-1:2]
+        amppeaks = amplitudes[0:-1:2]
+        amptroughs = amplitudes[1::2]
+    elif amplitudes[0] < amplitudes[1]:
+        peaks = extrema[1::2]
+        amppeaks = amplitudes[1::2]
+        amptroughs = amplitudes[0:-1:2]
         
+    periods = np.ediff1d(peaks, to_begin=0) / sfreq
+    periods[0] = np.mean(periods)
+    periods_interp = interp_period(peaks, periods, signal.size)
+    
+#    amps =
+#    amps_interp
+    
+    return periods, periods_interp
+
+
+
+

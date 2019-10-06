@@ -12,14 +12,13 @@ import numpy as np
 from scipy.signal import find_peaks
 from itertools import islice
 from shutil import copyfile
-from ecg_offline import peaks_ecg
-from resp_offline import extrema_resp
-from analysis_utils import get_rr
+from ecg_offline import ecg_peaks, ecg_period
+from resp_offline import resp_extrema, resp_period
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
 
-peakfuncs = {'ECG': peaks_ecg,
-             'RESP': extrema_resp}
+peakfuncs = {'ECG': ecg_peaks,
+             'RESP': resp_extrema}
 
 # threading is implemented according to https://pythonguis.com/courses/
 # multithreading-pyqt-applications-qthreadpool/complete-example/
@@ -169,8 +168,8 @@ class Controller(QObject):
             self._model.peaks = peaks
         if self._model.markers is not None:
             self._model.markers = self._model.markers[begsamp:endsamp]
-        if self._model.hrinterp is not None:
-            self._model.hrinterp = self._model.hrinterp[begsamp:endsamp]
+        if self._model.rateintp is not None:
+            self._model.rateintp = self._model.rateintp[begsamp:endsamp]
 
     def save_signal(self):
         # if the signal has not been segmented, simply copy it to new
@@ -313,14 +312,18 @@ class Controller(QObject):
             return
         if self.modality == 'ECG':
             (self._model.peaks,
-             self._model.rr,
-             self._model.rrinterp) = get_rr(peaks=self._model.peaks,
-                                            sfreq=self._model.sfreq,
-                                            nsamp=self._model.signal.size)
-            self._model.hrinterp = 60 / self._model.rrinterp
-            print(np.around(np.mean(self._model.hrinterp), 4))
+             self._model.period,
+             self._model.periodintp) = ecg_period(peaks=self._model.peaks,
+                                                  sfreq=self._model.sfreq,
+                                                  nsamp=self._model.signal.
+                                                  size)
+            self._model.rateintp = 60 / self._model.periodintp
         elif self.modality == 'RESP':
-            pass
+            (self._model.period,
+             self._model.periodintp) = resp_period(extrema=self._model.peaks,
+                                                   signal=self._model.signal,
+                                                   sfreq=self._model.sfreq)
+            self._model.rateintp = 60 / self._model.periodintp
     
     def calculate_breathamp(self):
         pass

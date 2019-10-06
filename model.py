@@ -46,30 +46,30 @@ class Model(QObject):
             self.peaks_changed.emit()
             
     @property
-    def rr(self):
-        return self._rr
+    def period(self):
+        return self._period
 
-    @rr.setter
-    def rr(self, value):
-        self._rr = value
+    @period.setter
+    def period(self, value):
+        self._period = value
         
     @property
-    def rrinterp(self):
-        return self._rrinterp
+    def periodintp(self):
+        return self._periodintp
 
-    @rrinterp.setter
-    def rrinterp(self, value):
-        self._rrinterp = value
+    @periodintp.setter
+    def periodintp(self, value):
+        self._periodintp = value
             
     @property
-    def hrinterp(self):
-        return self._hrinterp
+    def rateintp(self):
+        return self._rateintp
 
-    @hrinterp.setter
-    def hrinterp(self, value):
-        self._hrinterp = value
+    @rateintp.setter
+    def rateintp(self, value):
+        self._rateintp = value
         if value is not None and self.plotting:
-            self.stats_changed.emit(self._hrinterp)
+            self.stats_changed.emit(self._rateintp)
         
     @property
     def sec(self):
@@ -134,9 +134,9 @@ class Model(QObject):
         
         self._signal = None
         self._peaks = None
-        self._rr = None
-        self._rrinterp = None
-        self._hrinterp = None
+        self._period = None
+        self._periodintp = None
+        self._rateintp = None
         self._sec = None
         self._markers = None
         self._segment = None
@@ -152,9 +152,9 @@ class Model(QObject):
     def reset(self):
         self._signal = None
         self._peaks = None
-        self._rr = None
-        self._rrinterp = None
-        self._hrinterp = None
+        self._period = None
+        self._periodintp = None
+        self._rateintp = None
         self._sec = None
         self._markers = None
         self._segment = None
