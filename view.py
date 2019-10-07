@@ -68,18 +68,16 @@ class View(QMainWindow):
         
         # peak editing
         self.editcheckbox = QCheckBox('edit peaks', self)
-        self.editcheckbox.stateChanged.connect(self._controller.
-                                               change_editable)
+        self.editcheckbox.stateChanged.connect(self._model.set_peakseditable)
         
         # processing mode (batch or single file)
         self.batchmenulabel = QLabel('processing mode')
         self.batchmenu = QComboBox(self)
         self.batchmenu.addItem('single file')
         self.batchmenu.addItem('multiple files')
-        self.batchmenu.currentTextChanged.connect(self._controller.
-                                                  change_batchmode)
+        self.batchmenu.currentTextChanged.connect(self._model.set_batchmode)
         # initialize with default value
-        self._controller.change_batchmode(self.batchmenu.currentText())
+        self._model.set_batchmode(self.batchmenu.currentText())
         
         # modality selection
         self.modmenulabel = QLabel('modality')
@@ -87,10 +85,9 @@ class View(QMainWindow):
         self.modmenu.addItem('ECG')
 #        self.modmenu.addItem('PPG')
         self.modmenu.addItem('RESP')
-        self.modmenu.currentTextChanged.connect(self._controller.
-                                                change_modality)
+        self.modmenu.currentTextChanged.connect(self._model.set_modality)
         # initialize with default value
-        self._controller.change_modality(self.modmenu.currentText())
+        self._model.set_modality(self.modmenu.currentText())
         
         # channel selection
         self.sigchanmenulabel = QLabel('data channel')
@@ -104,10 +101,11 @@ class View(QMainWindow):
         self.sigchanmenu.addItem('A4')
         self.sigchanmenu.addItem('A5')
         self.sigchanmenu.addItem('A6')
-        self.sigchanmenu.currentTextChanged.connect(self._controller.
-                                                    change_signalchan)
+#        self.sigchanmenu.currentTextChanged.connect(self._controller.
+#                                                    change_signalchan)
+        self.sigchanmenu.currentTextChanged.connect(self._model.set_signalchan)
         # initialize with default value
-        self._controller.change_signalchan(self.sigchanmenu.currentText())
+        self._model.set_signalchan(self.sigchanmenu.currentText())
         
         self.markerschanmenulabel = QLabel('marker channel')
         self.markerschanmenu = QComboBox(self)
@@ -119,10 +117,10 @@ class View(QMainWindow):
         self.markerschanmenu.addItem('A4')
         self.markerschanmenu.addItem('A5')
         self.markerschanmenu.addItem('A6')
-        self.markerschanmenu.currentTextChanged.connect(self._controller.
-                                                        change_markerchan)
+        self.markerschanmenu.currentTextChanged.connect(self._model.
+                                                        set_markerchan)
         # initialize with default value
-        self._controller.change_markerchan(self.markerschanmenu.currentText())
+        self._model.set_markerchan(self.markerschanmenu.currentText())
         
         # segment selection; this widget can be openend / set visible from
         # the menu and closed from within itself (see mapping of segmentermap);
@@ -155,7 +153,7 @@ class View(QMainWindow):
         self.previewedit.clicked.connect(self.emit_segment)
         # use previosly defined costum signal that sends start and end of
         # selected segment to controller from within emit_segment
-        self.segment_updated.connect(self._controller.change_segment)
+        self.segment_updated.connect(self._controller.verify_segment)
         
         self.confirmedit = QPushButton('confirm selection')
         lambdafn = lambda: self._controller.threader(status='segmenting'
@@ -375,8 +373,8 @@ class View(QMainWindow):
             self.statusBar.clearMessage()
         self.canvas.draw()
 
-    def display_path(self):
-        self.currentFile.setText(self._model.rpathsignal)
+    def display_path(self, value):
+        self.currentFile.setText(value)
         
     def display_status(self, status):
         # display status until new status is set

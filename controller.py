@@ -16,7 +16,10 @@ from ecg_offline import ecg_peaks, ecg_period
 from resp_offline import resp_extrema, resp_period
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
-
+getOpenFileName = QFileDialog.getOpenFileName
+getOpenFileNames = QFileDialog.getOpenFileNames
+getSaveFileName = QFileDialog.getSaveFileName
+getExistingDirectory = QFileDialog.getExistingDirectory
 peakfuncs = {'ECG': ecg_peaks,
              'RESP': resp_extrema}
 
@@ -50,34 +53,28 @@ class Controller(QObject):
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
 
-        self.fpaths = None
-        self.wpathpeaks = None
-        self.wdirpeaks = None
-        self.rpathpeaks = None
-        self.wpathsignal = None
-        self.batchmode = None
-        self.modality = None
-        self.peakseditable = False
-
     ###########
     # methods #
     ###########
     def open_signal(self):
-        self.fpaths = QFileDialog.getOpenFileNames(None, 'Choose your data',
-                                                   '\home')[0]
-        if self.fpaths:
-            if self.batchmode == 'multiple files' and len(self.fpaths) >= 1:
+        self._model.fpaths = getOpenFileNames(None, 'Choose your data',
+                                              '\home')[0]
+        print('controller: {}'.format(self._model.fpaths))
+        if self._model.fpaths:
+            if (self._model.batchmode == 'multiple files' and
+                len(self._model.fpaths) >= 1):
                 self.get_wpathpeaks()
-                if self.wdirpeaks:
+                if self._model.wdirpeaks:
                     self.threader(status='processing files',
                                   fn=self.batch_processor)
-            elif self.batchmode == 'single file' and len(self.fpaths) == 1:
+            elif (self._model.batchmode == 'single file' and
+                  len(self._model.fpaths) == 1):
                 self._model.reset()
                 self.threader(status='loading file', fn=self.read_chan,
-                              path=self.fpaths[0], chantype='signal')
+                              path=self._model.fpaths[0], chantype='signal')
 
     def open_markers(self):
-        if self.batchmode == 'single file':
+        if self._model.batchmode == 'single file':
             # only read markerss from file if file has been loaded and signal
             # has not been segmented yet
             if self._model.loaded and self._model.segment is None:
@@ -87,8 +84,8 @@ class Controller(QObject):
                 self._model.status = 'error: no data available'
 
     def read_chan(self, path, chantype):
-        _, self.file_extension = os.path.splitext(path)
-        if self.file_extension != '.txt':
+        _, file_extension = os.path.splitext(path)
+        if file_extension != '.txt':
             self._model.status = 'error: wrong file format'
             return
         # open file and check if it's encoded in OpenSignals format
@@ -111,7 +108,7 @@ class Controller(QObject):
                     channel = self._model.markerchan
                 if channel[0] == 'A':
                     chanidx = [i for i, s in enumerate(channels)
-                                if int(channel[1]) == s]
+                               if int(channel[1]) == s]
                 elif channel[0] == 'I':
                     chanidx = int(channel[1])
                 else:
@@ -138,7 +135,7 @@ class Controller(QObject):
                 if chantype == 'signal':
                     datalen = data.size
                     sec = np.linspace(0, datalen / sfreq, datalen)
-                    _, self._model.rpathsignal = os.path.split(path)
+                    self._model.rpathsignal = path
                     # important to set seconds PRIOR TO signal,
                     # otherwise plotting behaves unexpectadly (since
                     # plotting is triggered as soon as signal changes)
@@ -150,7 +147,7 @@ class Controller(QObject):
                     self._model.markers = np.ravel(data)
             else:
                 self._model.status = 'error: wrong file format'
-           
+
 
     def segment_signal(self):
         # convert from seconds to samples
@@ -175,8 +172,8 @@ class Controller(QObject):
         # if the signal has not been segmented, simply copy it to new
         # location
         if self._model.segment is None:
-            if self._model.rpathsignal != self.wpathsignal:
-                copyfile(self._model.rpathsignal, self.wpathsignal)
+            if self._model.rpathsignal != self._model.wpathsignal:
+                copyfile(self._model.rpathsignal, self._model.wpathsignal)
         # if signal has been segmented apply segmentation to all
         # channels in the dataset
         elif self._model.segment is not None:
@@ -188,7 +185,7 @@ class Controller(QObject):
                                header=None, comment='#')
             data = data.iloc[begsamp:endsamp, :]
             with open(self._model.rpathsignal, 'r') as oldfile, \
-                open(self.wpathsignal, 'w', newline='') as newfile:
+                open(self._model.wpathsignal, 'w', newline='') as newfile:
                 # read header (first three lines) and write it to
                 # new file
                 for line in islice(oldfile, 3):
@@ -198,7 +195,7 @@ class Controller(QObject):
                             index=False)
 
     def read_peaks(self):
-        dfpeaks = pd.read_csv(self.rpathpeaks)
+        dfpeaks = pd.read_csv(self._model.rpathpeaks)
         if dfpeaks.shape[1] == 1:
             peaks = dfpeaks['peaks'].copy()
             # convert back to samples
@@ -224,7 +221,7 @@ class Controller(QObject):
     def find_peaks(self):
         if self._model.loaded:
             if self._model.peaks is None:
-                peakfunc = peakfuncs[self.modality]
+                peakfunc = peakfuncs[self._model.modality]
                 self._model.peaks = peakfunc(self._model.signal,
                                              self._model.sfreq)
             else:
@@ -235,7 +232,7 @@ class Controller(QObject):
     def edit_peaks(self, event):
         # account for the fact that depending on sensor modality, data.peaks
         # has different shapes; preserve ndarrays throughout editing!
-        if not self.peakseditable:
+        if not self._model.peakseditable:
             return
         if self._model.peaks is None:
             return
@@ -267,13 +264,14 @@ class Controller(QObject):
                 insertarr = [newpeak]
                 self._model.peaks = np.insert(self._model.peaks, insertidx,
                                               insertarr)
-                
+
     def save_peaks(self):
         # save peaks in seconds
-        if self.modality == 'ECG':
+        if self._model.modality == 'ECG':
             savearray = pd.DataFrame(self._model.peaks / self._model.sfreq)
-            savearray.to_csv(self.wpathpeaks, index=False, header=['peaks'])
-        elif self.modality == 'RESP':
+            savearray.to_csv(self._model.wpathpeaks, index=False,
+                             header=['peaks'])
+        elif self._model.modality == 'RESP':
             # check if the alternation of peaks and troughs is
             # unbroken (it might be at this point due to user edits);
             # if alternation of sign in extdiffs is broken, remove
@@ -288,7 +286,7 @@ class Controller(QObject):
             # pad extrema with NAN in order to simulate equal number of peaks
             # and troughs if needed
             if np.remainder(extrema.size, 2) != 0:
-                extrema = np.append(extrema, np.nan0)
+                extrema = np.append(extrema, np.nan)
             # determine if series starts with peak or trough to be able
             # to save peaks and troughs separately
             amps = self._model.signal[extrema]
@@ -303,14 +301,14 @@ class Controller(QObject):
             savearray = np.column_stack((peaks / self._model.sfreq,
                                          troughs / self._model.sfreq))
             savearray = pd.DataFrame(savearray)
-            savearray.to_csv(self.wpathpeaks, index=False,
+            savearray.to_csv(self._model.wpathpeaks, index=False,
                              header=['peaks', 'troughs'], na_rep='nan')
-                    
+
     def calculate_rate(self):
         if self._model.peaks is None:
             self._model.status = 'error: no peaks available'
             return
-        if self.modality == 'ECG':
+        if self._model.modality == 'ECG':
             (self._model.peaks,
              self._model.period,
              self._model.periodintp) = ecg_period(peaks=self._model.peaks,
@@ -318,23 +316,22 @@ class Controller(QObject):
                                                   nsamp=self._model.signal.
                                                   size)
             self._model.rateintp = 60 / self._model.periodintp
-        elif self.modality == 'RESP':
+        elif self._model.modality == 'RESP':
             (self._model.period,
              self._model.periodintp) = resp_period(extrema=self._model.peaks,
                                                    signal=self._model.signal,
                                                    sfreq=self._model.sfreq)
             self._model.rateintp = 60 / self._model.periodintp
-    
+
     def calculate_breathamp(self):
         pass
 
     def get_wpathsignal(self):
         if self._model.loaded:
-            self.wpathsignal, _ = QFileDialog.getSaveFileName(None,
-                                                              'Save signal',
-                                                              'untitled.txt',
-                                                              'text (*.txt)')
-            if self.wpathsignal:
+            self._model.wpathsignal = getSaveFileName(None, 'Save signal',
+                                                      'untitled.txt',
+                                                      'text (*.txt)')[0]
+            if self._model.wpathsignal:
                 self.threader(status='saving signal', fn=self.save_signal)
         else:
             self._model.status = 'error: no data available'
@@ -342,11 +339,10 @@ class Controller(QObject):
     def get_rpathpeaks(self):
         if self._model.loaded:
             if self._model.peaks is None:
-                self.rpathpeaks = QFileDialog.getOpenFileNames(None,
-                                                               'Choose your'
-                                                               'peaks',
-                                                               '\home')[0][0]
-                if self.rpathpeaks:
+                self._model.rpathpeaks = getOpenFileName(None,
+                                                         'Choose your peaks',
+                                                         '\home')[0]
+                if self._model.rpathpeaks:
                     self.threader(status='loading peaks', fn=self.read_peaks)
             else:
                 self._model.status = 'error: peaks already in memory'
@@ -354,24 +350,21 @@ class Controller(QObject):
             self._model.status = 'error: no data available'
 
     def get_wpathpeaks(self):
-        if self.batchmode == 'single file':
+        if self._model.batchmode == 'single file':
             if self._model.peaks is not None:
-                self.wpathpeaks, _ = QFileDialog.getSaveFileName(None,
-                                                                 'Save peaks',
-                                                                 'untitled'
-                                                                 '.csv',
-                                                                 'CSV (*.csv)')
-                if self.wpathpeaks:
+                self._model.wpathpeaks = getSaveFileName(None, 'Save peaks',
+                                                         'untitled.csv',
+                                                         'CSV (*.csv)')[0]
+                if self._model.wpathpeaks:
                     self.threader(status='saving peaks', fn=self.save_peaks)
             else:
                 self._model.status = 'error: no peaks available'
-        elif self.batchmode == 'multiple files':
-            self.wdirpeaks = QFileDialog.getExistingDirectory(None,
-                                                              'Choose a '
-                                                              'directory '
-                                                              'for saving '
-                                                              'the peaks',
-                                                              '\home')
+        elif self._model.batchmode == 'multiple files':
+            self._model.wdirpeaks = getExistingDirectory(None,
+                                                         'Choose a directory '
+                                                         'for saving the '
+                                                         'peaks',
+                                                         '\home')
 
     def batch_processor(self):
         # disable plotting during batch processing, since matplotlib cannot
@@ -380,7 +373,7 @@ class Controller(QObject):
         # processed); the user can still get an impression of the progress
         # since the current file path is displayed
         self._model.plotting = False
-        for fpath in self.fpaths:
+        for fpath in self._model.fpaths:
             # reset model before reading new dataset
             self._model.reset()
             self.read_chan(fpath, chantype='signal')
@@ -393,9 +386,10 @@ class Controller(QObject):
                 # save peaks to self.wpathpeaks with "<fname>_peaks" ending
                 _, fname = os.path.split(fpath)
                 fpartname, _ = os.path.splitext(fname)
-                self.wpathpeaks = os.path.join(self.wdirpeaks,
-                                               '{}{}'.format(fpartname,
-                                                '_peaks.csv'))
+                self._model.wpathpeaks = os.path.join(self._model.wdirpeaks,
+                                                      '{}{}'.format(fpartname,
+                                                                    '_peaks'
+                                                                    '.csv'))
                 self.save_peaks()
         # enable plotting again once the batch is done
         self._model.plotting = True
@@ -405,31 +399,10 @@ class Controller(QObject):
         # method each time a new worker is instantiated
         self._model.status = status
         worker = Worker(fn, **kwargs)
-        worker.signals.progress.connect(self.change_progress)
+        worker.signals.progress.connect(self._model.progress)
         self.threadpool.start(worker)
 
-    def change_progress(self, value):
-        self._model.progress = value
-
-    def change_modality(self, value):
-        self.modality = value
-
-    def change_signalchan(self, value):
-        self._model.signalchan = value
-
-    def change_markerchan(self, value):
-        self._model.markerchan = value
-
-    def change_batchmode(self, value):
-        self.batchmode = value
-
-    def change_editable(self, value):
-        if value == 2:
-            self.peakseditable = True
-        elif value == 0:
-            self.peakseditable = False
-
-    def change_segment(self, values):
+    def verify_segment(self, values):
         # check if any of the fields is empty
         if values[0] and values[1]:
             begsamp = float(values[0])
@@ -440,7 +413,7 @@ class Controller(QObject):
             if np.all(evalarray):
                 # check if order is valid
                 if begsamp < endsamp:
-                    self._model.status ='valid selection {}'.format(values)
+                    self._model.status = 'valid selection {}'.format(values)
                     self._model.segment = [begsamp, endsamp]
                 else:
                     self._model.status = 'invalid selection {}'.format(values)

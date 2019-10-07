@@ -161,7 +161,7 @@ class Tests:
         # preview segment
         segment = segment
         self._controller.threader(status='changing segment',
-                                  fn=self._controller.change_segment,
+                                  fn=self._controller.verify_segment,
                                   values = segment)
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
@@ -177,7 +177,7 @@ class Tests:
         # 5. save segmented signal
         ##########################
         # set path for saving signal
-        self._controller.wpathsignal = sigpathseg
+        self._model.wpathsignal = sigpathseg
         # save signal
         self._controller.threader(status='saving signal',
                                   fn=self._controller.save_signal)
@@ -225,7 +225,7 @@ class Tests:
         # 8. save peaks
         ###############
         # set path for saving peaks
-        self._controller.wpathpeaks = './'+peakpath
+        self._model.wpathpeaks = './'+peakpath
         self._controller.threader(status='saving peaks',
                                   fn=self._controller.save_peaks)
         self.wait_for_signal(self._model.progress_changed, 1)
@@ -247,7 +247,7 @@ class Tests:
         
         # 10. load peaks found for segmented signal
         ###########################################
-        self._controller.rpathpeaks = peakpath
+        self._model.rpathpeaks = peakpath
         self._controller.threader(status='loading peaks',
                                   fn=self._controller.read_peaks)
         self.wait_for_signal(self._model.progress_changed, 1)
@@ -260,6 +260,7 @@ class Tests:
         self._controller.threader(status='calculating rate',
                                   fn=self._controller.calculate_rate)
         self.wait_for_signal(self._model.progress_changed, 1)
+        QTest.qWait(2000)
         assert np.around(np.mean(self._model.rateintp), 4) == avgrate, \
                 'failed to calculate rate'
         print('calculated rate successfully')
@@ -283,8 +284,8 @@ class Tests:
         QTest.keyClicks(self._view.modmenu, modality)
         QTest.keyClicks(self._view.sigchanmenu, sigchan)
         QTest.keyClicks(self._view.batchmenu, mode)
-        self._controller.fpaths = sigpaths
-        self._controller.wdirpeaks = peakdir
+        self._model.fpaths = sigpaths
+        self._model.wdirpeaks = peakdir
         
         # 2. process batch
         ##################
@@ -307,7 +308,7 @@ class Tests:
             # load peaks
             _, fname = os.path.split(sigpath)
             fpartname, _ = os.path.splitext(fname)
-            self._controller.rpathpeaks = fpartname + '_peaks.csv'
+            self._model.rpathpeaks = fpartname + '_peaks.csv'
             self._controller.threader(status='loading peaks',
                                       fn=self._controller.read_peaks)
             self.wait_for_signal(self._model.progress_changed, 1)
@@ -316,7 +317,7 @@ class Tests:
             print('loaded peaks for {} successfully'.format(sigpath))
             
             # remove all files that have been saved during the test
-            os.remove(self._controller.rpathpeaks)
+            os.remove(self._model.rpathpeaks)
             
 
 if __name__ == '__main__':
