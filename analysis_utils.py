@@ -21,12 +21,14 @@ def threshold_normalization(data, alpha, window_half):
     th = np.zeros(data.size)
     if data.size <= 2 * wh:
         th[:] = alpha * (iqr(np.abs(data)) / 2)
+        # normalize data by threshold
+        data_th = np.divide(data, th)
     else:
         data_pad = np.pad(data, wh, 'reflect')
         for i in np.arange(wh, wh + data.size):
             th[i - wh] = alpha * (iqr(np.abs(data_pad[i - wh:i + wh])) / 2)     
-    # normalize data by threshold (remove padding)
-    data_th = np.divide(data_pad[wh:wh + data.size], th)
+        # normalize data by threshold (remove padding)
+        data_th = np.divide(data_pad[wh:wh + data.size], th)
     return data_th, th
 
 
