@@ -64,6 +64,8 @@ class Model(QObject):
     @periodintp.setter
     def periodintp(self, value):
         self._periodintp = value
+#        if value is not None and self.plotting:
+#            self.stats_changed.emit(value)
             
     @property
     def rateintp(self):
@@ -73,7 +75,17 @@ class Model(QObject):
     def rateintp(self, value):
         self._rateintp = value
         if value is not None and self.plotting:
-            self.stats_changed.emit(self._rateintp)
+            self.stats_changed.emit(value)
+            
+    @property
+    def tidalampintp(self):
+        return self._rateintp
+
+    @tidalampintp.setter
+    def tidalampintp(self, value):
+        self._tidalampintp = value
+#        if value is not None and self.plotting:
+#            self.stats_changed.emit(value)
         
     @property
     def sec(self):
@@ -115,12 +127,10 @@ class Model(QObject):
     @property
     def fpaths(self):
         return self._fpaths
-        print(self._fpaths, type(self._fpaths))
         
     @fpaths.setter
     def fpaths(self, value):
         self._fpaths = value
-        print(value, type(value))
         
     @property
     def wpathpeaks(self):
@@ -186,6 +196,14 @@ class Model(QObject):
         self._markerchan = value
         
     @pyqtProperty(str)
+    def signalchan(self):
+        return self._signalchan
+
+    @pyqtSlot(str)
+    def set_signalchan(self, value):
+        self._signalchan = value
+        
+    @pyqtProperty(str)
     def modality(self):
         return self._modality
 
@@ -210,23 +228,15 @@ class Model(QObject):
         if value is not None:
             self.progress_changed.emit(value)
 
-    @pyqtProperty(str)
-    def signalchan(self):
-        return self._signalchan
 
-    @pyqtSlot(str)
-    def set_signalchan(self, value):
-        self._signalchan = value
-        
-        
     def __init__(self):
         super().__init__()
         
         self._signal = None
         self._peaks = None
-        self._period = None
         self._periodintp = None
         self._rateintp = None
+        self._tidalampintp = None
         self._sec = None
         self._markers = None
         self._segment = None
@@ -250,9 +260,9 @@ class Model(QObject):
     def reset(self):
         self._signal = None
         self._peaks = None
-        self._period = None
         self._periodintp = None
         self._rateintp = None
+        self._tidalampintp = None
         self._sec = None
         self._markers = None
         self._segment = None

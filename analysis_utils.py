@@ -48,17 +48,18 @@ def update_indices(source_idcs, update_idcs, update):
     return update_idcs_buffer
 
 
-def interp_period(peaks, periods, nsamp):
-    # interpolate periods over the entire duration of the signal: samples up
-    # until first peak and from last peak to end of signal are assigned the
-    # the mean of all periods; linear (2nd order) interpolation is chosen since
-    # cubic (4th order) interpolation can lead to biologically implausible
-    # interpolated values and erratic fluctuations due to overfitting
-    f = interp1d(np.ravel(peaks), periods, kind='slinear',
-                 bounds_error=False, fill_value=([periods[0]], [periods[-1]]))
+def interp_stats(peaks, stats, nsamp):
+    # interpolate descriptive statistics over the entire duration of the
+    # signal: samples up until first peak and from last peak to end of signal
+    # are set to the value of the first and last element of stats respectively;
+    # linear (2nd order) interpolation is chosen since cubic (4th order)
+    # interpolation can lead to biologically implausible interpolated values
+    # and erratic fluctuations due to overfitting
+    f = interp1d(np.ravel(peaks), stats, kind='slinear',
+                 bounds_error=False, fill_value=([stats[0]], [stats[-1]]))
     # internally, for consistency in plotting etc., keep original sampling
     # rate, convert sampling rates during saving
     samples = np.arange(0, nsamp)
-    periodsinterp = f(samples)
+    statsintp = f(samples)
     
-    return periodsinterp
+    return statsintp

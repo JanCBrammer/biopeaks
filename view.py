@@ -83,7 +83,6 @@ class View(QMainWindow):
         self.modmenulabel = QLabel('modality')
         self.modmenu = QComboBox(self)
         self.modmenu.addItem('ECG')
-#        self.modmenu.addItem('PPG')
         self.modmenu.addItem('RESP')
         self.modmenu.currentTextChanged.connect(self._model.set_modality)
         # initialize with default value
@@ -92,17 +91,13 @@ class View(QMainWindow):
         # channel selection
         self.sigchanmenulabel = QLabel('data channel')
         self.sigchanmenu = QComboBox(self)
-        self.sigchanmenu.addItem('ECG')
-#        self.sigchanmenu.addItem('PPG')
-        self.sigchanmenu.addItem('RESP')
+        self.sigchanmenu.addItem('infer from modality')
         self.sigchanmenu.addItem('A1')
         self.sigchanmenu.addItem('A2')
         self.sigchanmenu.addItem('A3')
         self.sigchanmenu.addItem('A4')
         self.sigchanmenu.addItem('A5')
         self.sigchanmenu.addItem('A6')
-#        self.sigchanmenu.currentTextChanged.connect(self._controller.
-#                                                    change_signalchan)
         self.sigchanmenu.currentTextChanged.connect(self._model.set_signalchan)
         # initialize with default value
         self._model.set_signalchan(self.sigchanmenu.currentText())
@@ -240,10 +235,6 @@ class View(QMainWindow):
         rate.triggered.connect(lambdafn)
         analyzemenu.addAction(rate)
         
-        breathamp = QAction('breathing amplitude', self)
-        breathamp.triggered.connect(self._controller.calculate_breathamp)
-        analyzemenu.addAction(breathamp)
-        
         # set up status bar to display error messages and current file path
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
@@ -312,11 +303,11 @@ class View(QMainWindow):
         self.ax1.relim()
         # reset navitools history
         self.navitools.update()
-        self.line0 = self.ax0.plot(self._model.sec, self._model.signal,
-                                   zorder=1)
+        self.ax0line0 = self.ax0.plot(self._model.sec, self._model.signal,
+                                      zorder=1)
         self.ax0.set_xlabel('seconds', fontsize='large', fontweight='heavy')
         self.canvas.draw()
-        print("plot_signal listening")
+#        print("plot_signal listening")
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
 
     def plot_peaks(self):
@@ -328,7 +319,7 @@ class View(QMainWindow):
                                                         c='m',
                                                         zorder=2)
         self.canvas.draw()
-        print("plot_peaks listening")
+#        print("plot_peaks listening")
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
 
     def plot_segment(self):
@@ -351,7 +342,7 @@ class View(QMainWindow):
         self.ax2.set_ylim(bottom=min(stats), top=max(stats))
         self.navitools.update()
         self.canvas.draw()
-        print('plot_stats listening')
+#        print('plot_stats listening')
         
     def dock_markers(self, value):
         if value == 1:

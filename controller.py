@@ -13,7 +13,7 @@ from scipy.signal import find_peaks
 from itertools import islice
 from shutil import copyfile
 from ecg_offline import ecg_peaks, ecg_period
-from resp_offline import resp_extrema, resp_period
+from resp_offline import resp_extrema, resp_stats
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
 getOpenFileName = QFileDialog.getOpenFileName
@@ -22,6 +22,7 @@ getSaveFileName = QFileDialog.getSaveFileName
 getExistingDirectory = QFileDialog.getExistingDirectory
 peakfuncs = {'ECG': ecg_peaks,
              'RESP': resp_extrema}
+
 
 # threading is implemented according to https://pythonguis.com/courses/
 # multithreading-pyqt-applications-qthreadpool/complete-example/
@@ -38,6 +39,7 @@ class Worker(QRunnable):
         self.kwargs = kwargs
         self.signals = WorkerSignals()
 
+
     def run(self):
         self.signals.progress.emit(0)
         self.fn(**self.kwargs)
@@ -53,13 +55,13 @@ class Controller(QObject):
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
 
+
     ###########
     # methods #
     ###########
     def open_signal(self):
         self._model.fpaths = getOpenFileNames(None, 'Choose your data',
                                               '\home')[0]
-        print('controller: {}'.format(self._model.fpaths))
         if self._model.fpaths:
             if (self._model.batchmode == 'multiple files' and
                 len(self._model.fpaths) >= 1):
@@ -73,6 +75,7 @@ class Controller(QObject):
                 self.threader(status='loading file', fn=self.read_chan,
                               path=self._model.fpaths[0], chantype='signal')
 
+
     def open_markers(self):
         if self._model.batchmode == 'single file':
             # only read markerss from file if file has been loaded and signal
@@ -82,6 +85,7 @@ class Controller(QObject):
                               path=self._model.rpathsignal, chantype='markers')
             else:
                 self._model.status = 'error: no data available'
+
 
     def read_chan(self, path, chantype):
         _, file_extension = os.path.splitext(path)
@@ -103,7 +107,10 @@ class Controller(QObject):
                 channels = metadata['channels']
                 # select channel and load data
                 if chantype == 'signal':
-                    channel = self._model.signalchan
+                    if self._model.signalchan == 'infer from modality':
+                        channel = self._model.modality
+                    else:
+                        channel = self._model.signalchan
                 elif chantype == 'markers':
                     channel = self._model.markerchan
                 if channel[0] == 'A':
@@ -168,6 +175,7 @@ class Controller(QObject):
         if self._model.rateintp is not None:
             self._model.rateintp = self._model.rateintp[begsamp:endsamp]
 
+
     def save_signal(self):
         # if the signal has not been segmented, simply copy it to new
         # location
@@ -194,6 +202,7 @@ class Controller(QObject):
                 data.to_csv(newfile, sep='\t', header=False,
                             index=False)
 
+
     def read_peaks(self):
         dfpeaks = pd.read_csv(self._model.rpathpeaks)
         if dfpeaks.shape[1] == 1:
@@ -218,6 +227,7 @@ class Controller(QObject):
             # convert to biopeaks array format
             self._model.peaks = extrema.astype(int)
 
+
     def find_peaks(self):
         if self._model.loaded:
             if self._model.peaks is None:
@@ -228,6 +238,7 @@ class Controller(QObject):
                 self._model.status = 'error: peaks already in memory'
         else:
             self._model.status = 'error: no data available'
+
 
     def edit_peaks(self, event):
         # account for the fact that depending on sensor modality, data.peaks
@@ -264,6 +275,7 @@ class Controller(QObject):
                 insertarr = [newpeak]
                 self._model.peaks = np.insert(self._model.peaks, insertidx,
                                               insertarr)
+
 
     def save_peaks(self):
         # save peaks in seconds
@@ -304,27 +316,23 @@ class Controller(QObject):
             savearray.to_csv(self._model.wpathpeaks, index=False,
                              header=['peaks', 'troughs'], na_rep='nan')
 
+
     def calculate_rate(self):
         if self._model.peaks is None:
             self._model.status = 'error: no peaks available'
             return
         if self._model.modality == 'ECG':
             (self._model.peaks,
-             self._model.period,
-             self._model.periodintp) = ecg_period(peaks=self._model.peaks,
-                                                  sfreq=self._model.sfreq,
-                                                  nsamp=self._model.signal.
-                                                  size)
-            self._model.rateintp = 60 / self._model.periodintp
+             self._model.periodintp,
+             self._model.rateintp) = ecg_period(peaks=self._model.peaks,
+                                                sfreq=self._model.sfreq,
+                                                nsamp=self._model.signal.size)
         elif self._model.modality == 'RESP':
-            (self._model.period,
-             self._model.periodintp) = resp_period(extrema=self._model.peaks,
-                                                   signal=self._model.signal,
-                                                   sfreq=self._model.sfreq)
-            self._model.rateintp = 60 / self._model.periodintp
-
-    def calculate_breathamp(self):
-        pass
+            (self._model.periodintp,
+             self._model.rateintp,
+             self._model.tidalampintp) = resp_stats(extrema=self._model.peaks,
+                                                    signal=self._model.signal,
+                                                    sfreq=self._model.sfreq)
 
     def get_wpathsignal(self):
         if self._model.loaded:
@@ -335,6 +343,7 @@ class Controller(QObject):
                 self.threader(status='saving signal', fn=self.save_signal)
         else:
             self._model.status = 'error: no data available'
+
 
     def get_rpathpeaks(self):
         if self._model.loaded:
@@ -348,6 +357,7 @@ class Controller(QObject):
                 self._model.status = 'error: peaks already in memory'
         else:
             self._model.status = 'error: no data available'
+
 
     def get_wpathpeaks(self):
         if self._model.batchmode == 'single file':
@@ -365,6 +375,7 @@ class Controller(QObject):
                                                          'for saving the '
                                                          'peaks',
                                                          '\home')
+
 
     def batch_processor(self):
         # disable plotting during batch processing, since matplotlib cannot
@@ -394,6 +405,7 @@ class Controller(QObject):
         # enable plotting again once the batch is done
         self._model.plotting = True
 
+
     def threader(self, status, fn, **kwargs):
         # note that the worker's signal must be connected to the controller's
         # method each time a new worker is instantiated
@@ -401,6 +413,7 @@ class Controller(QObject):
         worker = Worker(fn, **kwargs)
         worker.signals.progress.connect(self._model.progress)
         self.threadpool.start(worker)
+
 
     def verify_segment(self, values):
         # check if any of the fields is empty

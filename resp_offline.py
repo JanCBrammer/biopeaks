@@ -8,15 +8,15 @@ Created on Wed Dec  5 17:33:13 2018
 import numpy as np
 from scipy.signal import welch, find_peaks, argrelextrema
 from filters import butter_lowpass_filter
-from analysis_utils import interp_period
+from analysis_utils import interp_stats
 
 
 def resp_extrema(signal, sfreq):
 
     N = np.size(signal)
     # get an initial estimate of dominant breathing rate; assume rate ranging
-    # from 10 to 30 breaths per minute
-    fmin, fmax = .16, 0.5
+    # from 5 to 60 breaths per minute
+    fmin, fmax = .08, 1
     f, powden = welch(signal, sfreq, nperseg=N)
     f_range = np.logical_and(f >= fmin, f <= fmax)
     f = f[f_range]
@@ -116,13 +116,9 @@ def resp_extrema(signal, sfreq):
         # make sure that the search window doesn't exceed the boundaries of the
         # trial
         if search_samples[0] <= 0:
-            search_samples = np.arange(0,
-                                       t + n_search_window,
-                                       dtype=int)
+            search_samples = np.arange(0, t + n_search_window, dtype=int)
         elif search_samples[-1] >= N:
-            search_samples = np.arange(t - n_search_window,
-                                       N,
-                                       dtype=int)
+            search_samples = np.arange(t - n_search_window, N, dtype=int)
 
         search_signal = signal[search_samples]
         adjusted_t = search_samples[np.argmin(search_signal)]
@@ -131,20 +127,15 @@ def resp_extrema(signal, sfreq):
     adjusted_peaks = []
     for p in peaks:
 
-        search_samples = np.arange(p - n_search_window,
-                                   p + n_search_window,
+        search_samples = np.arange(p - n_search_window, p + n_search_window,
                                    dtype=int)
 
         # make sure that the search window doesn't exceed the boundaries of the
         # trial
         if search_samples[0] <= 0:
-            search_samples = np.arange(0,
-                                       p + n_search_window,
-                                       dtype=int)
+            search_samples = np.arange(0, p + n_search_window, dtype=int)
         elif search_samples[-1] >= N:
-            search_samples = np.arange(p - n_search_window,
-                                       N,
-                                       dtype=int)
+            search_samples = np.arange(p - n_search_window, N, dtype=int)
 
         search_signal = signal[search_samples]
         adjusted_p = search_samples[np.argmax(search_signal)]
@@ -159,7 +150,11 @@ def resp_extrema(signal, sfreq):
     return returnarray
 
 
-def resp_period(extrema, signal, sfreq):
+def resp_stats(extrema, signal, sfreq):
+    '''
+    tidal amplitude is calculated as vertical trough-peak differences;
+    breathing period is calculated as horizontal peak-peak differences
+    '''
     # check if the alternation of peaks and troughs is
     # unbroken (it might be due to user edits);
     # if alternation of sign in extdiffs is broken, remove
@@ -171,27 +166,61 @@ def resp_period(extrema, signal, sfreq):
     extrema = np.delete(extrema, removeext)
     amplitudes = np.delete(amplitudes, removeext)
     
-    # determine if series starts with peak or trough to be able
-    # to save peaks and troughs separately (as well as the
-    # corresponding amplitudes)
+    
+    # pad the amplitude series in such a way that it always starts with a
+    # trough and ends with a peak (i.e., series of trough-peak pairs),
+    # in order to be able to interpolate tidal amplitudes by assigning to each
+    # peak the vertical difference to the preceding trough; drawing all
+    # passible cases in a 2(extrema start w/ peak vs. extrema start w/ trough)
+    # x 2(extrema end w/ peak vs. extrema end w/ trough) matrix helps figuring
+    # out how to pad series
+    
+    # determine if series starts with peak or trough
     if amplitudes[0] > amplitudes[1]:
-        peaks = extrema[0:-1:2]
-        amppeaks = amplitudes[0:-1:2]
-        amptroughs = amplitudes[1::2]
-    elif amplitudes[0] < amplitudes[1]:
-        peaks = extrema[1::2]
-        amppeaks = amplitudes[1::2]
-        amptroughs = amplitudes[0:-1:2]
+        # series starts with peak
+        # check if number of extrema is even
+        if np.remainder(extrema.size, 2) != 0:
+            # prepend NAN (i.e., trough)
+            extrema = np.pad(extrema.astype(float), (1, 0), 'constant',
+                             constant_values=(np.nan,))
+            amplitudes = np.pad(amplitudes.astype(float), (1, 0), 'constant',
+                                constant_values=(np.nan,))
+        else:
+            # pad with NANs on both ends (prepend trough and append peak)
+            extrema = np.pad(extrema.astype(float), (1, 1), 'constant',
+                             constant_values=(np.nan,))
+            amplitudes = np.pad(amplitudes.astype(float), (1, 1), 'constant',
+                                constant_values=(np.nan,))
         
-    periods = np.ediff1d(peaks, to_begin=0) / sfreq
-    periods[0] = np.mean(periods)
-    periods_interp = interp_period(peaks, periods, signal.size)
+    elif amplitudes[0] < amplitudes[1]:
+        # series starts with trough
+        # check if number of extrema is even
+        if np.remainder(extrema.size, 2) != 0:
+            # append NAN (i.e., peak)
+            extrema = np.pad(extrema.astype(float), (0, 1), 'constant',
+                             constant_values=(np.nan,))
+            amplitudes = np.pad(amplitudes.astype(float), (0, 1), 'constant',
+                                constant_values=(np.nan,))
+        
+    # calculate tidal amplitude
+    peaks = extrema[1::2]
+    amppeaks = amplitudes[1::2]
+    amptroughs = amplitudes[0:-1:2]
+    tidalamps = amppeaks - amptroughs
+    # remove tidal amplitudes that are NAN, as well as any peak that is part of
+    # a trough-peak pair that resulted in a tidal amplitude of NAN
+    nan_idcs = np.where(np.isnan(tidalamps))[0]
+    tidalamps = np.delete(tidalamps, nan_idcs)
+    peaks = np.delete(peaks, nan_idcs)
+    # to each peak, assign the vertical difference of that peak to the
+    # preceding trough
+    tidalampintp = interp_stats(peaks, tidalamps, signal.size)
+
+    # calculate breathing period and rate
+    # to each peak assign the horizontal difference to the preceding peak
+    period = np.ediff1d(peaks, to_begin=0) / sfreq
+    period[0] = np.mean(period)
+    periodintp = interp_stats(peaks, period, signal.size)
+    rateintp = 60 / periodintp
     
-#    amps =
-#    amps_interp
-    
-    return periods, periods_interp
-
-
-
-
+    return periodintp, rateintp, tidalampintp
