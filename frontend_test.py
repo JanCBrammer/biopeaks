@@ -142,21 +142,12 @@ class Tests:
         self.wait_for_signal(self._model.progress_changed, 1)
         # give a human reviewer some time to confirm the execution visually
         QTest.qWait(2000)
-        assert np.size(self._model.signal) == siglen, \
-                'failed to load signal'
+        assert np.size(self._model.signal) == siglen, 'failed to load signal'
         print('loaded signal successfully')
-        
-        # 3. load markers
-        #################
-        self._controller.open_markers()
-        # open_markers starts thread
-        self.wait_for_signal(self._model.progress_changed, 1)
-        QTest.qWait(2000)
-        assert np.size(self._model.markers) == siglen, \
-                'failed to load markers'
+        assert np.size(self._model.markers) == siglen, 'failed to load markers'
         print('loaded markers successfully')
-        
-        # 4. segment signal
+    
+        # 3. segment signal
         ###################
         # preview segment
         segment = segment
@@ -174,7 +165,7 @@ class Tests:
                 'failed to load signal'
         print('segmented signal successfully')
         
-        # 5. save segmented signal
+        # 4. save segmented signal
         ##########################
         # set path for saving signal
         self._model.wpathsignal = sigpathseg
@@ -186,7 +177,7 @@ class Tests:
                 'failed to save segmented signal'
         print('segmented signal successfully')
 
-        # 6. find peaks
+        # 5. find peaks
         ###############
         self._controller.threader(status='finding peaks',
                                   fn=self._controller.find_peaks)
@@ -195,7 +186,7 @@ class Tests:
         assert self._model.peaks.size == peaklen, 'failed to find peaks'
         print('found peaks successfully')
         
-        # 7. edit peaks
+        # 6. edit peaks
         ###############
         # enable editing
         QTest.mouseClick(self._view.editcheckbox, Qt.LeftButton)
@@ -222,7 +213,7 @@ class Tests:
                    demopeak) <= 0.015, 'failed to re-insert first peak'
         print('re-inserted first peaks successfully')
         
-        # 8. save peaks
+        # 7. save peaks
         ###############
         # set path for saving peaks
         self._model.wpathpeaks = './'+peakpath
@@ -233,7 +224,7 @@ class Tests:
         assert os.path.isfile('./'+peakpath), 'failed to save peaks'
         print('saved peaks successfully')
         
-        # 9. load segmented signal
+        # 8. load segmented signal
         ##########################
         self._controller.threader(status='loading file',
                                   fn=self._controller.read_chan,
@@ -245,7 +236,7 @@ class Tests:
                 'failed to load signal'
         print('re-loaded signal successfully')
         
-        # 10. load peaks found for segmented signal
+        # 9. load peaks found for segmented signal
         ###########################################
         self._model.rpathpeaks = peakpath
         self._controller.threader(status='loading peaks',
@@ -255,7 +246,7 @@ class Tests:
         assert self._model.peaks.size == peaklen, 'failed to re-load peaks'
         print('re-loaded peaks successfully')
         
-        # 11. calculate rate
+        # 10. calculate rate
         ##########################
         self._controller.threader(status='calculating rate',
                                   fn=self._controller.calculate_rate)

@@ -73,21 +73,9 @@ class Controller(QObject):
                   len(self._model.fpaths) == 1):
                 self._model.reset()
                 self.threader(status='loading file', fn=self.read_chan,
-                              path=self._model.fpaths[0], chantype='signal')
+                              path=self._model.fpaths[0])
 
-
-    def open_markers(self):
-        if self._model.batchmode == 'single file':
-            # only read markerss from file if file has been loaded and signal
-            # has not been segmented yet
-            if self._model.loaded and self._model.segment is None:
-                self.threader(status='docking markers', fn=self.read_chan,
-                              path=self._model.rpathsignal, chantype='markers')
-            else:
-                self._model.status = 'error: no data available'
-
-
-    def read_chan(self, path, chantype):
+    def read_chan(self, path):
         _, file_extension = os.path.splitext(path)
         if file_extension != '.txt':
             self._model.status = 'error: wrong file format'
@@ -105,53 +93,69 @@ class Controller(QObject):
                 sfreq = metadata['sampling rate']
                 sensors = metadata['sensor']
                 channels = metadata['channels']
-                # select channel and load data
-                if chantype == 'signal':
-                    if self._model.signalchan == 'infer from modality':
-                        channel = self._model.modality
-                    else:
-                        channel = self._model.signalchan
-                elif chantype == 'markers':
-                    channel = self._model.markerchan
-                if channel[0] == 'A':
-                    chanidx = [i for i, s in enumerate(channels)
-                               if int(channel[1]) == s]
-                elif channel[0] == 'I':
-                    chanidx = int(channel[1])
-                else:
+                
+                # load signal
+                if self._model.signalchan == 'infer from modality':
+                    schan = self._model.modality
                     # find the index of the sensor that corresponds to the
                     # selected modality; it doesn't matter if sensor is
                     # called <modality>BIT or <modality>BITREV
-                    chanidx = [i for i, s in enumerate(sensors)
-                                if channel in s]
-                if not chanidx:
-                    self._model.status = 'error: channel not found'
+                    schanidx = [i for i, s in enumerate(sensors)
+                                if schan in s]
+                else:
+                    # search analogue channels
+                    schan = self._model.signalchan
+                    schanidx = [i for i, s in enumerate(channels)
+                               if int(schan[1]) == s]
+                if not schanidx:
+                    self._model.status = 'error: signal-channel not found'
                     return
-                if channel[0] != 'I':
+                # select only first sensor of the selected
+                # modality (it is conceivable that multiple sensors
+                # of the same kind have been recorded)
+                schanidx = schanidx[0]
+                # since analog channels start in column 5 (zero
+                # based), add 5 to sensor index to obtain signal
+                # from selected modality
+                schanidx += 5
+                # load data with pandas for performance
+                signal = pd.read_csv(path, delimiter='\t', usecols=[schanidx],
+                                     header=None, comment='#')
+                signallen = signal.size
+                sec = np.linspace(0, signallen / sfreq, signallen)
+                self._model.rpathsignal = path
+                # important to set seconds PRIOR TO signal,
+                # otherwise plotting behaves unexpectadly (since
+                # plotting is triggered as soon as signal changes)
+                self._model.sec = sec
+                self._model.signal = np.ravel(signal)
+                self._model.sfreq = sfreq
+                self._model.loaded = True
+                
+                # load markers
+                if self._model.markerchan == 'none':
+                    return
+                mchan = self._model.markerchan
+                if mchan[0] == 'A':
+                    mchanidx = [i for i, s in enumerate(channels)
+                               if int(mchan[1]) == s]
+                elif mchan[0] == 'I':
+                    mchanidx = int(mchan[1])
+                if not mchanidx:
+                    self._model.status = 'error: marker-channel not found'
+                    return
+                if mchan[0] != 'I':
                     # select only first sensor of the selected
                     # modality (it is conceivable that multiple sensors
                     # of the same kind have been recorded)
-                    chanidx = chanidx[0]
+                    mchanidx = mchanidx[0]
                     # since analog channels start in column 5 (zero
                     # based), add 5 to sensor index to obtain signal
                     # from selected modality
-                    chanidx += 5
-                # load data with pandas for performance
-                data = pd.read_csv(path, delimiter='\t', usecols=[chanidx],
-                                   header=None, comment='#')
-                if chantype == 'signal':
-                    datalen = data.size
-                    sec = np.linspace(0, datalen / sfreq, datalen)
-                    self._model.rpathsignal = path
-                    # important to set seconds PRIOR TO signal,
-                    # otherwise plotting behaves unexpectadly (since
-                    # plotting is triggered as soon as signal changes)
-                    self._model.sec = sec
-                    self._model.signal = np.ravel(data)
-                    self._model.sfreq = sfreq
-                    self._model.loaded = True
-                elif chantype == 'markers':
-                    self._model.markers = np.ravel(data)
+                    mchanidx += 5
+                markers = pd.read_csv(path, delimiter='\t', usecols=[mchanidx],
+                                      header=None, comment='#')
+                self._model.markers = np.ravel(markers)
             else:
                 self._model.status = 'error: wrong file format'
 
@@ -172,8 +176,13 @@ class Controller(QObject):
             self._model.peaks = peaks
         if self._model.markers is not None:
             self._model.markers = self._model.markers[begsamp:endsamp]
+        if self._model.periodintp is not None:
+            self._model.periodintp = self._model.periodintp[begsamp:endsamp]
         if self._model.rateintp is not None:
             self._model.rateintp = self._model.rateintp[begsamp:endsamp]
+        if self._model.tidalampintp is not None:
+            self._model.tidalampintp = self._model.tidalampintp[begsamp:
+                                                                endsamp]
 
 
     def save_signal(self):
@@ -387,7 +396,7 @@ class Controller(QObject):
         for fpath in self._model.fpaths:
             # reset model before reading new dataset
             self._model.reset()
-            self.read_chan(fpath, chantype='signal')
+            self.read_chan(fpath)
             # in case the file cannot be loaded successfully (e.g., wrong
             # format or non-existing channel), move on to next file
             if self._model.loaded:

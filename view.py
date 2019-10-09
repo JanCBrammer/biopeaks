@@ -8,7 +8,8 @@ Created on Mon Jun  3 18:47:12 2019
 from PyQt5.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                              QVBoxLayout, QHBoxLayout, QCheckBox,
                              QLabel, QStatusBar, QGroupBox, QDockWidget,
-                             QLineEdit, QFormLayout, QPushButton, QProgressBar)
+                             QLineEdit, QFormLayout, QPushButton, QProgressBar,
+                             QSplitter)
 from PyQt5.QtCore import (Qt, QSignalMapper, QRegExp, pyqtSignal)
 from PyQt5.QtGui import QIcon, QRegExpValidator
 from matplotlib.figure import Figure
@@ -46,25 +47,37 @@ class View(QMainWindow):
         self.setGeometry(50, 50, 1750, 750)
         self.setWindowIcon(QIcon('python_icon.png'))
         
-        # figure
-        self.figure = Figure()
-        self.canvas = FigureCanvas(self.figure)
-        # axes for signal
-        self.ax0 = self.figure.add_axes([.05, .55, .9, .4])
-        self.ax0.get_yaxis().set_visible(False)
-        self.ax0.set_frame_on(False)
-        # axes for markers docked below signal axes
-        self.ax1 = self.figure.add_axes([.05, .275, .9, .225],
-                                        sharex=self.ax0)
-        self.ax1.set_frame_on(False)
-        self.ax1.get_xaxis().set_visible(False)
-        self.ax1.get_yaxis().set_visible(False)
-        # axes for rate or amplitude docked below markers
-        self.ax2 = self.figure.add_axes([.05, .05, .9, .225],
-                                        sharex=self.ax0)
-        self.ax2.set_frame_on(False)
-        self.ax2.get_xaxis().set_visible(False)
-        self.navitools = CustomNavigationToolbar(self.canvas, self)
+        # figure0 for signal
+        self.figure0 = Figure()
+        self.canvas0 = FigureCanvas(self.figure0)
+        self.ax00 = self.figure0.add_subplot()
+        self.ax00.set_frame_on(False)
+        self.figure0.tight_layout()
+
+        # figure1 for markers
+        self.figure1 = Figure()
+        self.canvas1 = FigureCanvas(self.figure1)
+        self.ax10 = self.figure1.add_subplot(sharex=self.ax00)
+        self.ax10.get_xaxis().set_visible(False)
+        self.ax10.set_frame_on(False)
+        self.figure1.tight_layout()
+        
+        # figure2 for statistics
+        self.figure2 = Figure()
+        self.canvas2 = FigureCanvas(self.figure2)
+        self.ax20 = self.figure2.add_subplot(3,1,1, sharex=self.ax00)
+        self.ax20.get_xaxis().set_visible(False)
+        self.ax20.set_frame_on(False)
+        self.ax21 = self.figure2.add_subplot(3,1,2, sharex=self.ax00)
+        self.ax21.get_xaxis().set_visible(False)
+        self.ax21.set_frame_on(False)
+        self.ax22 = self.figure2.add_subplot(3,1,3, sharex=self.ax00)
+        self.ax22.get_xaxis().set_visible(False)
+        self.ax22.set_frame_on(False)
+        self.figure2.tight_layout()
+        
+        # navigation bar
+        self.navitools = CustomNavigationToolbar(self.canvas0, self)
         
         # peak editing
         self.editcheckbox = QCheckBox('edit peaks', self)
@@ -104,6 +117,7 @@ class View(QMainWindow):
         
         self.markerschanmenulabel = QLabel('marker channel')
         self.markerschanmenu = QComboBox(self)
+        self.markerschanmenu.addItem('none')
         self.markerschanmenu.addItem('I1')
         self.markerschanmenu.addItem('I2')
         self.markerschanmenu.addItem('A1')
@@ -188,14 +202,6 @@ class View(QMainWindow):
         openSignal.triggered.connect(self._controller.open_signal)
         signalmenu.addAction(openSignal)
         
-        markersmenu = signalmenu.addMenu('markers')
-        dockmarkers = QAction('dock', self)
-        dockmarkers.triggered.connect(self._controller.open_markers)
-        markersmenu.addAction(dockmarkers)
-        undockmarkers = QAction('undock', self)
-        undockmarkers.triggered.connect(lambda: self.dock_markers(0))        
-        markersmenu.addAction(undockmarkers)
-        
         segmentSignal = QAction('select segment', self)
         segmentSignal.triggered.connect(self.segmentermap.map)
         self.segmentermap.setMapping(segmentSignal, 1)
@@ -248,14 +254,24 @@ class View(QMainWindow):
         self.centwidget = QWidget()
         self.setCentralWidget(self.centwidget)
 
-        # connect canvas to keyboard and mouse input for peak editing;
+        # connect canvas0 to keyboard and mouse input for peak editing;
         # only widgets (e.g. canvas) that currently have focus capture
         # keyboard input: "You must enable keyboard focus for a widget if
         # it processes keyboard events."
-        self.canvas.setFocusPolicy(Qt.ClickFocus)
-        self.canvas.setFocus()
-        self.canvas.mpl_connect('key_press_event', self._controller.edit_peaks)
-        self.canvas.mpl_connect('button_press_event', self.get_xcursor)
+        self.canvas0.setFocusPolicy(Qt.ClickFocus)
+        self.canvas0.setFocus()
+        self.canvas0.mpl_connect('key_press_event',
+                                 self._controller.edit_peaks)
+        self.canvas0.mpl_connect('button_press_event', self.get_xcursor)
+        
+        # arrange the three figure canvases in splitter object
+        self.splitter = QSplitter(Qt.Vertical)
+        # setting opaque resizing to false is important, since resizing gets
+        # very slow otherwise once axes are populated
+        self.splitter.setOpaqueResize(False)
+        self.splitter.addWidget(self.canvas0)
+        self.splitter.addWidget(self.canvas1)
+        self.splitter.addWidget(self.canvas2)
         
         # define GUI layout
         self.vlayout0 = QVBoxLayout(self.centwidget)
@@ -270,7 +286,7 @@ class View(QMainWindow):
         self.vlayout1.addRow(self.batchmenulabel, self.batchmenu)
         self.optionsgroup.setLayout(self.vlayout1)
         self.hlayout0.addWidget(self.optionsgroup)
-        self.hlayout0.addWidget(self.canvas)
+        self.hlayout0.addWidget(self.splitter)
         self.hlayout0.setStretch(0, 1)
         self.hlayout0.setStretch(1, 15)
         self.vlayout0.addLayout(self.hlayout0)
@@ -283,9 +299,11 @@ class View(QMainWindow):
         # connect output widgets to external signals #
         ##############################################
         self._model.signal_changed.connect(self.plot_signal)
+        self._model.markers_changed.connect(self.plot_markers)
         self._model.peaks_changed.connect(self.plot_peaks)
-        self._model.stats_changed.connect(self.plot_stats)
-        self._model.markers_changed.connect(self.dock_markers)
+        self._model.period_changed.connect(self.plot_period)
+        self._model.rate_changed.connect(self.plot_rate)
+        self._model.tidalamp_changed.connect(self.plot_tidalamp)
         self._model.path_changed.connect(self.display_path)
         self._model.segment_changed.connect(self.plot_segment)
         self._model.status_changed.connect(self.display_status)
@@ -296,73 +314,74 @@ class View(QMainWindow):
     # methods #
     ###########
 
-    def plot_signal(self):
-        self.ax0.clear()
-        self.ax0.relim()
-        self.ax1.clear()
-        self.ax1.relim()
+    def plot_signal(self, value):
+        self.ax00.clear()
+        self.ax00.relim()
         # reset navitools history
         self.navitools.update()
-        self.ax0line0 = self.ax0.plot(self._model.sec, self._model.signal,
-                                      zorder=1)
-        self.ax0.set_xlabel('seconds', fontsize='large', fontweight='heavy')
-        self.canvas.draw()
+        self.line00 = self.ax00.plot(self._model.sec, value, zorder=1)
+        self.ax00.set_xlabel('seconds', fontsize='large', fontweight='heavy')
+        self.canvas0.draw()
 #        print("plot_signal listening")
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
-
-    def plot_peaks(self):
+        
+    def plot_peaks(self, value):
         # self.scat is listed in ax.collections
-        if self.ax0.collections:
-            self.ax0.collections[0].remove()
-        self.scat = self.ax0.scatter(self._model.sec[self._model.peaks],
-                                     self._model.signal[self._model.peaks],
-                                                        c='m',
-                                                        zorder=2)
-        self.canvas.draw()
+        if self.ax00.collections:
+            self.ax00.collections[0].remove()
+        self.scat = self.ax00.scatter(self._model.sec[value],
+                                      self._model.signal[value], c='m',
+                                      zorder=2)
+        self.canvas0.draw()
 #        print("plot_peaks listening")
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
 
-    def plot_segment(self):
+    def plot_segment(self, value):
         # self.segementspan is listed in ax.patches
-        if self.ax0.patches:
-            self.ax0.patches[0].remove()
-        self.segmentspan = self.ax0.axvspan(self._model.segment[0],
-                                           self._model.segment[1],
-                                           color='m',
-                                           alpha=0.25)
-        self.canvas.draw()
+        if self.ax00.patches:
+            self.ax00.patches[0].remove()
+        self.segmentspan = self.ax00.axvspan(value[0], value[1], color='m',
+                                             alpha=0.25)
+        self.canvas0.draw()
         self.confirmedit.setEnabled(True)
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
         
-    def plot_stats(self, stats):
-        self.ax2.clear()
-        self.ax2.relim()
+    def plot_markers(self, value):
+        self.ax10.clear()
+        self.ax10.relim()
+        self.line10 = self.ax10.plot(self._model.sec, value)
+        self.canvas1.draw()
+#        print("plot_markers listening")
+
+    def plot_period(self, value):
+        self.ax20.clear()
+        self.ax20.relim()
         self.navitools.home()
-        self.line1 = self.ax2.plot(self._model.sec, stats)
-        self.ax2.set_ylim(bottom=min(stats), top=max(stats))
+        self.line20 = self.ax20.plot(self._model.sec, value)
+        self.ax20.set_ylim(bottom=min(value), top=max(value))
         self.navitools.update()
-        self.canvas.draw()
-#        print('plot_stats listening')
+        self.canvas2.draw()
+#        print("plot_period listening")
         
-    def dock_markers(self, value):
-        if value == 1:
-            # manually restore home view to avoid corrupted scale in 
-            # marker channel plot
-            self.navitools.home()
-            self.ax1.clear()
-            self.markers = self.ax1.plot(self._model.sec,
-                                         self._model.markers)
-            # reset navitools history
-            self.navitools.update()
-        elif value == 0:
-            # reset markers, otherwise they are replotted, e.g. after
-            # segmentation of the signal
-            self._model.markers = None
-            self.statusBar.showMessage('undocking markers')
-            self.ax1.clear()
-            self.ax1.relim()
-            self.statusBar.clearMessage()
-        self.canvas.draw()
+    def plot_rate(self, value):
+        self.ax21.clear()
+        self.ax21.relim()
+        self.navitools.home()
+        self.line21 = self.ax21.plot(self._model.sec, value)
+        self.ax21.set_ylim(bottom=min(value), top=max(value))
+        self.navitools.update()
+        self.canvas2.draw()
+#        print("plot_rate listening")
+        
+    def plot_tidalamp(self, value):
+        self.ax22.clear()
+        self.ax22.relim()
+        self.navitools.home()
+        self.line22 = self.ax22.plot(self._model.sec, value)
+        self.ax22.set_ylim(bottom=min(value), top=max(value))
+        self.navitools.update()
+        self.canvas2.draw()
+#        print("plot_tidalamp listening")
 
     def display_path(self, value):
         self.currentFile.setText(value)
@@ -386,15 +405,15 @@ class View(QMainWindow):
             # close segmenter after segment has been confirmed
             elif value == 0:
                 self.segmenter.setVisible(False)
-                if self.ax0.patches:
-                    self.ax0.patches[0].remove()
+                if self.ax00.patches:
+                    self.ax00.patches[0].remove()
             # close segmenter after segmentation has been aborted (reset
             # segment)
             elif value == 2:
                 self._model.segment = None
                 self.segmenter.setVisible(False)
-                if self.ax0.patches:
-                    self.ax0.patches[0].remove()
+                if self.ax00.patches:
+                    self.ax00.patches[0].remove()
                 
     def enable_segmentedit(self):
         # disable peak editing to avoid interference
@@ -423,12 +442,18 @@ class View(QMainWindow):
         self.segment_updated.emit([begsamp, endsamp])
         
     def reset_plot(self):
-        self.ax0.clear()
-        self.ax0.relim()
-        self.ax1.clear()
-        self.ax1.relim()
-        self.ax2.clear()
-        self.ax2.relim()
-        self.canvas.draw()
+        self.ax00.clear()
+        self.ax00.relim()
+        self.ax10.clear()
+        self.ax10.relim()
+        self.ax20.clear()
+        self.ax20.relim()
+        self.ax21.clear()
+        self.ax21.relim()
+        self.ax22.clear()
+        self.ax22.relim()
+        self.canvas0.draw()
+        self.canvas1.draw()
+        self.canvas2.draw()
         self.navitools.update()
         self.currentFile.clear()

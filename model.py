@@ -12,13 +12,15 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, pyqtProperty
 class Model(QObject):
     
     # costum signals
-    signal_changed = pyqtSignal()
-    peaks_changed = pyqtSignal()
+    signal_changed = pyqtSignal(object)
+    peaks_changed = pyqtSignal(object)
+    markers_changed = pyqtSignal(object)
+    segment_changed = pyqtSignal(object)
     # makes sure that the emitted stats signal has the same length as self._sec
-    stats_changed = pyqtSignal(object)
-    markers_changed = pyqtSignal(int)
+    period_changed = pyqtSignal(object)
+    rate_changed = pyqtSignal(object)
+    tidalamp_changed = pyqtSignal(object)
     path_changed = pyqtSignal(str)
-    segment_changed = pyqtSignal()
     status_changed = pyqtSignal(str)
     progress_changed = pyqtSignal(int)
     model_reset = pyqtSignal()
@@ -37,7 +39,7 @@ class Model(QObject):
         # signal, also do not emit signal if plotting is not desired (e.g.,
         # during batch processing)
         if value is not None and self.plotting:
-            self.signal_changed.emit()
+            self.signal_changed.emit(value)
         
     @property
     def peaks(self):
@@ -47,7 +49,7 @@ class Model(QObject):
     def peaks(self, value):
         self._peaks = value
         if value is not None and self.plotting:
-            self.peaks_changed.emit()
+            self.peaks_changed.emit(value)
             
     @property
     def period(self):
@@ -64,8 +66,8 @@ class Model(QObject):
     @periodintp.setter
     def periodintp(self, value):
         self._periodintp = value
-#        if value is not None and self.plotting:
-#            self.stats_changed.emit(value)
+        if value is not None and self.plotting:
+            self.period_changed.emit(value)
             
     @property
     def rateintp(self):
@@ -75,17 +77,17 @@ class Model(QObject):
     def rateintp(self, value):
         self._rateintp = value
         if value is not None and self.plotting:
-            self.stats_changed.emit(value)
+            self.rate_changed.emit(value)
             
     @property
     def tidalampintp(self):
-        return self._rateintp
+        return self._tidalampintp
 
     @tidalampintp.setter
     def tidalampintp(self, value):
         self._tidalampintp = value
-#        if value is not None and self.plotting:
-#            self.stats_changed.emit(value)
+        if value is not None and self.plotting:
+            self.tidalamp_changed.emit(value)
         
     @property
     def sec(self):
@@ -102,8 +104,8 @@ class Model(QObject):
     @markers.setter
     def markers(self, value):
         self._markers = value
-        if value is not None:
-            self.markers_changed.emit(1)
+        if value is not None and self.plotting:
+            self.markers_changed.emit(value)
         
     @property
     def rpathsignal(self):
@@ -164,7 +166,7 @@ class Model(QObject):
     def segment(self, value):
         self._segment = value
         if value is not None:
-            self.segment_changed.emit()
+            self.segment_changed.emit(value)
         
     @property
     def status(self):
