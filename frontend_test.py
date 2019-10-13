@@ -135,10 +135,7 @@ class Tests:
         
         # 2. load signal
         ################
-        self._controller.threader(status='loading file',
-                                  fn=self._controller.read_chan,
-                                  path=sigpathorig,
-                                  chantype='signal')
+        self._controller.read_chan(path=sigpathorig)
         self.wait_for_signal(self._model.progress_changed, 1)
         # give a human reviewer some time to confirm the execution visually
         QTest.qWait(2000)
@@ -151,14 +148,11 @@ class Tests:
         ###################
         # preview segment
         segment = segment
-        self._controller.threader(status='changing segment',
-                                  fn=self._controller.verify_segment,
-                                  values = segment)
+        self._controller.verify_segment(values=segment)
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
         # prune signal to segment
-        self._controller.threader(status='segmenting signal',
-                                  fn=self._controller.segment_signal)
+        self._controller.segment_signal()
         self.wait_for_signal(self._model.progress_changed, 1)
         siglenseg = int((segment[1] - segment[0]) * self._model.sfreq)
         assert np.size(self._model.signal) == siglenseg, \
@@ -170,8 +164,7 @@ class Tests:
         # set path for saving signal
         self._model.wpathsignal = sigpathseg
         # save signal
-        self._controller.threader(status='saving signal',
-                                  fn=self._controller.save_signal)
+        self._controller.save_signal()
         self.wait_for_signal(self._model.progress_changed, 1)
         assert os.path.isfile('./'+sigpathseg), \
                 'failed to save segmented signal'
@@ -179,8 +172,7 @@ class Tests:
 
         # 5. find peaks
         ###############
-        self._controller.threader(status='finding peaks',
-                                  fn=self._controller.find_peaks)
+        self._controller.find_peaks()
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
         assert self._model.peaks.size == peaklen, 'failed to find peaks'
@@ -191,7 +183,7 @@ class Tests:
         # enable editing
         QTest.mouseClick(self._view.editcheckbox, Qt.LeftButton)
         # engage editing (click on canvas to give it the focus)
-        QTest.mouseClick(self._view.canvas, Qt.LeftButton)
+        QTest.mouseClick(self._view.canvas0, Qt.LeftButton)
         # since it is very tedious to map from matplotlib figure canvas
         # coordinates to qt coordinates, the controllers edit_peaks 
         # method is called with a mocked KeyEvent; to demonstrate edit_peaks
@@ -217,8 +209,7 @@ class Tests:
         ###############
         # set path for saving peaks
         self._model.wpathpeaks = './'+peakpath
-        self._controller.threader(status='saving peaks',
-                                  fn=self._controller.save_peaks)
+        self._controller.save_peaks()
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
         assert os.path.isfile('./'+peakpath), 'failed to save peaks'
@@ -226,10 +217,7 @@ class Tests:
         
         # 8. load segmented signal
         ##########################
-        self._controller.threader(status='loading file',
-                                  fn=self._controller.read_chan,
-                                  path=sigpathseg,
-                                  chantype='signal')
+        self._controller.read_chan(path=sigpathseg)
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
         assert np.size(self._model.signal) == siglenseg, \
@@ -239,8 +227,7 @@ class Tests:
         # 9. load peaks found for segmented signal
         ###########################################
         self._model.rpathpeaks = peakpath
-        self._controller.threader(status='loading peaks',
-                                  fn=self._controller.read_peaks)
+        self._controller.read_peaks()
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
         assert self._model.peaks.size == peaklen, 'failed to re-load peaks'
@@ -248,8 +235,7 @@ class Tests:
         
         # 10. calculate rate
         ##########################
-        self._controller.threader(status='calculating rate',
-                                  fn=self._controller.calculate_rate)
+        self._controller.calculate_rate()
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
         assert np.around(np.mean(self._model.rateintp), 4) == avgrate, \
@@ -280,10 +266,11 @@ class Tests:
         
         # 2. process batch
         ##################
-        self._controller.threader(status='processing files',
-                                  fn=self._controller.batch_processor)
-        self.wait_for_signal(self._model.progress_changed, 1)
-
+        self._controller.batch_processor()
+        for i in range(3 * len(sigpaths)):
+            # this is a hack: for each file (i.e., len(sigpaths)), wait until
+            # all three methods called on that file have finished
+            self.wait_for_signal(self._model.progress_changed, 1)
 
         # 3. check peaks
         ################
@@ -291,17 +278,13 @@ class Tests:
         # peaks have been identified correctly
         for sigpath, peaklen in zip(sigpaths, peaklens):
             # load signal
-            self._controller.threader(status='loading file',
-                                      fn=self._controller.read_chan,
-                                      path=sigpath,
-                                      chantype='signal')
+            self._controller.read_chan(path=sigpath)
             self.wait_for_signal(self._model.progress_changed, 1)
             # load peaks
             _, fname = os.path.split(sigpath)
             fpartname, _ = os.path.splitext(fname)
             self._model.rpathpeaks = fpartname + '_peaks.csv'
-            self._controller.threader(status='loading peaks',
-                                      fn=self._controller.read_peaks)
+            self._controller.read_peaks()
             self.wait_for_signal(self._model.progress_changed, 1)
             assert self._model.peaks.size == peaklen, \
                     'failed to re-load peaks'

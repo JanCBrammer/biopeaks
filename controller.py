@@ -33,19 +33,29 @@ class WorkerSignals(QObject):
 
 class Worker(QRunnable):
 
-    def __init__(self, fn, **kwargs):
+    def __init__(self, fn, controller, **kwargs):
         super(Worker, self).__init__()
         self.fn = fn
         self.kwargs = kwargs
         self.signals = WorkerSignals()
-
+        self.controller = controller
 
     def run(self):
         self.signals.progress.emit(0)
-        self.fn(**self.kwargs)
+        self.fn(self.controller, **self.kwargs)
         self.signals.progress.emit(1)
 
 
+# decorator that runs Controller methods in Worker thread
+def threaded(fn):
+    def threader(controller, **kwargs):
+    # flag to disable threading
+        worker = Worker(fn, controller, **kwargs)
+        worker.signals.progress.connect(controller._model.progress)
+        controller.threadpool.start(worker)
+    return threader
+
+    
 class Controller(QObject):
 
     def __init__(self, model):
@@ -54,12 +64,12 @@ class Controller(QObject):
         self._model = model
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
-
-
+        self.threading_enabled = True
+        
     ###########
     # methods #
     ###########
-    def open_signal(self):
+    def get_fpaths(self):
         self._model.fpaths = getOpenFileNames(None, 'Choose your data',
                                               '\home')[0]
         if self._model.fpaths:
@@ -67,15 +77,127 @@ class Controller(QObject):
                 len(self._model.fpaths) >= 1):
                 self.get_wpathpeaks()
                 if self._model.wdirpeaks:
-                    self.threader(status='processing files',
-                                  fn=self.batch_processor)
+                    self.batch_processor()
             elif (self._model.batchmode == 'single file' and
                   len(self._model.fpaths) == 1):
                 self._model.reset()
-                self.threader(status='loading file', fn=self.read_chan,
-                              path=self._model.fpaths[0])
+                self.read_chan(path=self._model.fpaths[0])
+                
+                
+    def get_wpathsignal(self):
+        if self._model.loaded:
+            self._model.wpathsignal = getSaveFileName(None, 'Save signal',
+                                                      'untitled.txt',
+                                                      'text (*.txt)')[0]
+            if self._model.wpathsignal:
+                self.save_signal()
+        else:
+            self._model.status = 'error: no data available'
 
+
+    def get_rpathpeaks(self):
+        if self._model.loaded:
+            if self._model.peaks is None:
+                self._model.rpathpeaks = getOpenFileName(None,
+                                                         'Choose your peaks',
+                                                         '\home')[0]
+                if self._model.rpathpeaks:
+                    self.read_peaks()
+            else:
+                self._model.status = 'error: peaks already in memory'
+        else:
+            self._model.status = 'error: no data available'
+
+
+    def get_wpathpeaks(self):
+        if self._model.batchmode == 'single file':
+            if self._model.peaks is not None:
+                self._model.wpathpeaks = getSaveFileName(None, 'Save peaks',
+                                                         'untitled.csv',
+                                                         'CSV (*.csv)')[0]
+                if self._model.wpathpeaks:
+                    self.save_peaks()
+            else:
+                self._model.status = 'error: no peaks available'
+        elif self._model.batchmode == 'multiple files':
+            self._model.wdirpeaks = getExistingDirectory(None,
+                                                         'Choose a directory '
+                                                         'for saving the '
+                                                         'peaks',
+                                                         '\home')
+
+
+    def batch_processor(self):
+        '''
+        Initiates batch processing. After initiation, the dispatcher method
+        handles the sequential execution of methods that are called on each
+        file of the batch. The dispatcher only listenes to the threader's
+        progress signal during batch processing. The progress signal informs
+        the dispatcher that a method has finshed and that the next method can
+        be called. This slightly convoluted way of handling a batch is
+        necessary for the following reason. Since each method is run in a
+        thread (decorator), looping over the files of a batch will lead to ill-
+        defined states of the model. The dispatcher ensures strictly sequential
+        execution of methods (although limiting the threadpools capacity to one
+        thread at a time should achieve the same). Also, busy-waiting can be
+        avoided by using the dispatcher. Plotting is disabled during batch
+        processing (model.plotting flag), since matplotlib cannot update the
+        canvas fast enough when multiple plotting operations must be executed
+        in rapid succession (i.e., when small files are processed). The user
+        can still get an impression of the progress since the current file path
+        is displayed.
+        '''
+
+        self.methodnb = 0
+        self.nmethods = 2
+        self.filenb = 0
+        self.nfiles = len(self._model.fpaths)
+    
+        self._model.status = 'processing files'
+        self._model.plotting = False
+        self._model.progress_changed.connect(self.dispatcher)
+        
+        # initiate processing
+        self.dispatcher(1)
+    
+    
+    def dispatcher(self, progress):
+        '''
+        Start with first method on first file. As soon as one method has
+        finished, (indicated by emission of progress_changed), execute next
+        method. Once all methods are executed, go to the next file and start
+        cycling through methods again.
+        '''
+        if progress == 0:
+            return
+        fpath = self._model.fpaths[self.filenb]
+        if self.methodnb == 0:
+            self._model.reset()
+            self.read_chan(path=fpath)
+            self.methodnb += 1
+        elif self.methodnb == 1:
+            self.find_peaks()
+            self.methodnb += 1
+        elif self.methodnb == self.nmethods:
+            _, fname = os.path.split(fpath)
+            fpartname, _ = os.path.splitext(fname)
+            self._model.wpathpeaks = os.path.join(self._model.wdirpeaks,
+                                                  '{}{}'.format(fpartname,
+                                                                '_peaks.csv'))
+            self.save_peaks()
+            # once all methods are executed, move to next file and start with
+            # first method again
+            self.filenb += 1
+            self.methodnb = 0
+            if self.filenb == self.nfiles:
+                self._model.plotting = True
+                self._model.progress_changed.disconnect(self.dispatcher)
+                return
+            
+            
+    @threaded
     def read_chan(self, path):
+        self._model.status = 'loading file'
         _, file_extension = os.path.splitext(path)
         if file_extension != '.txt':
             self._model.status = 'error: wrong file format'
@@ -160,7 +282,9 @@ class Controller(QObject):
                 self._model.status = 'error: wrong file format'
 
 
+    @threaded
     def segment_signal(self):
+        self._model.status = 'segmenting signal'
         # convert from seconds to samples
         begsamp = int(np.rint(self._model.segment[0] * self._model.sfreq))
         endsamp = int(np.rint(self._model.segment[1] * self._model.sfreq))
@@ -184,8 +308,10 @@ class Controller(QObject):
             self._model.tidalampintp = self._model.tidalampintp[begsamp:
                                                                 endsamp]
 
-
+                
+    @threaded
     def save_signal(self):
+        self._model.status = 'saving signal'
         # if the signal has not been segmented, simply copy it to new
         # location
         if self._model.segment is None:
@@ -212,7 +338,9 @@ class Controller(QObject):
                             index=False)
 
 
+    @threaded
     def read_peaks(self):
+        self._model.status = 'loading peaks'
         dfpeaks = pd.read_csv(self._model.rpathpeaks)
         if dfpeaks.shape[1] == 1:
             peaks = dfpeaks['peaks'].copy()
@@ -237,7 +365,9 @@ class Controller(QObject):
             self._model.peaks = extrema.astype(int)
 
 
+    @threaded
     def find_peaks(self):
+        self._model.status = 'finding peaks'
         if self._model.loaded:
             if self._model.peaks is None:
                 peakfunc = peakfuncs[self._model.modality]
@@ -285,8 +415,9 @@ class Controller(QObject):
                 self._model.peaks = np.insert(self._model.peaks, insertidx,
                                               insertarr)
 
-
+    @threaded
     def save_peaks(self):
+        self._model.status = 'saving peaks'
         # save peaks in seconds
         if self._model.modality == 'ECG':
             savearray = pd.DataFrame(self._model.peaks / self._model.sfreq)
@@ -325,8 +456,9 @@ class Controller(QObject):
             savearray.to_csv(self._model.wpathpeaks, index=False,
                              header=['peaks', 'troughs'], na_rep='nan')
 
-
+    @threaded
     def calculate_rate(self):
+        self._model.status = 'calculating rate'
         if self._model.peaks is None:
             self._model.status = 'error: no peaks available'
             return
@@ -343,88 +475,10 @@ class Controller(QObject):
                                                     signal=self._model.signal,
                                                     sfreq=self._model.sfreq)
 
-    def get_wpathsignal(self):
-        if self._model.loaded:
-            self._model.wpathsignal = getSaveFileName(None, 'Save signal',
-                                                      'untitled.txt',
-                                                      'text (*.txt)')[0]
-            if self._model.wpathsignal:
-                self.threader(status='saving signal', fn=self.save_signal)
-        else:
-            self._model.status = 'error: no data available'
 
-
-    def get_rpathpeaks(self):
-        if self._model.loaded:
-            if self._model.peaks is None:
-                self._model.rpathpeaks = getOpenFileName(None,
-                                                         'Choose your peaks',
-                                                         '\home')[0]
-                if self._model.rpathpeaks:
-                    self.threader(status='loading peaks', fn=self.read_peaks)
-            else:
-                self._model.status = 'error: peaks already in memory'
-        else:
-            self._model.status = 'error: no data available'
-
-
-    def get_wpathpeaks(self):
-        if self._model.batchmode == 'single file':
-            if self._model.peaks is not None:
-                self._model.wpathpeaks = getSaveFileName(None, 'Save peaks',
-                                                         'untitled.csv',
-                                                         'CSV (*.csv)')[0]
-                if self._model.wpathpeaks:
-                    self.threader(status='saving peaks', fn=self.save_peaks)
-            else:
-                self._model.status = 'error: no peaks available'
-        elif self._model.batchmode == 'multiple files':
-            self._model.wdirpeaks = getExistingDirectory(None,
-                                                         'Choose a directory '
-                                                         'for saving the '
-                                                         'peaks',
-                                                         '\home')
-
-
-    def batch_processor(self):
-        # disable plotting during batch processing, since matplotlib cannot
-        # update the canvas fast enough when multiple plotting operations must
-        # be executed in rapid succession (i.e., when small files are
-        # processed); the user can still get an impression of the progress
-        # since the current file path is displayed
-        self._model.plotting = False
-        for fpath in self._model.fpaths:
-            # reset model before reading new dataset
-            self._model.reset()
-            self.read_chan(fpath)
-            # in case the file cannot be loaded successfully (e.g., wrong
-            # format or non-existing channel), move on to next file
-            if self._model.loaded:
-
-                self.find_peaks()
-
-                # save peaks to self.wpathpeaks with "<fname>_peaks" ending
-                _, fname = os.path.split(fpath)
-                fpartname, _ = os.path.splitext(fname)
-                self._model.wpathpeaks = os.path.join(self._model.wdirpeaks,
-                                                      '{}{}'.format(fpartname,
-                                                                    '_peaks'
-                                                                    '.csv'))
-                self.save_peaks()
-        # enable plotting again once the batch is done
-        self._model.plotting = True
-
-
-    def threader(self, status, fn, **kwargs):
-        # note that the worker's signal must be connected to the controller's
-        # method each time a new worker is instantiated
-        self._model.status = status
-        worker = Worker(fn, **kwargs)
-        worker.signals.progress.connect(self._model.progress)
-        self.threadpool.start(worker)
-
-
+    @threaded       
     def verify_segment(self, values):
+        self._model.status = 'verifying segment'
         # check if any of the fields is empty
         if values[0] and values[1]:
             begsamp = float(values[0])

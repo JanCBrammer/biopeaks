@@ -165,11 +165,7 @@ class View(QMainWindow):
         self.segment_updated.connect(self._controller.verify_segment)
         
         self.confirmedit = QPushButton('confirm selection')
-        lambdafn = lambda: self._controller.threader(status='segmenting'
-                                                     ' signal',
-                                                     fn=self._controller.
-                                                     segment_signal)
-        self.confirmedit.clicked.connect(lambdafn)
+        self.confirmedit.clicked.connect(self._controller.segment_signal)
         self.confirmedit.clicked.connect(self.segmentermap.map)
         self.segmentermap.setMapping(self.confirmedit, 0)
         
@@ -199,7 +195,7 @@ class View(QMainWindow):
         signalmenu = menubar.addMenu('data')
         
         openSignal = QAction('load', self)
-        openSignal.triggered.connect(self._controller.open_signal)
+        openSignal.triggered.connect(self._controller.get_fpaths)
         signalmenu.addAction(openSignal)
         
         segmentSignal = QAction('select segment', self)
@@ -217,10 +213,8 @@ class View(QMainWindow):
         peakmenu = menubar.addMenu('peaks')
         
         findPeaks = QAction('find', self)
-        lambdafn = lambda: self._controller.threader(status='finding peaks',
-                                                     fn=self._controller.
-                                                     find_peaks)
-        findPeaks.triggered.connect(lambdafn)
+        
+        findPeaks.triggered.connect(self._controller.find_peaks)
         peakmenu.addAction(findPeaks)
         
         savePeaks = QAction('save', self)
@@ -235,10 +229,7 @@ class View(QMainWindow):
         analyzemenu = menubar.addMenu('analysis')
         
         rate = QAction('rate', self)
-        lambdafn = lambda: self._controller.threader(status='calculating rate',
-                                                     fn=self._controller.
-                                                     calculate_rate)
-        rate.triggered.connect(lambdafn)
+        rate.triggered.connect(self._controller.calculate_rate)
         analyzemenu.addAction(rate)
         
         # set up status bar to display error messages and current file path
