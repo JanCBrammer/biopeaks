@@ -5,6 +5,7 @@ Created on Mon Jun  3 18:47:12 2019
 @author: John Doe
 """
 
+import numpy as np
 from os import path
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, pyqtProperty
 
@@ -159,16 +160,6 @@ class Model(QObject):
         self._wdirpeaks = value
         
     @property
-    def segment(self):
-        return self._segment
-    
-    @segment.setter
-    def segment(self, value):
-        self._segment = value
-        if value is not None:
-            self.segment_changed.emit(value)
-        
-    @property
     def status(self):
         return self._status
     
@@ -180,6 +171,30 @@ class Model(QObject):
         
     # the following model attributes are slots that are connected to signals
     # from the view or controller
+    
+    @pyqtProperty(object)
+    def segment(self):
+        return self._segment
+    
+    @pyqtSlot(object)
+    def set_segment(self, values):
+        print(values)
+        if values[0] and values[1]:
+            begsamp = float(values[0])
+            endsamp = float(values[1])
+            # check if values are inside temporal bounds
+            evalarray = [np.asarray([begsamp, endsamp]) >= self._sec[0],
+                         np.asarray([begsamp, endsamp]) <= self._sec[-1]]
+            if np.all(evalarray):
+                # check if order is valid
+                if begsamp < endsamp:
+                    self._status = 'valid selection {}'.format(values)
+                    self._segment = [begsamp, endsamp]
+                    self.segment_changed.emit(self._segment)
+                else:
+                    self._status = 'invalid selection {}'.format(values)
+            else:
+                self._status = 'invalid selection {}'.format(values)
     
     @pyqtProperty(str)
     def batchmode(self):

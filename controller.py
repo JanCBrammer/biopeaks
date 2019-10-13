@@ -55,7 +55,7 @@ def threaded(fn):
         controller.threadpool.start(worker)
     return threader
 
-    
+
 class Controller(QObject):
 
     def __init__(self, model):
@@ -65,7 +65,7 @@ class Controller(QObject):
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
         self.threading_enabled = True
-        
+
     ###########
     # methods #
     ###########
@@ -82,8 +82,8 @@ class Controller(QObject):
                   len(self._model.fpaths) == 1):
                 self._model.reset()
                 self.read_chan(path=self._model.fpaths[0])
-                
-                
+
+
     def get_wpathsignal(self):
         if self._model.loaded:
             self._model.wpathsignal = getSaveFileName(None, 'Save signal',
@@ -152,15 +152,15 @@ class Controller(QObject):
         self.nmethods = 2
         self.filenb = 0
         self.nfiles = len(self._model.fpaths)
-    
+
         self._model.status = 'processing files'
         self._model.plotting = False
         self._model.progress_changed.connect(self.dispatcher)
-        
+
         # initiate processing
         self.dispatcher(1)
-    
-    
+
+
     def dispatcher(self, progress):
         '''
         Start with first method on first file. As soon as one method has
@@ -193,8 +193,8 @@ class Controller(QObject):
                 self._model.plotting = True
                 self._model.progress_changed.disconnect(self.dispatcher)
                 return
-            
-            
+
+
     @threaded
     def read_chan(self, path):
         self._model.status = 'loading file'
@@ -215,7 +215,7 @@ class Controller(QObject):
                 sfreq = metadata['sampling rate']
                 sensors = metadata['sensor']
                 channels = metadata['channels']
-                
+
                 # load signal
                 if self._model.signalchan == 'infer from modality':
                     schan = self._model.modality
@@ -228,7 +228,7 @@ class Controller(QObject):
                     # search analogue channels
                     schan = self._model.signalchan
                     schanidx = [i for i, s in enumerate(channels)
-                               if int(schan[1]) == s]
+                                if int(schan[1]) == s]
                 if not schanidx:
                     self._model.status = 'error: signal-channel not found'
                     return
@@ -253,14 +253,14 @@ class Controller(QObject):
                 self._model.signal = np.ravel(signal)
                 self._model.sfreq = sfreq
                 self._model.loaded = True
-                
+
                 # load markers
                 if self._model.markerchan == 'none':
                     return
                 mchan = self._model.markerchan
                 if mchan[0] == 'A':
                     mchanidx = [i for i, s in enumerate(channels)
-                               if int(mchan[1]) == s]
+                                if int(mchan[1]) == s]
                 elif mchan[0] == 'I':
                     mchanidx = int(mchan[1])
                 if not mchanidx:
@@ -308,7 +308,7 @@ class Controller(QObject):
             self._model.tidalampintp = self._model.tidalampintp[begsamp:
                                                                 endsamp]
 
-                
+
     @threaded
     def save_signal(self):
         self._model.status = 'saving signal'
@@ -457,8 +457,8 @@ class Controller(QObject):
                              header=['peaks', 'troughs'], na_rep='nan')
 
     @threaded
-    def calculate_rate(self):
-        self._model.status = 'calculating rate'
+    def calculate_stats(self):
+        self._model.status = 'calculating statistics'
         if self._model.peaks is None:
             self._model.status = 'error: no peaks available'
             return
@@ -474,24 +474,8 @@ class Controller(QObject):
              self._model.tidalampintp) = resp_stats(extrema=self._model.peaks,
                                                     signal=self._model.signal,
                                                     sfreq=self._model.sfreq)
-
-
-    @threaded       
-    def verify_segment(self, values):
-        self._model.status = 'verifying segment'
-        # check if any of the fields is empty
-        if values[0] and values[1]:
-            begsamp = float(values[0])
-            endsamp = float(values[1])
-            # check if values are inside temporal bounds
-            evalarray = [np.asarray([begsamp, endsamp]) >= self._model.sec[0],
-                         np.asarray([begsamp, endsamp]) <= self._model.sec[-1]]
-            if np.all(evalarray):
-                # check if order is valid
-                if begsamp < endsamp:
-                    self._model.status = 'valid selection {}'.format(values)
-                    self._model.segment = [begsamp, endsamp]
-                else:
-                    self._model.status = 'invalid selection {}'.format(values)
-            else:
-                self._model.status = 'invalid selection {}'.format(values)
+            
+            
+    @threaded
+    def save_stats(self):
+        pass

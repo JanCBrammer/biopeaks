@@ -132,6 +132,7 @@ class Tests:
         QTest.keyClicks(self._view.sigchanmenu, sigchan)
         QTest.keyClicks(self._view.markerschanmenu, markerchan)
         QTest.keyClicks(self._view.batchmenu, mode)
+
         
         # 2. load signal
         ################
@@ -147,9 +148,7 @@ class Tests:
         # 3. segment signal
         ###################
         # preview segment
-        segment = segment
-        self._controller.verify_segment(values=segment)
-        self.wait_for_signal(self._model.progress_changed, 1)
+        self._model.set_segment(values=segment)
         QTest.qWait(2000)
         # prune signal to segment
         self._controller.segment_signal()
@@ -181,7 +180,7 @@ class Tests:
         # 6. edit peaks
         ###############
         # enable editing
-        QTest.mouseClick(self._view.editcheckbox, Qt.LeftButton)
+        self._view.editcheckbox.setCheckState(Qt.Checked)
         # engage editing (click on canvas to give it the focus)
         QTest.mouseClick(self._view.canvas0, Qt.LeftButton)
         # since it is very tedious to map from matplotlib figure canvas
@@ -235,7 +234,7 @@ class Tests:
         
         # 10. calculate rate
         ##########################
-        self._controller.calculate_rate()
+        self._controller.calculate_stats()
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
         assert np.around(np.mean(self._model.rateintp), 4) == avgrate, \
@@ -246,7 +245,7 @@ class Tests:
         # reset model
         self._model.reset()
         # disable editing
-        QTest.mouseClick(self._view.editcheckbox, Qt.LeftButton)
+        self._view.editcheckbox.setCheckState(Qt.Unchecked)
         
         # remove all files that have been saved during the test
         os.remove('./'+peakpath)

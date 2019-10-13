@@ -10,13 +10,14 @@ from PyQt5.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                              QLabel, QStatusBar, QGroupBox, QDockWidget,
                              QLineEdit, QFormLayout, QPushButton, QProgressBar,
                              QSplitter)
-from PyQt5.QtCore import (Qt, QSignalMapper, QRegExp, pyqtSignal)
+from PyQt5.QtCore import (Qt, QSignalMapper, QRegExp)
 from PyQt5.QtGui import QIcon, QRegExpValidator
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
                                                 FigureCanvas)
 from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as
                                                 NavigationToolbar)
+
 
 class CustomNavigationToolbar(NavigationToolbar):
     # only retain desired functionality of navitoolbar
@@ -25,11 +26,6 @@ class CustomNavigationToolbar(NavigationToolbar):
         
         
 class View(QMainWindow):
-    
-    # define costum signals here, since they must be part of the class
-    # definition and cannot be dynamically added as class attributes after
-    # the class has been defined
-    segment_updated = pyqtSignal(object)
 
     def __init__(self, model, controller):
         super().__init__()
@@ -82,6 +78,14 @@ class View(QMainWindow):
         # peak editing
         self.editcheckbox = QCheckBox('edit peaks', self)
         self.editcheckbox.stateChanged.connect(self._model.set_peakseditable)
+        
+        # calculate stats
+        self.calculatestats = QPushButton('calculate', self)
+        self.calculatestats.clicked.connect(self._controller.calculate_stats)
+        
+        # save stats
+        self.savestats = QPushButton('save marked statistics', self)
+        self.savestats.clicked.connect(self._controller.save_stats)
         
         # processing mode (batch or single file)
         self.batchmenulabel = QLabel('processing mode')
@@ -159,10 +163,9 @@ class View(QMainWindow):
         self.endedit.addAction(segmentfromcursor, 1)
         
         self.previewedit = QPushButton('update selection')
-        self.previewedit.clicked.connect(self.emit_segment)
-        # use previosly defined costum signal that sends start and end of
-        # selected segment to controller from within emit_segment
-        self.segment_updated.connect(self._controller.verify_segment)
+        lambdafn = lambda: self._model.set_segment([self.startedit.text(),
+                                                    self.endedit.text()])
+        self.previewedit.clicked.connect(lambdafn)
         
         self.confirmedit = QPushButton('confirm selection')
         self.confirmedit.clicked.connect(self._controller.segment_signal)
@@ -225,13 +228,6 @@ class View(QMainWindow):
         loadPeaks.triggered.connect(self._controller.get_rpathpeaks)
         peakmenu.addAction(loadPeaks)
         
-        # analysis menu
-        analyzemenu = menubar.addMenu('analysis')
-        
-        rate = QAction('rate', self)
-        rate.triggered.connect(self._controller.calculate_rate)
-        analyzemenu.addAction(rate)
-        
         # set up status bar to display error messages and current file path
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
@@ -267,23 +263,31 @@ class View(QMainWindow):
         # define GUI layout
         self.vlayout0 = QVBoxLayout(self.centwidget)
         self.vlayout1 = QFormLayout()
+        self.vlayout2 = QVBoxLayout()
+        self.vlayout3 = QVBoxLayout()
         self.hlayout0 = QHBoxLayout()
         self.hlayout1 = QHBoxLayout()
 
-        self.optionsgroup = QGroupBox('select options')
+        self.optionsgroup0 = QGroupBox('select options')
         self.vlayout1.addRow(self.modmenulabel, self.modmenu)
         self.vlayout1.addRow(self.sigchanmenulabel, self.sigchanmenu)
         self.vlayout1.addRow(self.markerschanmenulabel, self.markerschanmenu)
         self.vlayout1.addRow(self.batchmenulabel, self.batchmenu)
-        self.optionsgroup.setLayout(self.vlayout1)
-        self.hlayout0.addWidget(self.optionsgroup)
+        self.vlayout1.addRow(self.editcheckbox)
+        self.optionsgroup0.setLayout(self.vlayout1)
+        self.optionsgroup1 = QGroupBox('statistics')
+        self.vlayout3.addWidget(self.calculatestats)
+        self.vlayout3.addWidget(self.savestats)
+        self.optionsgroup1.setLayout(self.vlayout3)
+        self.vlayout2.addWidget(self.optionsgroup0)
+        self.vlayout2.addWidget(self.optionsgroup1)
+        self.hlayout0.addLayout(self.vlayout2)
         self.hlayout0.addWidget(self.splitter)
         self.hlayout0.setStretch(0, 1)
         self.hlayout0.setStretch(1, 15)
         self.vlayout0.addLayout(self.hlayout0)
         
         self.hlayout1.addWidget(self.navitools)
-        self.hlayout1.addWidget(self.editcheckbox)
         self.vlayout0.addLayout(self.hlayout1)
 
         ##############################################
@@ -426,11 +430,6 @@ class View(QMainWindow):
                 self.endedit.insert('{:.2f}'.format(event.xdata))
             # disable segment cursor again after value has been set
             self.segmentcursor = False  
-            
-    def emit_segment(self):
-        begsamp = self.startedit.text()
-        endsamp = self.endedit.text()
-        self.segment_updated.emit([begsamp, endsamp])
         
     def reset_plot(self):
         self.ax00.clear()
