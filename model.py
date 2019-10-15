@@ -30,6 +30,14 @@ class Model(QObject):
     # methods
     
     @property
+    def savestats(self):
+        return self._savestats
+    
+    @savestats.setter
+    def savestats(self, value):
+        self._savestats = value
+        
+    @property
     def signal(self):
         return self._signal
 
@@ -178,7 +186,6 @@ class Model(QObject):
     
     @pyqtSlot(object)
     def set_segment(self, values):
-        print(values)
         if values[0] and values[1]:
             begsamp = float(values[0])
             endsamp = float(values[1])
@@ -249,6 +256,7 @@ class Model(QObject):
     def __init__(self):
         super().__init__()
         
+        self._savestats = {"period":False, "rate":False, "tidalamp":False}
         self._signal = None
         self._peaks = None
         self._periodintp = None
@@ -275,6 +283,7 @@ class Model(QObject):
         self._rpathsignal = None
 
     def reset(self):
+        self._savestats = {"period":False, "rate":False, "tidalamp":False}
         self._signal = None
         self._peaks = None
         self._periodintp = None

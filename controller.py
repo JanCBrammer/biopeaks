@@ -415,6 +415,7 @@ class Controller(QObject):
                 self._model.peaks = np.insert(self._model.peaks, insertidx,
                                               insertarr)
 
+
     @threaded
     def save_peaks(self):
         self._model.status = 'saving peaks'
@@ -456,6 +457,7 @@ class Controller(QObject):
             savearray.to_csv(self._model.wpathpeaks, index=False,
                              header=['peaks', 'troughs'], na_rep='nan')
 
+
     @threaded
     def calculate_stats(self):
         self._model.status = 'calculating statistics'
@@ -478,4 +480,20 @@ class Controller(QObject):
             
     @threaded
     def save_stats(self):
-        pass
+        savekeys = []
+        for key, value in self._model.savestats.items():
+            if value == True:
+                savekeys.append(key)
+        savearray = np.zeros((self._model.signal.size, len(savekeys)))
+        for i, key in enumerate(savekeys):
+            if key == 'period':
+                savearray[:, i] = self._model.periodintp
+            if key == 'rate':
+                savearray[:, i] = self._model.rateintp
+            if key == 'tidalamp':
+                savearray[:, i] = self._model.tidalampintp
+        print(savearray[:5, :])
+                
+            
+            
+  

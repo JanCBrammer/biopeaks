@@ -33,8 +33,9 @@ class View(QMainWindow):
         self._model = model
         self._controller = controller
         self.segmentcursor = False
+        self.togglecolors = {"#1f77b4":"m", "m":"#1f77b4"}
+
         
-                        
         #################################################################
         # define GUI layout and connect input widgets to external slots #
         #################################################################
@@ -46,17 +47,19 @@ class View(QMainWindow):
         # figure0 for signal
         self.figure0 = Figure()
         self.canvas0 = FigureCanvas(self.figure0)
-        self.ax00 = self.figure0.add_subplot()
+        self.ax00 = self.figure0.add_subplot(1,1,1)
         self.ax00.set_frame_on(False)
-        self.figure0.tight_layout()
+        self.figure0.subplots_adjust(left=0.04, right=0.98, bottom=0.25)
+
 
         # figure1 for markers
         self.figure1 = Figure()
         self.canvas1 = FigureCanvas(self.figure1)
-        self.ax10 = self.figure1.add_subplot(sharex=self.ax00)
+        self.ax10 = self.figure1.add_subplot(1,1,1, sharex=self.ax00)
         self.ax10.get_xaxis().set_visible(False)
         self.ax10.set_frame_on(False)
-        self.figure1.tight_layout()
+        self.figure1.subplots_adjust(left=0.04, right=0.98)
+
         
         # figure2 for statistics
         self.figure2 = Figure()
@@ -70,7 +73,7 @@ class View(QMainWindow):
         self.ax22 = self.figure2.add_subplot(3,1,3, sharex=self.ax00)
         self.ax22.get_xaxis().set_visible(False)
         self.ax22.set_frame_on(False)
-        self.figure2.tight_layout()
+        self.figure2.subplots_adjust(left=0.04, right=0.98)
         
         # navigation bar
         self.navitools = CustomNavigationToolbar(self.canvas0, self)
@@ -250,6 +253,7 @@ class View(QMainWindow):
         self.canvas0.mpl_connect('key_press_event',
                                  self._controller.edit_peaks)
         self.canvas0.mpl_connect('button_press_event', self.get_xcursor)
+        self.canvas2.mpl_connect('pick_event', self.select_stats)
         
         # arrange the three figure canvases in splitter object
         self.splitter = QSplitter(Qt.Vertical)
@@ -352,8 +356,13 @@ class View(QMainWindow):
         self.ax20.clear()
         self.ax20.relim()
         self.navitools.home()
-        self.line20 = self.ax20.plot(self._model.sec, value)
+        if self._model.savestats["period"] == True:
+            self.line20 = self.ax20.plot(self._model.sec, value, c='m',
+                                         picker=5)
+        else:
+            self.line20 = self.ax20.plot(self._model.sec, value, picker=5)
         self.ax20.set_ylim(bottom=min(value), top=max(value))
+        self.ax20.set_ylabel('period')
         self.navitools.update()
         self.canvas2.draw()
 #        print("plot_period listening")
@@ -362,8 +371,13 @@ class View(QMainWindow):
         self.ax21.clear()
         self.ax21.relim()
         self.navitools.home()
-        self.line21 = self.ax21.plot(self._model.sec, value)
+        if self._model.savestats["rate"] == True:
+            self.line21 = self.ax21.plot(self._model.sec, value, c='m',
+                                         picker=5)
+        else:
+            self.line21 = self.ax21.plot(self._model.sec, value, picker=5)
         self.ax21.set_ylim(bottom=min(value), top=max(value))
+        self.ax21.set_ylabel('rate')
         self.navitools.update()
         self.canvas2.draw()
 #        print("plot_rate listening")
@@ -372,8 +386,13 @@ class View(QMainWindow):
         self.ax22.clear()
         self.ax22.relim()
         self.navitools.home()
-        self.line22 = self.ax22.plot(self._model.sec, value)
+        if self._model.savestats["tidalamp"] == True:
+            self.line22 = self.ax22.plot(self._model.sec, value, c='m',
+                                         picker=5)
+        else:
+            self.line22 = self.ax22.plot(self._model.sec, value, picker=5)
         self.ax22.set_ylim(bottom=min(value), top=max(value))
+        self.ax22.set_ylabel('amplitude')
         self.navitools.update()
         self.canvas2.draw()
 #        print("plot_tidalamp listening")
@@ -430,6 +449,22 @@ class View(QMainWindow):
                 self.endedit.insert('{:.2f}'.format(event.xdata))
             # disable segment cursor again after value has been set
             self.segmentcursor = False  
+            
+    def select_stats(self, event):
+        """
+        select or deselect statistics to be saved; toggle boolean with xor
+        operator ^=, toggle color with dictionary
+        """
+        if event.artist == self.line20[0]:
+            self._model.savestats["period"] ^= True
+            event.artist.set_color(self.togglecolors[event.artist.get_color()])
+        elif event.artist == self.line21[0]:
+            self._model.savestats["rate"] ^= True
+            event.artist.set_color(self.togglecolors[event.artist.get_color()])
+        elif event.artist == self.line22[0]:
+            self._model.savestats["tidalamp"] ^= True
+            event.artist.set_color(self.togglecolors[event.artist.get_color()])
+        self.canvas2.draw()
         
     def reset_plot(self):
         self.ax00.clear()
