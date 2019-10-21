@@ -9,6 +9,7 @@ import numpy as np
 from scipy.stats import iqr
 from scipy.interpolate import interp1d
 
+
 def moving_average(signal, window_size):
     
     return np.convolve(signal, np.ones((window_size,)) / window_size,

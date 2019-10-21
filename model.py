@@ -168,6 +168,22 @@ class Model(QObject):
         self._wdirpeaks = value
         
     @property
+    def wpathstats(self):
+        return self._wpathstats
+
+    @wpathstats.setter
+    def wpathstats(self, value):
+        self._wpathstats = value
+        
+    @property
+    def wdirstats(self):
+        return self._wdirstats
+
+    @wdirstats.setter
+    def wdirstats(self, value):
+        self._wdirstats = value
+        
+    @property
     def status(self):
         return self._status
     
@@ -256,7 +272,6 @@ class Model(QObject):
     def __init__(self):
         super().__init__()
         
-        self._savestats = {"period":False, "rate":False, "tidalamp":False}
         self._signal = None
         self._peaks = None
         self._periodintp = None
@@ -281,9 +296,11 @@ class Model(QObject):
         self._rpathpeaks = None
         self._wpathsignal = None
         self._rpathsignal = None
+        self._wpathstats = None
+        self._wdirstats = None
+        self._savestats = {"period":False, "rate":False, "tidalamp":False}
 
     def reset(self):
-        self._savestats = {"period":False, "rate":False, "tidalamp":False}
         self._signal = None
         self._peaks = None
         self._periodintp = None
@@ -300,6 +317,10 @@ class Model(QObject):
         self._rpathpeaks = None
         self._wpathsignal = None
         self._rpathsignal = None
-        # don't reset channels and plotting
+        self._wpathstats = None
+        # don't reset attributes that aren't ideosyncratic to the dataset
+        # (e.g., channels, batchmode, savestats etc.); also don't reset
+        # attributes that must be permanently accessible during batch
+        # processing (e.g., fpaths, wdirpeaks, wdirstats)
         self.model_reset.emit()
         

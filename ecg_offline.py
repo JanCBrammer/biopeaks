@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from filters import butter_highpass_filter
 from scipy.signal import find_peaks, medfilt
 from analysis_utils import (moving_average, threshold_normalization,
-                            interp_period, update_indices)
+                            interp_stats, update_indices)
 
 
 def ecg_peaks(signal, sfreq, enable_plot=False):
@@ -52,29 +52,28 @@ def ecg_peaks(signal, sfreq, enable_plot=False):
         end = end_qrs[i]
         len_qrs = end - beg
                 
-        if len_qrs > min_len:
+        if len_qrs < min_len:
+            continue
             
-            # visualize QRS intervals
-            if enable_plot is True:
-                ax2.axvspan(beg, end, facecolor='m', alpha=0.5)
-            
-            data = filt[beg:end]
-            locmax, _ = find_peaks(data)
-            locmin, _ = find_peaks(data * -1)
-            extrema = np.concatenate((locmax, locmin))
-            extrema.sort(kind='mergesort')
-            
-            if extrema.size > 0:
-                peakidx = np.argmax(np.square(data[extrema]))
-                peak = beg + extrema[peakidx]
-                peaks.append(peak)
+        # visualize QRS intervals
+        if enable_plot is True:
+            ax2.axvspan(beg, end, facecolor='m', alpha=0.5)
+        
+        data = filt[beg:end]
+        locmax, _ = find_peaks(data)
+        locmin, _ = find_peaks(data * -1)
+        extrema = np.concatenate((locmax, locmin))
+        extrema.sort(kind='mergesort')
+        
+        if extrema.size > 0:
+            peakidx = np.argmax(np.square(data[extrema]))
+            peak = beg + extrema[peakidx]
+            peaks.append(peak)
             
     if enable_plot is True:
         ax1.scatter(np.arange(filt.size)[peaks], filt[peaks], c='r')
 
-    returnarray = np.asarray(peaks).astype(int)
-
-    return returnarray
+    return np.asarray(peaks).astype(int)
 
 
 def ecg_period(peaks, sfreq, nsamp):
@@ -93,14 +92,14 @@ def ecg_period(peaks, sfreq, nsamp):
     window_half = 45
     medfilt_order = 11
     
-    # compute RR series (make sure it has same numer of elements as peaks);
+    # compute period series (make sure it has same numer of elements as peaks);
     # peaks are in samples, convert to seconds
     rr = np.ediff1d(peaks, to_begin=0) / sfreq
     # for subsequent analysis it is important that the first element has
     # a value in a realistic range (e.g., for median filtering)
     rr[0] = np.mean(rr)
 
-    # compute differences of consecutive RRs
+    # compute differences of consecutive periods
     drrs = np.ediff1d(rr, to_begin=0)
     drrs[0] = np.mean(drrs)
     # normalize by threshold
@@ -245,7 +244,7 @@ def ecg_period(peaks, sfreq, nsamp):
         peaks = np.delete(peaks, extra_idcs)
         # re-calculate the RR series
         rr = np.ediff1d(peaks, to_begin=0) / sfreq
-        print('extra: {}'.format(peaks[extra_idcs]))
+#        print('extra: {}'.format(peaks[extra_idcs]))
         # update remaining indices
         missed_idcs = update_indices(extra_idcs, missed_idcs, -1)
         etopic_idcs = update_indices(extra_idcs, etopic_idcs, -1)
@@ -261,7 +260,7 @@ def ecg_period(peaks, sfreq, nsamp):
         peaks = np.insert(peaks, missed_idcs, added_peaks)
         # re-calculate the RR series
         rr = np.ediff1d(peaks, to_begin=0) / sfreq
-        print('missed: {}'.format(peaks[missed_idcs]))
+#        print('missed: {}'.format(peaks[missed_idcs]))
         # update remaining indices
         etopic_idcs = update_indices(missed_idcs, etopic_idcs, 1)
         longshort_idcs = update_indices(missed_idcs, longshort_idcs, 1)
@@ -276,22 +275,18 @@ def ecg_period(peaks, sfreq, nsamp):
         # interpolate artifacts
         interp_artifacts = np.interp(interp_idcs, x, rr[x])
         rr[interp_idcs] = interp_artifacts
-        print('interpolated: {}'.format(peaks[interp_idcs]))
+#        print('interpolated: {}'.format(peaks[interp_idcs]))
 ##        plt.figure(0)
 ##        plt.plot(rr)
 
     # interpolate rr at the signals sampling rate for plotting; the rate 
     # corresponding to the first peak is set to the mean RR
     rr[0] = np.mean(rr)
-    rrinterp = interp_period(peaks, rr, nsamp)
+    periodintp = interp_stats(peaks, rr, nsamp)
+    rateintp = 60 / periodintp
+    
 
-    # prepare data for handling in biopeaks gui (must be ndarray to allow
-    # homogeneous handling with respiratory data)
-    returnarray = np.ndarray((np.size(peaks), 1))
-    returnarray[:, 0] = peaks
-    returnarray = returnarray.astype(int)
-
-    return returnarray, rr, rrinterp
+    return peaks.astype(int), periodintp, rateintp
 
 #path = r'C:\Users\JohnDoe\Desktop\beats.csv'
 #peaks = np.ravel(pd.read_csv(path))

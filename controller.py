@@ -110,20 +110,41 @@ class Controller(QObject):
 
 
     def get_wpathpeaks(self):
+        if self._model.peaks is None:
+            self._model.status = 'error: no peaks available'
+            return
         if self._model.batchmode == 'single file':
-            if self._model.peaks is not None:
-                self._model.wpathpeaks = getSaveFileName(None, 'Save peaks',
-                                                         'untitled.csv',
-                                                         'CSV (*.csv)')[0]
-                if self._model.wpathpeaks:
-                    self.save_peaks()
-            else:
-                self._model.status = 'error: no peaks available'
+            self._model.wpathpeaks = getSaveFileName(None, 'Save peaks',
+                                                     'untitled.csv',
+                                                     'CSV (*.csv)')[0]
+            if self._model.wpathpeaks:
+                self.save_peaks()
         elif self._model.batchmode == 'multiple files':
             self._model.wdirpeaks = getExistingDirectory(None,
                                                          'Choose a directory '
                                                          'for saving the '
                                                          'peaks',
+                                                         '\home')
+            
+            
+    def get_wpathstats(self):
+        # count number of items selected for saving
+        nitems = sum(self._model.savestats.values())
+        if nitems < 1:
+            self._model.status = "error: no statistics selected for saving"
+            return
+        if self._model.batchmode == 'single file':
+            self._model.wpathstats = getSaveFileName(None, 'Save statistics',
+                                                     'untitled.csv',
+                                                     'CSV (*.csv)')[0]
+            if self._model.wpathstats:
+                self.save_stats()
+           
+        elif self._model.batchmode == 'multiple files':
+            self._model.wdirstats = getExistingDirectory(None,
+                                                         'Choose a directory '
+                                                         'for saving the '
+                                                         'statistics',
                                                          '\home')
 
 
@@ -484,6 +505,9 @@ class Controller(QObject):
         for key, value in self._model.savestats.items():
             if value == True:
                 savekeys.append(key)
+        if not savekeys:
+            self._model.status = 'error: no statistics selected for saving'
+            return
         savearray = np.zeros((self._model.signal.size, len(savekeys)))
         for i, key in enumerate(savekeys):
             if key == 'period':
@@ -492,7 +516,8 @@ class Controller(QObject):
                 savearray[:, i] = self._model.rateintp
             if key == 'tidalamp':
                 savearray[:, i] = self._model.tidalampintp
-        print(savearray[:5, :])
+        savearray = pd.DataFrame(savearray)
+        savearray.to_csv(self._model.wpathstats, index=False, header=savekeys)
                 
             
             
