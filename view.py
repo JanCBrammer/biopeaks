@@ -102,8 +102,10 @@ class View(QMainWindow):
         self.batchmenu.addItem('single file')
         self.batchmenu.addItem('multiple files')
         self.batchmenu.currentTextChanged.connect(self._model.set_batchmode)
+        self.batchmenu.currentTextChanged.connect(self.toggle_options)
         # initialize with default value
         self._model.set_batchmode(self.batchmenu.currentText())
+        self.toggle_options(self.batchmenu.currentText())
 
         # modality selection
         self.modmenulabel = QLabel('modality')
@@ -111,8 +113,10 @@ class View(QMainWindow):
         self.modmenu.addItem('ECG')
         self.modmenu.addItem('RESP')
         self.modmenu.currentTextChanged.connect(self._model.set_modality)
+        self.modmenu.currentTextChanged.connect(self.toggle_options)
         # initialize with default value
         self._model.set_modality(self.modmenu.currentText())
+        self.toggle_options(self.modmenu.currentText())
 
         # channel selection
         self.sigchanmenulabel = QLabel('data channel')
@@ -352,6 +356,7 @@ class View(QMainWindow):
 #        print("plot_signal listening")
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
 
+
     def plot_peaks(self, value):
         # self.scat is listed in ax.collections
         if self.ax00.collections:
@@ -363,6 +368,7 @@ class View(QMainWindow):
 #        print("plot_peaks listening")
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
 
+
     def plot_segment(self, value):
         # self.segementspan is listed in ax.patches
         if self.ax00.patches:
@@ -373,12 +379,14 @@ class View(QMainWindow):
         self.confirmedit.setEnabled(True)
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
 
+
     def plot_markers(self, value):
         self.ax10.clear()
         self.ax10.relim()
         self.line10 = self.ax10.plot(self._model.sec, value)
         self.canvas1.draw()
 #        print("plot_markers listening")
+
 
     def plot_period(self, value):
         self.ax20.clear()
@@ -394,6 +402,7 @@ class View(QMainWindow):
         self.canvas2.draw()
 #        print("plot_period listening")
 
+
     def plot_rate(self, value):
         self.ax21.clear()
         self.ax21.relim()
@@ -407,6 +416,7 @@ class View(QMainWindow):
         self.navitools.update()
         self.canvas2.draw()
 #        print("plot_rate listening")
+
 
     def plot_tidalamp(self, value):
         self.ax22.clear()
@@ -422,16 +432,20 @@ class View(QMainWindow):
         self.canvas2.draw()
 #        print("plot_tidalamp listening")
 
+
     def display_path(self, value):
         self.currentFile.setText(value)
+
 
     def display_status(self, status):
         # display status until new status is set
         self.statusBar.showMessage(status)
 
+
     def display_progress(self, value):
         # if value is 0, the progressbar indicates a busy state
         self.progressBar.setRange(0, value)
+
 
     def toggle_segmenter(self, value):
         if self._model.loaded:
@@ -454,6 +468,7 @@ class View(QMainWindow):
                 if self.ax00.patches:
                     self.ax00.patches[0].remove()
 
+
     def enable_segmentedit(self):
         # disable peak editing to avoid interference
         self.editcheckbox.setCheckState(0)
@@ -461,6 +476,7 @@ class View(QMainWindow):
             self.segmentcursor = 'start'
         elif self.endedit.hasFocus():
             self.segmentcursor = 'end'
+
 
     def get_xcursor(self, event):
         # event.button 1 corresponds to left mouse button
@@ -474,6 +490,7 @@ class View(QMainWindow):
                 self.endedit.insert('{:.2f}'.format(event.xdata))
             # disable segment cursor again after value has been set
             self.segmentcursor = False
+
 
     def select_stats(self, event):
         """
@@ -494,6 +511,20 @@ class View(QMainWindow):
         if line:
             line.set_color(self.togglecolors[line.get_color()])
         self.canvas2.draw()
+        
+        
+    def toggle_options(self, event):
+        if event == "ECG":
+            self.tidalampcheckbox.setEnabled(False)
+            self.tidalampcheckbox.setChecked(False)
+        elif event == "RESP":
+            self.tidalampcheckbox.setEnabled(True)
+        elif event == "multiple files":
+            self.editcheckbox.setEnabled(False)
+            self.editcheckbox.setChecked(False)
+        elif event == "single file":
+            self.editcheckbox.setEnabled(True)
+        
 
     def reset_plot(self):
         self.ax00.clear()

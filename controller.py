@@ -75,9 +75,7 @@ class Controller(QObject):
         if self._model.fpaths:
             if (self._model.batchmode == 'multiple files' and
                 len(self._model.fpaths) >= 1):
-                self.get_wpathpeaks()
-                if self._model.wdirpeaks:
-                    self.batch_processor()
+                self.batch_processor()
             elif (self._model.batchmode == 'single file' and
                   len(self._model.fpaths) == 1):
                 self._model.reset()
@@ -110,10 +108,10 @@ class Controller(QObject):
 
 
     def get_wpathpeaks(self):
-        if self._model.peaks is None:
-            self._model.status = 'error: no peaks available'
-            return
         if self._model.batchmode == 'single file':
+            if self._model.peaks is None:
+                self._model.status = 'error: no peaks available'
+                return
             self._model.wpathpeaks = getSaveFileName(None, 'Save peaks',
                                                      'untitled.csv',
                                                      'CSV (*.csv)')[0]
@@ -133,7 +131,20 @@ class Controller(QObject):
         if nitems < 1:
             self._model.status = "error: no statistics selected for saving"
             return
+        # get paths
         if self._model.batchmode == 'single file':
+            # check is there is data for the selected stats
+            for key, value in self._model.savestats.items():
+                if value:
+                    if key == "period" and self._model.periodintp is None:
+                        self._model.status = "error: no statistics available"
+                        return
+                    elif key == "rate" and self._model.rateintp is None:
+                        self._model.status = "error: no statistics available"
+                        return
+                    elif key == "tidalamp" and self._model.tidalampintp is None:
+                        self._model.status = "error: no statistics available"
+                        return
             self._model.wpathstats = getSaveFileName(None, 'Save statistics',
                                                      'untitled.csv',
                                                      'CSV (*.csv)')[0]
@@ -167,12 +178,16 @@ class Controller(QObject):
         in rapid succession (i.e., when small files are processed). The user
         can still get an impression of the progress since the current file path
         is displayed.
+        TODO: make method calls and their order more explicit!
         '''
 
         self.methodnb = 0
-        self.nmethods = 2
+        self.nmethods = 4
         self.filenb = 0
         self.nfiles = len(self._model.fpaths)
+        
+        self.get_wpathpeaks()
+        self.get_wpathstats()
 
         self._model.status = 'processing files'
         self._model.plotting = False
@@ -191,30 +206,47 @@ class Controller(QObject):
         '''
         if progress == 0:
             return
+        if self.filenb == self.nfiles:
+            self._model.plotting = True
+            self._model.progress_changed.disconnect(self.dispatcher)
+            self._model.wdirpeaks = None
+            self._model.wdirstats = None
+            return
         fpath = self._model.fpaths[self.filenb]
         if self.methodnb == 0:
+            self.methodnb += 1
             self._model.reset()
             self.read_chan(path=fpath)
-            self.methodnb += 1
         elif self.methodnb == 1:
-            self.find_peaks()
             self.methodnb += 1
-        elif self.methodnb == self.nmethods:
-            _, fname = os.path.split(fpath)
-            fpartname, _ = os.path.splitext(fname)
-            self._model.wpathpeaks = os.path.join(self._model.wdirpeaks,
-                                                  '{}{}'.format(fpartname,
-                                                                '_peaks.csv'))
-            self.save_peaks()
+            self.find_peaks()
+        elif self.methodnb == 2:
+            self.methodnb += 1
+            self.calculate_stats()
+        elif self.methodnb == 3:
+            self.methodnb += 1
+            if self._model.wdirpeaks:
+                _, fname = os.path.split(fpath)
+                fpartname, _ = os.path.splitext(fname)
+                self._model.wpathpeaks = os.path.join(self._model.wdirpeaks,
+                                                      f"{fpartname}_peaks.csv")
+                self.save_peaks()
+            else:
+                self.dispatcher(1)
+        elif self.methodnb == 4:
             # once all methods are executed, move to next file and start with
             # first method again
-            self.filenb += 1
             self.methodnb = 0
-            if self.filenb == self.nfiles:
-                self._model.plotting = True
-                self._model.progress_changed.disconnect(self.dispatcher)
-                return
-
+            self.filenb += 1
+            if self._model.wdirstats:
+                _, fname = os.path.split(fpath)
+                fpartname, _ = os.path.splitext(fname)
+                self._model.wpathstats = os.path.join(self._model.wdirstats,
+                                                      f"{fpartname}_stats.csv")
+                self.save_stats()
+            else:
+                self.dispatcher(1)
+            
 
     @threaded
     def read_chan(self, path):
@@ -401,8 +433,6 @@ class Controller(QObject):
 
 
     def edit_peaks(self, event):
-        # account for the fact that depending on sensor modality, data.peaks
-        # has different shapes; preserve ndarrays throughout editing!
         if not self._model.peakseditable:
             return
         if self._model.peaks is None:
@@ -505,9 +535,6 @@ class Controller(QObject):
         for key, value in self._model.savestats.items():
             if value == True:
                 savekeys.append(key)
-        if not savekeys:
-            self._model.status = 'error: no statistics selected for saving'
-            return
         savearray = np.zeros((self._model.signal.size, len(savekeys)))
         for i, key in enumerate(savekeys):
             if key == 'period':
@@ -519,6 +546,3 @@ class Controller(QObject):
         savearray = pd.DataFrame(savearray)
         savearray.to_csv(self._model.wpathstats, index=False, header=savekeys)
                 
-            
-            
-  
