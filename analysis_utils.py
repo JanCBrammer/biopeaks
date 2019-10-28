@@ -34,10 +34,10 @@ def threshold_normalization(data, alpha, window_half):
 
 
 def update_indices(source_idcs, update_idcs, update):
-    '''
+    """
     for every element s in source_idcs, change every element u in update_idcs
     accoridng to update, if u is larger than s
-    '''
+    """
     update_idcs_buffer = update_idcs
     for s in source_idcs:
         # for each list, find the indices (of indices) that need to be updated
@@ -50,16 +50,21 @@ def update_indices(source_idcs, update_idcs, update):
 
 
 def interp_stats(peaks, stats, nsamp):
-    # interpolate descriptive statistics over the entire duration of the
-    # signal: samples up until first peak and from last peak to end of signal
-    # are set to the value of the first and last element of stats respectively;
-    # linear (2nd order) interpolation is chosen since cubic (4th order)
-    # interpolation can lead to biologically implausible interpolated values
-    # and erratic fluctuations due to overfitting
+    """
+    interpolate descriptive statistics over the entire duration of the
+    signal: samples up until first peak and from last peak to end of signal
+    are set to the value of the first and last element of stats respectively;
+    linear (2nd order) interpolation is chosen since cubic (4th order)
+    interpolation can lead to biologically implausible interpolated values
+    and erratic fluctuations due to overfitting
+    """
+    if np.size(peaks) < 2:
+        print("empty peak array, interpolation not possible")
+        return
     f = interp1d(np.ravel(peaks), stats, kind='slinear',
                  bounds_error=False, fill_value=([stats[0]], [stats[-1]]))
     # internally, for consistency in plotting etc., keep original sampling
-    # rate, convert sampling rates during saving
+    # rate
     samples = np.arange(0, nsamp)
     statsintp = f(samples)
     
