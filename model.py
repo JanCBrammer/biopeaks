@@ -264,6 +264,17 @@ class Model(QObject):
             self._peakseditable = True
         elif value == 0:
             self._peakseditable = False
+            
+    @pyqtProperty(int)
+    def savebatchpeaks(self):
+        return self._savebatchpeaks
+
+    @pyqtSlot(int)
+    def set_savebatchpeaks(self, value):
+        if value == 2:
+            self._savebatchpeaks = True
+        elif value == 0:
+            self._savebatchpeaks = False
         
     @pyqtSlot(int)
     def progress(self, value):
@@ -301,6 +312,7 @@ class Model(QObject):
         self._rpathsignal = None
         self._wpathstats = None
         self._wdirstats = None
+        self._savebatchpeaks = False
         self._savestats = {"period":False, "rate":False, "tidalamp":False}
 
     def reset(self):

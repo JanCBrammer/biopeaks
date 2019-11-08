@@ -117,6 +117,8 @@ class Controller(QObject):
             if self._model.wpathpeaks:
                 self.save_peaks()
         elif self._model.batchmode == 'multiple files':
+            if not self._model.savebatchpeaks:
+                return
             self._model.wdirpeaks = getExistingDirectory(None,
                                                          'Choose a directory '
                                                          'for saving the '

@@ -88,6 +88,11 @@ class View(QMainWindow):
         # peak editing
         self.editcheckbox = QCheckBox('edit peaks', self)
         self.editcheckbox.stateChanged.connect(self._model.set_peakseditable)
+        
+        # peak saving batch
+        self.savecheckbox = QCheckBox('save peaks during batch processing',
+                                       self)
+        self.savecheckbox.stateChanged.connect(self._model.set_savebatchpeaks)
 
         # selecting stats for saving
         self.periodcheckbox = QCheckBox('period', self)
@@ -305,6 +310,7 @@ class View(QMainWindow):
 
         self.optionsgroupC = QGroupBox('peak options')
         self.vlayoutC.addWidget(self.editcheckbox)
+        self.vlayoutC.addWidget(self.savecheckbox)
         self.optionsgroupC.setLayout(self.vlayoutC)
 
         self.optionsgroupD = QGroupBox('select statistics for saving')
@@ -522,10 +528,13 @@ class View(QMainWindow):
         elif event == "multiple files":
             self.editcheckbox.setEnabled(False)
             self.editcheckbox.setChecked(False)
+            self.savecheckbox.setEnabled(True)
             self.markerschanmenu.setEnabled(False)
         elif event == "single file":
             self.editcheckbox.setEnabled(True)
             self.markerschanmenu.setEnabled(True)
+            self.savecheckbox.setEnabled(False)
+            self.savecheckbox.setChecked(False)
 
 
     def reset_plot(self):
