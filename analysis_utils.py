@@ -11,7 +11,6 @@ from scipy.interpolate import interp1d
 
 
 def moving_average(signal, window_size):
-    
     return np.convolve(signal, np.ones((window_size,)) / window_size,
                        mode='same')
 
@@ -58,9 +57,6 @@ def interp_stats(peaks, stats, nsamp):
     interpolation can lead to biologically implausible interpolated values
     and erratic fluctuations due to overfitting
     """
-    if np.size(peaks) < 2:
-        print("empty peak array, interpolation not possible")
-        return
     f = interp1d(np.ravel(peaks), stats, kind='slinear',
                  bounds_error=False, fill_value=([stats[0]], [stats[-1]]))
     # internally, for consistency in plotting etc., keep original sampling

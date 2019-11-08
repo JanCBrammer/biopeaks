@@ -202,22 +202,25 @@ class Model(QObject):
     
     @pyqtSlot(object)
     def set_segment(self, values):
-        if values[0] and values[1]:
-            begsamp = float(values[0])
-            endsamp = float(values[1])
-            # check if values are inside temporal bounds
-            evalarray = [np.asarray([begsamp, endsamp]) >= self._sec[0],
-                         np.asarray([begsamp, endsamp]) <= self._sec[-1]]
-            if np.all(evalarray):
-                # check if order is valid
-                if begsamp < endsamp:
-                    self._status = 'valid selection {}'.format(values)
-                    self._segment = [begsamp, endsamp]
-                    self.segment_changed.emit(self._segment)
+        try:
+            if values[0] and values[1]:
+                begsamp = float(values[0])
+                endsamp = float(values[1])
+                # check if values are inside temporal bounds
+                evalarray = [np.asarray([begsamp, endsamp]) >= self._sec[0],
+                             np.asarray([begsamp, endsamp]) <= self._sec[-1]]
+                if np.all(evalarray):
+                    # check if order is valid
+                    if begsamp < endsamp:
+                        self._status = 'valid selection {}'.format(values)
+                        self._segment = [begsamp, endsamp]
+                        self.segment_changed.emit(self._segment)
+                    else:
+                        self._status = 'invalid selection {}'.format(values)
                 else:
                     self._status = 'invalid selection {}'.format(values)
-            else:
-                self._status = 'invalid selection {}'.format(values)
+        except:
+            self._segment = None
     
     @pyqtProperty(str)
     def batchmode(self):

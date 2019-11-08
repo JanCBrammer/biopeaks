@@ -97,29 +97,8 @@ class View(QMainWindow):
         self.tidalampcheckbox = QCheckBox('tidal amplitude', self)
         self.tidalampcheckbox.stateChanged.connect(lambda: self.select_stats('tidalamp'))
 
-        # processing mode (batch or single file)
-        self.batchmenu = QComboBox(self)
-        self.batchmenu.addItem('single file')
-        self.batchmenu.addItem('multiple files')
-        self.batchmenu.currentTextChanged.connect(self._model.set_batchmode)
-        self.batchmenu.currentTextChanged.connect(self.toggle_options)
-        # initialize with default value
-        self._model.set_batchmode(self.batchmenu.currentText())
-        self.toggle_options(self.batchmenu.currentText())
-
-        # modality selection
-        self.modmenulabel = QLabel('modality')
-        self.modmenu = QComboBox(self)
-        self.modmenu.addItem('ECG')
-        self.modmenu.addItem('RESP')
-        self.modmenu.currentTextChanged.connect(self._model.set_modality)
-        self.modmenu.currentTextChanged.connect(self.toggle_options)
-        # initialize with default value
-        self._model.set_modality(self.modmenu.currentText())
-        self.toggle_options(self.modmenu.currentText())
-
         # channel selection
-        self.sigchanmenulabel = QLabel('data channel')
+        self.sigchanmenulabel = QLabel('biosignal channel')
         self.sigchanmenu = QComboBox(self)
         self.sigchanmenu.addItem('infer from modality')
         self.sigchanmenu.addItem('A1')
@@ -147,6 +126,27 @@ class View(QMainWindow):
                                                         set_markerchan)
         # initialize with default value
         self._model.set_markerchan(self.markerschanmenu.currentText())
+        
+        # processing mode (batch or single file)
+        self.batchmenu = QComboBox(self)
+        self.batchmenu.addItem('single file')
+        self.batchmenu.addItem('multiple files')
+        self.batchmenu.currentTextChanged.connect(self._model.set_batchmode)
+        self.batchmenu.currentTextChanged.connect(self.toggle_options)
+        # initialize with default value
+        self._model.set_batchmode(self.batchmenu.currentText())
+        self.toggle_options(self.batchmenu.currentText())
+
+        # modality selection
+        self.modmenulabel = QLabel('modality')
+        self.modmenu = QComboBox(self)
+        self.modmenu.addItem('ECG')
+        self.modmenu.addItem('RESP')
+        self.modmenu.currentTextChanged.connect(self._model.set_modality)
+        self.modmenu.currentTextChanged.connect(self.toggle_options)
+        # initialize with default value
+        self._model.set_modality(self.modmenu.currentText())
+        self.toggle_options(self.modmenu.currentText())
 
         # segment selection; this widget can be openend / set visible from
         # the menu and closed from within itself (see mapping of segmentermap);
@@ -175,17 +175,17 @@ class View(QMainWindow):
         self.startedit.addAction(segmentfromcursor, 1)
         self.endedit.addAction(segmentfromcursor, 1)
 
-        self.previewedit = QPushButton('update selection')
+        self.previewedit = QPushButton('preview segment')
         lambdafn = lambda: self._model.set_segment([self.startedit.text(),
                                                     self.endedit.text()])
         self.previewedit.clicked.connect(lambdafn)
 
-        self.confirmedit = QPushButton('confirm selection')
+        self.confirmedit = QPushButton('confirm segment')
         self.confirmedit.clicked.connect(self._controller.segment_signal)
         self.confirmedit.clicked.connect(self.segmentermap.map)
         self.segmentermap.setMapping(self.confirmedit, 0)
 
-        self.abortedit = QPushButton('abort selection')
+        self.abortedit = QPushButton('abort segmentation')
         self.abortedit.clicked.connect(self.segmentermap.map)
         # reset the segment to None
         self.segmentermap.setMapping(self.abortedit, 2)
@@ -208,7 +208,7 @@ class View(QMainWindow):
         menubar = self.menuBar()
 
         # signal menu
-        signalmenu = menubar.addMenu('data')
+        signalmenu = menubar.addMenu('biosignal')
 
         openSignal = QAction('load', self)
         openSignal.triggered.connect(self._controller.get_fpaths)
@@ -307,7 +307,7 @@ class View(QMainWindow):
         self.vlayoutC.addWidget(self.editcheckbox)
         self.optionsgroupC.setLayout(self.vlayoutC)
 
-        self.optionsgroupD = QGroupBox('select statistics')
+        self.optionsgroupD = QGroupBox('select statistics for saving')
         self.vlayoutD.addWidget(self.periodcheckbox)
         self.vlayoutD.addWidget(self.ratecheckbox)
         self.vlayoutD.addWidget(self.tidalampcheckbox)
@@ -463,7 +463,7 @@ class View(QMainWindow):
             # close segmenter after segmentation has been aborted (reset
             # segment)
             elif value == 2:
-                self._model.segment = None
+                self._model.set_segment(None)
                 self.segmenter.setVisible(False)
                 if self.ax00.patches:
                     self.ax00.patches[0].remove()
@@ -522,9 +522,11 @@ class View(QMainWindow):
         elif event == "multiple files":
             self.editcheckbox.setEnabled(False)
             self.editcheckbox.setChecked(False)
+            self.markerschanmenu.setEnabled(False)
         elif event == "single file":
             self.editcheckbox.setEnabled(True)
-        
+            self.markerschanmenu.setEnabled(True)
+
 
     def reset_plot(self):
         self.ax00.clear()

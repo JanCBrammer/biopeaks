@@ -49,7 +49,6 @@ class Worker(QRunnable):
 # decorator that runs Controller methods in Worker thread
 def threaded(fn):
     def threader(controller, **kwargs):
-    # flag to disable threading
         worker = Worker(fn, controller, **kwargs)
         worker.signals.progress.connect(controller._model.progress)
         controller.threadpool.start(worker)
@@ -487,17 +486,17 @@ class Controller(QObject):
             # work on local copy of extrema to avoid call to plotting
             # function
             extrema = np.delete(self._model.peaks, removeext)
+            amps = self._model.signal[extrema]
             # pad extrema with NAN in order to simulate equal number of peaks
             # and troughs if needed
             if np.remainder(extrema.size, 2) != 0:
                 extrema = np.append(extrema, np.nan)
             # determine if series starts with peak or trough to be able
             # to save peaks and troughs separately
-            amps = self._model.signal[extrema]
-            if extrema[0] > extrema[1]:
+            if amps[0] > amps[1]:
                 peaks = extrema[0:-1:2]
                 troughs = extrema[1::2]
-            elif extrema[0] < extrema[1]:
+            elif amps[0] < amps[1]:
                 peaks = extrema[1::2]
                 troughs = extrema[0:-1:2]
             # make sure extrema are float: IMPORTANT, if seconds are
@@ -512,7 +511,7 @@ class Controller(QObject):
     @threaded
     def calculate_stats(self):
         self._model.status = 'calculating statistics'
-        if self._model.peaks is None:
+        if (self._model.peaks is None) or (np.size(self._model.peaks) < 2):
             self._model.status = 'error: no peaks available'
             return
         if self._model.modality == 'ECG':
