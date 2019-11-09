@@ -51,7 +51,7 @@ segmenters
 between them up or down. Beneath the **optionspanel**, in the lower left
 corner, you find the **displaytools**. These allow you to interact with your
 biosignal. Have a
-look in the functionality section (link) for details on these elements.
+look in the [functionality section](#Functionality) for details on these elements.
 
 ## Functionality
 ### load biosignal
