@@ -56,9 +56,9 @@ class TestApplication(QApplication):
                                 sigchan='ECG',
                                 markerchan='I1',
                                 mode='single file',
-                                sigpathorig='testdata.txt',
-                                sigpathseg='testdatasegmented.txt',
-                                peakpath='testdata_segmented_peaks.csv',
+                                sigpathorig='testdata\testdata.txt',
+                                sigpathseg='testdata\testdatasegmented.txt',
+                                peakpath='testdata\testdata_segmented_peaks.csv',
                                 siglen=5100000,
                                 peaklen=92,
                                 avgrate=55.0913,
@@ -69,23 +69,23 @@ class TestApplication(QApplication):
                                 sigchan='RESP',
                                 markerchan='I1',
                                 mode='single file',
-                                sigpathorig='testdata.txt',
-                                sigpathseg='testdata_segmented.txt',
-                                peakpath='testdata_segmented_peaks.csv',
+                                sigpathorig='testdata\testdata.txt',
+                                sigpathseg='testdata\testdata_segmented.txt',
+                                peakpath='testdata\testdata_segmented_peaks.csv',
                                 siglen=5100000,
                                 peaklen=108,
                                 avgrate=16.5735,
                                 segment=[3200, 3400])
         
         # batch processing with ECG data
-        sigpaths = ['montage1A.txt', 'montage1J.txt', 'montage2A.txt',
+        sigfiles = ['montage1A.txt', 'montage1J.txt', 'montage2A.txt',
                     'montage2J.txt', 'montage3A.txt', 'montage3J.txt']
         peaklens = [312, 313, 257, 312, 305, 312]
         self._tests.batch_file(modality='ECG',
                                sigchan='ECG',
                                mode='multiple files',
-                               sigpaths=sigpaths,
-                               peakdir=os.getcwd(),
+                               sigpaths=sigfiles,
+                               peakdir="testdata",
                                peaklens=peaklens)
         
         
@@ -260,7 +260,7 @@ class Tests:
         QTest.keyClicks(self._view.modmenu, modality)
         QTest.keyClicks(self._view.sigchanmenu, sigchan)
         QTest.keyClicks(self._view.batchmenu, mode)
-        self._model.fpaths = sigpaths
+        self._model.fpaths = [f"testdata\{i}" for i in sigpaths]
         self._model.wdirpeaks = peakdir
         
         # 2. process batch
@@ -275,14 +275,15 @@ class Tests:
         ################
         # load each peak file saved during batch processing and assess if
         # peaks have been identified correctly
-        for sigpath, peaklen in zip(sigpaths, peaklens):
+        for sigfile, peaklen in zip(sigpaths, peaklens):
             # load signal
+            sigpath = f"testdata\{sigfile}"
             self._controller.read_chan(path=sigpath)
             self.wait_for_signal(self._model.progress_changed, 1)
             # load peaks
             _, fname = os.path.split(sigpath)
             fpartname, _ = os.path.splitext(fname)
-            self._model.rpathpeaks = fpartname + '_peaks.csv'
+            self._model.rpathpeaks = f"testdata\{fpartname}_peaks.csv"
             self._controller.read_peaks()
             self.wait_for_signal(self._model.progress_changed, 1)
             assert self._model.peaks.size == peaklen, \
