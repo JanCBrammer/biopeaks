@@ -34,7 +34,7 @@ as well.
 
 ## Layout of the interface
 
-![blank](https://github.com/JohnDoenut/biopeaks/tree/master/images/screenshot_blank.png)
+![blank](images/screenshot_blank.png)
 
 In the **menubar**, you can find three sections: **_biosignal_**, **_peaks_**,
 and **_statistics_**.
@@ -74,13 +74,13 @@ has been loaded successfully it is displayed in the upper **datadisplay**. If
 you selected a _marker channel_, the markers will be displayed in the middle
 **datadisplay**.
 
-![blank](https://github.com/JohnDoenut/biopeaks/tree/master/images/screenshot_biosignal.png)
+![biosignal](images/screenshot_biosignal.png)
 
 ### segment biosignal
 **menubar** -> **_biosignal_** -> _select segment_ opens the **segmentdialog**
 on the right side of the **datadisplay**.
 
-![segmentdialog](https://github.com/JohnDoenut/biopeaks/tree/master/images/screenshot_segmentdialog.png)
+![segmentdialog](images/screenshot_segmentdialog.png)
 
 Specify start and end of the segment in seconds either by entering values in
 the respective fields, or with the mouse. For the latter option, first click on
@@ -93,7 +93,7 @@ If you click **_preview segment_**
 the segment will be displayed as a shaded region in the upper **datadisplay**
 but the segment won't be cut out yet. 
 
-![segmenthighlight](https://github.com/JohnDoenut/biopeaks/tree/master/images/screenshot_segmenthighlight.png)
+![segmenthighlight](images/screenshot_segmenthighlight.png)
 
 You can change the start and end values
 and preview the segment until you are certain that the desired segment is
@@ -114,7 +114,7 @@ saved in the original OpenSignals format containing all channels.
 **menubar** -> **_peaks_** -> _find_ automatically identifies the peaks in the
 biosignal. The peaks appear as dots displayed on top of the biosignal.
 
-![peaks](https://github.com/JohnDoenut/biopeaks/tree/master/images/screenshot_peaks.png)
+![peaks](images/screenshot_peaks.png)
 
 ### save peaks
 **menubar** -> **_peaks_** -> _save_ opens a file dialog that lets you select a
@@ -141,7 +141,7 @@ dots displayed on top of the biosignal.
 possible statistics for the selected _modality_. The statistics will be 
 displayed in the lowest **datadisplay**.
 
-![statistics](https://github.com/JohnDoenut/biopeaks/tree/master/images/screenshot_statistics.png)
+![statistics](images/screenshot_statistics.png)
 
 ### save statistics
 First select the statistics that you'd like to save: **optionspanel** ->
@@ -235,7 +235,7 @@ correct locations. However, if there are noisy intervals in the biosignal,
 peaks might be misplaced or not detected at all (i.e., false positives or
 false negatives).
 
-![noise](https://github.com/JohnDoenut/biopeaks/tree/master/images/screenshot_noise.png)
+![noise](images/screenshot_noise.png)
 
 If this is the case you can manually edit the
 peak locations (link). Once you are confident that all the peaks are placed
