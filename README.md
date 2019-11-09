@@ -43,15 +43,16 @@ side, there's
 an **optionspanel** that allows you to customize your workflow.
 To the right of the **optionspanel** is the **datadisplay** which consists of 
 three panels. The upper
-panel contains your biosignal as well as peaks identified in the biosignal, 
+panel contains the biosignal as well as peaks identified in the biosignal, 
 while the middle panel can be used
 to optionally display a marker channel. The lower panel contains any statistics 
 derived from the peaks. Adjust the height of the panels by dragging the 
 segmenters
 between them up or down. Beneath the **optionspanel**, in the lower left
-corner, you find the **displaytools**. These allow you to interact with your
+corner, you find the **displaytools**. These allow you to interact with the
 biosignal. Have a
-look in the [functionality section](#Functionality) for details on these elements.
+look in the [functionality section](#Functionality) for details on these
+elements.
 
 ## Functionality
 ### load biosignal
@@ -69,7 +70,7 @@ that marks interesting events such as the onset of an experimental condition,
 button presses etc.. You can use the _marker channel_ to display any other
 channel alongside your _biosignal channel_. Once these options are selected,
 you can load the biosignal: **menubar** -> **_biosignal_** -> _load_. A
-dialog will let you select the file containing your biosignal. If the biosignal
+dialog will let you select the file containing the biosignal. If the biosignal
 has been loaded successfully it is displayed in the upper **datadisplay**. If
 you selected a _marker channel_, the markers will be displayed in the middle
 **datadisplay**.
@@ -165,11 +166,13 @@ select **optionspanel** -> **peak options** -> _edit peaks_. Now click on the
 upper **datadisplay** once to enable peak editing. To delete a peak place the 
 mouse cursor on top of it (or in it's vicinity) and press "d". To add a peak,
 press "a". Editing peaks is most convenient if you zoom in on the biosignal
-region that you want to edit using the **displaytools** (link). The statistics
+region that you want to edit using the [**displaytools**](#displaytools).
+The statistics
 can be a useful guide when editing peaks. Isolated, unusually large or small
 values in period or rate can indicate misplaced peaks. If the _modality_ is
-ECG, peaks are edited automatically during the calculation of the statistics
-(link). However, this does not guarantee that all errors in peak placement will
+ECG, peaks are edited automatically during the
+[calculation of the statistics](#calculate-statistics).
+However, this does not guarantee that all errors in peak placement will
 be caught. Always check for error manually! Note, that when editing breathing
 extrema, any edits that break the alternation of peaks and troughs
 (e.g., two consecutive peaks) will automatically be discarded when you save
@@ -177,10 +180,10 @@ the extrema. If you already calculated statistics, don't forget to calculate
 them again after peak editing 
 
 ### batch processing
-**WARNING:** There is no substitute for manually checking your biosignal's
+**WARNING:** There is no substitute for manually checking the biosignal's
 quality as well as the placement of the peaks. Manually checking and editing
 peak placement is the only way to guarantee sensible statistics. Only use
-batch processing if you are sure that your biosignal's quality is sufficient!
+batch processing if you are sure that the biosignal's quality is sufficient!
 
 To enable batch processing, select 
 **optionspanel** -> **_processing mode_** -> _multiple files_. Make sure to
@@ -218,18 +221,21 @@ detailled description of how to use them.
 The following workflow is meant as an introduction to the interface. Many other
 workflows are possible and might make more sense given your 
 requirements. Note that `biopeaks` works with the OpenSignals text file format.
-However, you can analyze any data as long as you format your data according to
+However, you can analyze any data as long as you format the data according to
 the [OpenSignals convention](http://bitalino.com/datasheets/OpenSignals_File_Formats.pdf).
 The functions used in the workflow are
-described in detail in the functionality section (link).
+described in detail in the [functionality section](#Functionality).
 
 ### examplary workflow on single file
 Time to look at some biosignals! Before you start any workflow, set the desired
 options in the **optionspanel**. Make sure that the **_processing mode_** is
-set to _single file_ and load your biosignal (link) to visually
-check its quality using the **displaytools** (link). Next, if you want, you can
-segment  your biosignal (link) based on a specific time interval or events in
-the markers. Now, you can identify the peaks in the biosignal (link). If the
+set to _single file_ and [load the biosignal](#load-biosignal) to visually
+check its quality using the [**displaytools**](#displaytools). Next, if you
+want, you can
+[segment the biosignal](#segment-biosignal) based on a specific time interval
+or events in
+the markers. Now, you can [identify the peaks](#find-peaks) in the biosignal.
+If the
 quality of the biosignal is sufficient, the peaks should be placed in the
 correct locations. However, if there are noisy intervals in the biosignal,
 peaks might be misplaced or not detected at all (i.e., false positives or
@@ -237,17 +243,21 @@ false negatives).
 
 ![noise](images/screenshot_noise.png)
 
-If this is the case you can manually edit the
-peak locations (link). Once you are confident that all the peaks are placed
-correctly you can calculate statistics (link). Finally, you can save any data
-that you'd like to keep (links). If you have segmented the biosignal it is a
+If this is the case you can [edit the
+peak locations](#edit-peaks). Once you are confident that all the peaks are
+placed
+correctly you can [calculate statistics](#calculate-statistics). Finally,
+you can [save the biosignal](#save-biosignal), [peaks](#save-peaks), and/or
+[statistics](#save-statistics), depending on your requirements. If you have
+segmented the biosignal it is a
 good idea to save it so you can reproduce the workflow later if necessary.
-Also, save the peaks if you're planning on reloading them later (link) or using
-them for your own computations.
+Also, save the peaks if you're planning on [reloading](#load-peaks) them later
+or using them for your own computations.
 
 
 # 3. Contributor Guide
-Please report any bug by opening an issue (link on how to do this). If you
+Please report any bug by [opening an issue](https://help.github.com/en/github/managing-your-work-on-github/creating-an-issue).
+If you
 have a question please also open an issue. 
 Pull requests for new features, improvements, and bug fixes are very welcome!
 
