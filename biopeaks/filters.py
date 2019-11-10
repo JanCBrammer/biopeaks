@@ -2,7 +2,7 @@
 """
 Created on Thu Dec 20 11:19:11 2018
 
-@author: U117148
+@author: John Doe
 """
 
 from scipy.signal import butter, filtfilt

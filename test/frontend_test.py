@@ -6,8 +6,8 @@ Created on Sun Jul 28 14:13:03 2019
 """
 
 '''
-What I want to provide are a few functional tests (as opposed to unit tests
-that cover every function, or integration tests); 
+I want to provide a few functional tests (as opposed to unit tests that cover
+every function, or integration tests).
 
 https://codeutopia.net/blog/2015/04/11/what-are-unit-testing-integration-
 testing-and-functional-testing/
@@ -21,14 +21,14 @@ registering an account, you could make that into a functional test"
 I won't use a dedicated test framework, but rather implement a test version of
 the qt application in which I simulate user interaction by directly interacting
 with the controller's methods (i.e. the tests won't simulate interaction with
-the view, as would be the case in a framework like pytest-qt); I don't use
+the view, as would be the case in a framework like pytest-qt). I don't use
 pytest-qt since it doesn't offer (straightforward) interactions with nested
-menus;
+menus.
 
 The tests will be restricted to a few typical, meaningful workflows (i.e., 
 sequences of function calls), since testing all possible workflows is
 unfeasible and for a majority of workflows meaningless (e.g., saving peaks
-before finding peaks etc.)
+before finding peaks etc.).
 '''
 
 import sys
@@ -51,31 +51,34 @@ class TestApplication(QApplication):
         self._tests = Tests(self._model, self._view, self._controller)
         self._view.show()
         
-        # single file with ECG data
-        self._tests.single_file(modality='ECG',
-                                sigchan='ECG',
-                                markerchan='I1',
-                                mode='single file',
-                                sigpathorig='testdata\testdata.txt',
-                                sigpathseg='testdata\testdatasegmented.txt',
-                                peakpath='testdata\testdata_segmented_peaks.csv',
-                                siglen=5100000,
-                                peaklen=92,
-                                avgrate=55.0913,
-                                segment=[760, 860])
+        # change to test directory
+        os.chdir("testdata")
         
-        # single file with breathing data
-        self._tests.single_file(modality='RESP',
-                                sigchan='RESP',
-                                markerchan='I1',
-                                mode='single file',
-                                sigpathorig='testdata\testdata.txt',
-                                sigpathseg='testdata\testdata_segmented.txt',
-                                peakpath='testdata\testdata_segmented_peaks.csv',
-                                siglen=5100000,
-                                peaklen=108,
-                                avgrate=16.5735,
-                                segment=[3200, 3400])
+#        # single file with ECG data
+#        self._tests.single_file(modality='ECG',
+#                                sigchan='ECG',
+#                                markerchan='I1',
+#                                mode='single file',
+#                                sigpathorig='testdata.txt',
+#                                sigpathseg='testdatasegmented.txt',
+#                                peakpath='testdata_segmented_peaks.csv',
+#                                siglen=5100000,
+#                                peaklen=92,
+#                                avgrate=55.0913,
+#                                segment=[760, 860])
+#        
+#        # single file with breathing data
+#        self._tests.single_file(modality='RESP',
+#                                sigchan='RESP',
+#                                markerchan='I1',
+#                                mode='single file',
+#                                sigpathorig='testdata.txt',
+#                                sigpathseg='testdata_segmented.txt',
+#                                peakpath='testdata_segmented_peaks.csv',
+#                                siglen=5100000,
+#                                peaklen=108,
+#                                avgrate=16.5735,
+#                                segment=[3200, 3400])
         
         # batch processing with ECG data
         sigfiles = ['montage1A.txt', 'montage1J.txt', 'montage2A.txt',
@@ -85,7 +88,7 @@ class TestApplication(QApplication):
                                sigchan='ECG',
                                mode='multiple files',
                                sigpaths=sigfiles,
-                               peakdir="testdata",
+                               peakdir=os.getcwd(),
                                peaklens=peaklens)
         
         
@@ -260,7 +263,7 @@ class Tests:
         QTest.keyClicks(self._view.modmenu, modality)
         QTest.keyClicks(self._view.sigchanmenu, sigchan)
         QTest.keyClicks(self._view.batchmenu, mode)
-        self._model.fpaths = [f"testdata\{i}" for i in sigpaths]
+        self._model.fpaths = sigpaths
         self._model.wdirpeaks = peakdir
         
         # 2. process batch
@@ -275,15 +278,14 @@ class Tests:
         ################
         # load each peak file saved during batch processing and assess if
         # peaks have been identified correctly
-        for sigfile, peaklen in zip(sigpaths, peaklens):
+        for sigpath, peaklen in zip(sigpaths, peaklens):
             # load signal
-            sigpath = f"testdata\{sigfile}"
             self._controller.read_chan(path=sigpath)
             self.wait_for_signal(self._model.progress_changed, 1)
             # load peaks
             _, fname = os.path.split(sigpath)
             fpartname, _ = os.path.splitext(fname)
-            self._model.rpathpeaks = f"testdata\{fpartname}_peaks.csv"
+            self._model.rpathpeaks = f"{fpartname}_peaks.csv"
             self._controller.read_peaks()
             self.wait_for_signal(self._model.progress_changed, 1)
             assert self._model.peaks.size == peaklen, \
