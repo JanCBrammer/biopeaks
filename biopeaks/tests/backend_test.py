@@ -10,8 +10,8 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 from wfdb.processing import compare_annotations
-from ecg_offline import peaks_ecg
-from resp_offline import extrema_resp
+from biopeaks.ecg import peaks_ecg
+from biopeaks.resp import extrema_resp
 
 '''
 What I want to provide here is a way to evaluate the quality of the backend

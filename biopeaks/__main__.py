@@ -7,9 +7,9 @@ Created on Mon Jun  3 18:47:10 2019
 
 import sys
 from PyQt5.QtWidgets import QApplication
-from model import Model
-from view import View
-from controller import Controller
+from .model import Model
+from .view import View
+from .controller import Controller
 
 
 class Application(QApplication):
@@ -18,9 +18,14 @@ class Application(QApplication):
         self._model = Model()
         self._controller = Controller(self._model)
         self._view = View(self._model, self._controller)
-        self._view.show()
+        
+    
+def main():
+    app = Application(sys.argv)
+    app._view.show()
+    sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
-    app = Application(sys.argv)
-    sys.exit(app.exec_())
+    main()
+    

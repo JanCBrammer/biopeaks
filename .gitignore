@@ -1,2 +1,6 @@
 ".pyc"
 ".png"
+misc/
+__pycache__/
+biopeaks/__pycache__/
+biopeaks.egg-info/

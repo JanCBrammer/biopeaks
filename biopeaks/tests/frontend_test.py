@@ -37,9 +37,9 @@ import numpy as np
 from PyQt5.QtTest import QTest, QSignalSpy
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
-from model import Model
-from view import View
-from controller import Controller
+from biopeaks.model import Model
+from biopeaks.view import View
+from biopeaks.controller import Controller
 
 class TestApplication(QApplication):
     def __init__(self, sys_argv):
@@ -54,36 +54,36 @@ class TestApplication(QApplication):
         # change to test directory
         os.chdir("testdata")
         
-#        # single file with ECG data
-#        self._tests.single_file(modality='ECG',
-#                                sigchan='ECG',
-#                                markerchan='I1',
-#                                mode='single file',
-#                                sigpathorig='testdata.txt',
-#                                sigpathseg='testdatasegmented.txt',
-#                                peakpath='testdata_segmented_peaks.csv',
-#                                siglen=5100000,
-#                                peaklen=92,
-#                                avgrate=55.0913,
-#                                segment=[760, 860])
-#        
-#        # single file with breathing data
-#        self._tests.single_file(modality='RESP',
-#                                sigchan='RESP',
-#                                markerchan='I1',
-#                                mode='single file',
-#                                sigpathorig='testdata.txt',
-#                                sigpathseg='testdata_segmented.txt',
-#                                peakpath='testdata_segmented_peaks.csv',
-#                                siglen=5100000,
-#                                peaklen=108,
-#                                avgrate=16.5735,
-#                                segment=[3200, 3400])
+        # single file with ECG data
+        self._tests.single_file(modality='ECG',
+                                sigchan='ECG',
+                                markerchan='I1',
+                                mode='single file',
+                                sigpathorig='testdata.txt',
+                                sigpathseg='testdatasegmented.txt',
+                                peakpath='testdata_segmented_peaks.csv',
+                                siglen=5100000,
+                                peaklen=92,
+                                avgrate=55.0913,
+                                segment=[760, 860])
+        
+        # single file with breathing data
+        self._tests.single_file(modality='RESP',
+                                sigchan='RESP',
+                                markerchan='I1',
+                                mode='single file',
+                                sigpathorig='testdata.txt',
+                                sigpathseg='testdata_segmented.txt',
+                                peakpath='testdata_segmented_peaks.csv',
+                                siglen=5100000,
+                                peaklen=108,
+                                avgrate=16.5735,
+                                segment=[3200, 3400])
         
         # batch processing with ECG data
         sigfiles = ['montage1A.txt', 'montage1J.txt', 'montage2A.txt',
                     'montage2J.txt', 'montage3A.txt', 'montage3J.txt']
-        peaklens = [312, 313, 257, 312, 305, 312]
+        peaklens = [311, 310, 257, 312, 304, 312]
         self._tests.batch_file(modality='ECG',
                                sigchan='ECG',
                                mode='multiple files',
@@ -269,9 +269,9 @@ class Tests:
         # 2. process batch
         ##################
         self._controller.batch_processor()
-        for i in range(3 * len(sigpaths)):
+        for i in range(len(sigpaths) * self._controller.nmethods):
             # this is a hack: for each file (i.e., len(sigpaths)), wait until
-            # all three methods called on that file have finished
+            # all methods called on that file have finished
             self.wait_for_signal(self._model.progress_changed, 1)
 
         # 3. check peaks

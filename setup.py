@@ -1,0 +1,27 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Nov 14 15:48:29 2019
+
+@author: John Doe
+"""
+
+from setuptools import setup, find_packages
+
+setup(
+    name="biopeaks",
+    version="1.0.0",
+    description="A graphical user interface for the analysis of OpenSignals ECG - and breathing data",
+    url="https://github.com/JohnDoenut/biopeaks",
+    author="Jan C. Brammer",
+    author_email="j.brammer@psych.ru.nl",
+    keywords="ECG Breathing Biosignals Bitalino OpenSignals GUI",
+    packages=find_packages(),
+    python_requires=">=3.7",
+    license="GPL-3.0",
+    include_package_data=True,
+    entry_points={
+        "console_scripts": [
+            "biopeaks=biopeaks.__main__:main",
+        ],
+    }
+)

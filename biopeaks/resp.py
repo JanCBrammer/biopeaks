@@ -7,8 +7,8 @@ Created on Wed Dec  5 17:33:13 2018
 
 import numpy as np
 from scipy.signal import welch, find_peaks, argrelextrema
-from filters import butter_lowpass_filter
-from analysis_utils import interp_stats
+from .filters import butter_lowpass_filter
+from .analysis_utils import interp_stats
 
 
 def resp_extrema(signal, sfreq):

@@ -7,10 +7,10 @@ Created on Fri Jan 18 11:01:04 2019
 
 import numpy as np
 import matplotlib.pyplot as plt
-from filters import butter_highpass_filter
 from scipy.signal import find_peaks, medfilt
-from analysis_utils import (moving_average, threshold_normalization,
-                            interp_stats, update_indices)
+from .filters import butter_highpass_filter
+from .analysis_utils import (moving_average, threshold_normalization,
+                             interp_stats, update_indices)
 
 
 def ecg_peaks(signal, sfreq, enable_plot=False):

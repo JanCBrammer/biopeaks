@@ -12,14 +12,14 @@ import numpy as np
 from scipy.signal import find_peaks
 from itertools import islice
 from shutil import copyfile
-from ecg_offline import ecg_peaks, ecg_period
-from resp_offline import resp_extrema, resp_stats
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
 getOpenFileName = QFileDialog.getOpenFileName
 getOpenFileNames = QFileDialog.getOpenFileNames
 getSaveFileName = QFileDialog.getSaveFileName
 getExistingDirectory = QFileDialog.getExistingDirectory
+from .ecg import ecg_peaks, ecg_period
+from .resp import resp_extrema, resp_stats
 peakfuncs = {'ECG': ecg_peaks,
              'RESP': resp_extrema}
 
