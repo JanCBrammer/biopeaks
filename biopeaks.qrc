@@ -1,0 +1,6 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file alias="python_icon.png">biopeaks/images/python_icon.png</file>
+    <file alias="mouse_icon.png">biopeaks/images/mouse_icon.png</file>
+</qresource>
+</RCC>

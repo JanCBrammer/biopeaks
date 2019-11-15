@@ -17,6 +17,7 @@ from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
                                                 FigureCanvas)
 from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as
                                                 NavigationToolbar)
+import biopeaks.resources
 
 
 class CustomNavigationToolbar(NavigationToolbar):
@@ -42,7 +43,7 @@ class View(QMainWindow):
 
         self.setWindowTitle('biopeaks')
         self.setGeometry(50, 50, 1750, 750)
-        self.setWindowIcon(QIcon('images\python_icon.png'))
+        self.setWindowIcon(QIcon(":/python_icon.png"))
 
         # figure0 for signal
         self.figure0 = Figure()
@@ -173,7 +174,7 @@ class View(QMainWindow):
         self.endedit = QLineEdit()
         self.endedit.setValidator(validator)
 
-        segmentfromcursor = QAction(QIcon('images\mouse_icon.png'),
+        segmentfromcursor = QAction(QIcon(":/mouse_icon.png"),
                                     'select with mouse',
                                     self)
         segmentfromcursor.triggered.connect(self.enable_segmentedit)
