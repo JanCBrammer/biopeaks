@@ -9,7 +9,7 @@ import os
 import json
 import pandas as pd
 import numpy as np
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks as find_peaks_scipy
 from itertools import islice
 from shutil import copyfile
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
@@ -450,10 +450,10 @@ class Controller(QObject):
                 self._model.peaks = np.delete(self._model.peaks, peakidx)
         elif event.key == 'a':
             searchsignal = self._model.signal[searchrange]
-            # use find_peaks to also detect local extrema that are
+            # use Scipy's find_peaks to also detect local extrema that are
             # plateaus
-            locmax, _ = find_peaks(searchsignal)
-            locmin, _ = find_peaks(searchsignal * -1)
+            locmax, _ = find_peaks_scipy(searchsignal)
+            locmin, _ = find_peaks_scipy(searchsignal * -1)
             locext = np.concatenate((locmax, locmin))
             locext.sort(kind='mergesort')
             if locext.size < 1:
