@@ -5,13 +5,14 @@ Created on Fri Sep  6 17:55:48 2019
 @author: John Doe
 """
 
+import time
 import wfdb
 import random
 import matplotlib.pyplot as plt
 import numpy as np
 from wfdb.processing import compare_annotations
-from biopeaks.ecg import peaks_ecg
-from biopeaks.resp import extrema_resp
+from biopeaks.ecg import ecg_peaks
+from biopeaks.resp import resp_extrema
 
 '''
 What I want to provide here is a way to evaluate the quality of the backend
@@ -50,12 +51,12 @@ def benchmark_detector(modality, tolerance, enable_plot=False):
 
     if modality == 'ecg':
         dataset = 'mitdb'
-        detector = peaks_ecg
+        detector = ecg_peaks
         channel = 'MLII'
         extension = 'atr'
     elif modality == 'breath':
         dataset = 'bidmc'
-        detector = extrema_resp
+        detector = resp_extrema
         channel = 'RESP,'
         extension = 'breath'
         
@@ -92,7 +93,10 @@ def benchmark_detector(modality, tolerance, enable_plot=False):
             anno = annotation.sample[anno_idcs]
             
         # get algorithmically identified extrema
+        start = time.time()
         algo = detector(signal, sfreq)
+        end = time.time()
+        print(end - start)
         # convert output format of the detector for handling with the wfdb API
         if modality == 'ecg':
             algo = np.ravel(algo)

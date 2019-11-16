@@ -64,7 +64,7 @@ class TestApplication(QApplication):
                                 peakpath='testdata_segmented_peaks.csv',
                                 siglen=5100000,
                                 peaklen=92,
-                                avgrate=55.0913,
+                                avgrate=55.1028,
                                 segment=[760, 860])
         
         # single file with breathing data
@@ -83,7 +83,7 @@ class TestApplication(QApplication):
         # batch processing with ECG data
         sigfiles = ['montage1A.txt', 'montage1J.txt', 'montage2A.txt',
                     'montage2J.txt', 'montage3A.txt', 'montage3J.txt']
-        peaklens = [311, 310, 257, 312, 304, 312]
+        peaklens = [310, 309, 256, 310, 303, 311]
         self._tests.batch_file(modality='ECG',
                                sigchan='ECG',
                                mode='multiple files',
