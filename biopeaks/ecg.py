@@ -14,7 +14,11 @@ from .analysis_utils import (moving_average, threshold_normalization,
 
 
 def ecg_peaks(signal, sfreq, enable_plot=False):
-    
+    """ 
+    enable_plot is for debugging purposes when the function is called in
+    isolation
+    """
+
     # initiate plot
     if enable_plot is True:
         plt.figure()
@@ -27,7 +31,8 @@ def ecg_peaks(signal, sfreq, enable_plot=False):
     smoothgrad = moving_average(absgrad, int(np.rint(0.125 * sfreq)))
     avggrad = moving_average(smoothgrad, int(np.rint(1 * sfreq)))
     gradthreshold = 1.5 * avggrad
-    
+    mindelay = int(np.rint(sfreq * 0.3))
+
     # visualize thresholding
     if enable_plot is True:
         ax1.plot(filt)
@@ -44,7 +49,7 @@ def ecg_peaks(signal, sfreq, enable_plot=False):
     # identify R-peaks within QRS (ignore QRS that are too short
     num_qrs = min(beg_qrs.size, end_qrs.size)
     min_len = np.mean(end_qrs[:num_qrs] - beg_qrs[:num_qrs]) * 0.4
-    peaks = []
+    peaks = [0]
     
     for i in range(num_qrs):
         
@@ -59,16 +64,18 @@ def ecg_peaks(signal, sfreq, enable_plot=False):
         if enable_plot is True:
             ax2.axvspan(beg, end, facecolor='m', alpha=0.5)
         
-        data = filt[beg:end]
-        locmax, _ = find_peaks(data)
-        locmin, _ = find_peaks(data * -1)
-        extrema = np.concatenate((locmax, locmin))
-        extrema.sort(kind='mergesort')
+        # find local maxima and their prominence within QRS
+        data = signal[beg:end]
+        locmax, props = find_peaks(data, prominence=(None, None))
         
-        if extrema.size > 0:
-            peakidx = np.argmax(np.square(data[extrema]))
-            peak = beg + extrema[peakidx]
-            peaks.append(peak)
+        if locmax.size > 0:
+            # identify most prominent local maximum
+            peak = beg + locmax[np.argmax(props["prominences"])]
+            # enforce minimum delay between peaks
+            if peak - peaks[-1] > mindelay:
+                peaks.append(peak)
+ 
+    peaks.pop(0)
             
     if enable_plot is True:
         ax1.scatter(np.arange(filt.size)[peaks], filt[peaks], c='r')
@@ -77,12 +84,12 @@ def ecg_peaks(signal, sfreq, enable_plot=False):
 
 
 def ecg_period(peaks, sfreq, nsamp):
-    '''
+    """
     implementation of Jukka A. Lipponen & Mika P. Tarvainen (2019): A robust
     algorithm for heart rate variability time series artefact correction using
     novel beat classification, Journal of Medical Engineering & Technology,
     DOI: 10.1080/03091902.2019.1640306
-    '''   
+    """
     peaks = np.ravel(peaks)
 
     # set free parameters
@@ -91,7 +98,7 @@ def ecg_period(peaks, sfreq, nsamp):
     alpha = 5.2
     window_half = 45
     medfilt_order = 11
-    
+
     # compute period series (make sure it has same numer of elements as peaks);
     # peaks are in samples, convert to seconds
     rr = np.ediff1d(peaks, to_begin=0) / sfreq
@@ -111,7 +118,7 @@ def ecg_period(peaks, sfreq, nsamp):
     # cast drrs to two-dimesnional subspace s1
     s12 = np.zeros(drrs.size)
     for d in np.arange(padding, padding + drrs.size):
-        
+
         if drrs_pad[d] > 0:
             s12[d - padding] = np.max([drrs_pad[d - 1], drrs_pad[d + 1]])
         elif drrs_pad[d] < 0:
@@ -126,8 +133,8 @@ def ecg_period(peaks, sfreq, nsamp):
             s22[d - padding] = np.max([drrs_pad[d + 1], drrs_pad[d + 2]])
         elif drrs_pad[d] < 0:
             s22[d - padding] = np.min([drrs_pad[d + 1], drrs_pad[d + 2]])
-        
-        
+
+
     # compute deviation of RRs from median RRs
     # pad RR series before filtering
     padding = medfilt_order // 2
@@ -279,12 +286,12 @@ def ecg_period(peaks, sfreq, nsamp):
 ##        plt.figure(0)
 ##        plt.plot(rr)
 
-    # interpolate rr at the signals sampling rate for plotting; the rate 
+    # interpolate rr at the signals sampling rate for plotting; the rate
     # corresponding to the first peak is set to the mean RR
     rr[0] = np.mean(rr)
     periodintp = interp_stats(peaks, rr, nsamp)
     rateintp = 60 / periodintp
-    
+
 
     return peaks.astype(int), periodintp, rateintp
 
@@ -295,4 +302,3 @@ def ecg_period(peaks, sfreq, nsamp):
 #
 #savearray = pd.DataFrame(peaks)
 #savearray.to_csv(r'C:\Users\JohnDoe\Desktop\beats_corrected.csv', index=False, header=['peaks'])
-    
