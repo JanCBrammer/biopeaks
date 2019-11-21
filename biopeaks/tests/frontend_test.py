@@ -79,7 +79,7 @@ class Tests:
             spy.wait()
         else:
             # wait for x*5 seconds (spy.wait() loops for 5 seconds)
-            for i in range(4):
+            for i in range(10):
                 # if a signal can emit different values, the while loop runs
                 # until the signal emits the desired value; every emitted value
                 # is appended to spy (last value is most recently emitted one)
