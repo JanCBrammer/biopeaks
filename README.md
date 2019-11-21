@@ -1,10 +1,10 @@
 # 1. General Information
 
 `biopeaks` is a graphical user interface for biosignals recorded with the 
-[Bitalino](https://bitalino.com/en/) and [OpenSignals](https://bitalino.com/en/software). The interface is meant for processing
-biosignals with rhythmically occuring peaks that
-determine the dynamics of the biosignal. A typical example is heart rate
-derived from the R-peaks in an electrocardiogram (ECG).
+[Bitalino](https://bitalino.com/en/) and [OpenSignals](https://bitalino.com/en/software).
+The interface is meant for processing biosignals with rhythmically occuring
+peaks that determine the dynamics of the biosignal. A typical example is heart
+rate derived from the R-peaks in an electrocardiogram (ECG).
 `biopeaks` identifies peaks (or more correctly: extrema) in ECG as well as
 breathing signals. Based on these peaks you can then calculate statistics, such
 as the biosignal's instantaneous period, -rate and in the case of breathing,
@@ -24,13 +24,50 @@ all peaks, especially if the biosignal's quality is poor.
 # 2. User Guide
 
 ## Installation
+Note that currently, `biopeaks` has been build and tested on Windows. Support
+for Linux and macOS will follow as soon as possible.
 
+
+### Instructions for users without a Python installation
+If you don't have experience with installing Python packages and/or if you
+aren't sure if you have Python on your computer start by setting up Python.
 Go to https://www.anaconda.com/distribution/ and install the latest 
-distribution
-for your operating system. Follow the [installation instructions](https://docs.anaconda.com/anaconda/install/)
-in case you're unsure about something. Note that currently, `biopeaks` has
-only been tested on Windows. In principle, it should work with Linux and macOS
-as well.
+distribution for your operating system (make sure to choose a Python 3.x version).
+Follow the [installation instructions](https://docs.anaconda.com/anaconda/install/)
+in case you're unsure about something. Once you've installed Anaconda (this can
+take a while), open an
+[Anaconda Prompt](https://docs.anaconda.com/anaconda/user-guide/getting-started/)
+and type
+
+```
+pip install biopeaks
+```
+
+After the successful installation, open the application by typing
+```
+biopeaks
+```
+in the Anaconda Prompt.
+
+
+### Instructions for users who already have a Python installation
+
+#### dependencies
+Make sure that the following requirements are met for your Python installation:
+
+python >= 3.7\
+numpy >= 1.17.3\
+scipy >= 1.3.1\
+pandas >= 0.25.3\
+pyqt >= 5.12.3\
+matplotlib >= 3.1.3
+
+Once you have all the dependencies, install `biopeaks` with
+
+```
+pip install biopeaks
+```
+
 
 ## Layout of the interface
 
@@ -173,7 +210,7 @@ values in period or rate can indicate misplaced peaks. If the _modality_ is
 ECG, peaks are edited automatically during the
 [calculation of the statistics](#calculate-statistics).
 However, this does not guarantee that all errors in peak placement will
-be caught. Always check for error manually! Note, that when editing breathing
+be caught. Always check for errors manually! Note, that when editing breathing
 extrema, any edits that break the alternation of peaks and troughs
 (e.g., two consecutive peaks) will automatically be discarded when you save
 the extrema. If you already calculated statistics, don't forget to calculate
@@ -264,22 +301,26 @@ Pull requests for new features, improvements, and bug fixes are very welcome!
 The application is structured according to a variant of the
 [model-view-controller architecture](https://martinfowler.com/eaaDev/uiArchs.html).
 To understand the relationship of the model, view, and controller have a look
-at how each of them is instantiated in `biopeaks.py`. For
+at how each of them is instantiated in `__main__.py`. For
 example, the view class has references to the model class as well as the
 controller class, whereas the model has no reference to any of the other
 components of the architecture (i.e., the model is agnostic to the view and
 controller).
 
 # 4. Tests
-The test data have been recorded with
+The test data have been recorded with\
 software: opensignals v2.0.0, 20190805\
-hardware: bitalino revolution (firmware 1281)
+hardware: BITalino (r)evolution (firmware 1281)\
 
-# 5. Requirements
-+ wfdb
-+ Anaconda >= 2019.10
+The tests can be run from a Python console:
+```
+from biopeaks.test import frontend_test
+frontend_test.runner()
+```
+This will open an application, run a few tests on it and print the results to
+the Python console.
 
-# 6. Further Resources
+# 5. Further Resources
 List links to other OSS packages for further analyses based on statistics\
 pyHRV, biosppy, Neurokit
 

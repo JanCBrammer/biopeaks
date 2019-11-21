@@ -63,7 +63,6 @@ class Controller(QObject):
         self._model = model
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
-        self.threading_enabled = True
 
     ###########
     # methods #
@@ -208,6 +207,7 @@ class Controller(QObject):
         if progress == 0:
             return
         if self.filenb == self.nfiles:
+            # this condition works because filenb starts at 0
             self._model.plotting = True
             self._model.progress_changed.disconnect(self.dispatcher)
             self._model.wdirpeaks = None
