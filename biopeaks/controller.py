@@ -365,31 +365,28 @@ class Controller(QObject):
 
     @threaded
     def save_signal(self):
-        self._model.status = 'saving signal'
-        # if the signal has not been segmented, simply copy it to new
-        # location
-        if self._model.segment is None:
-            if self._model.rpathsignal != self._model.wpathsignal:
-                copyfile(self._model.rpathsignal, self._model.wpathsignal)
+        self._model.status = "saving signal"
+        # get the header
+        header = []
+        with open(self._model.rpathsignal, 'rt') as oldfile:
+            for line in islice(oldfile, 3):
+                header.append(line)
+        # get the data
+        data = pd.read_csv(self._model.rpathsignal, delimiter='\t',
+                           header=None, comment='#')
         # if signal has been segmented apply segmentation to all
         # channels in the dataset
-        elif self._model.segment is not None:
+        if self._model.segment is not None:
             begsamp = int(np.rint(self._model.segment[0] *
                                   self._model.sfreq))
             endsamp = int(np.rint(self._model.segment[1] *
                                   self._model.sfreq))
-            data = pd.read_csv(self._model.rpathsignal, delimiter='\t',
-                               header=None, comment='#')
             data = data.iloc[begsamp:endsamp, :]
-            with open(self._model.rpathsignal, 'r') as oldfile, \
-                open(self._model.wpathsignal, 'w', newline='') as newfile:
-                # read header (first three lines) and write it to
-                # new file
-                for line in islice(oldfile, 3):
-                    newfile.write(line)
-                # then write the data to the new file
-                data.to_csv(newfile, sep='\t', header=False,
-                            index=False)
+            
+        with open(self._model.wpathsignal, 'w', newline='') as newfile:
+            for line in header:
+                newfile.write(line)
+            data.to_csv(newfile, sep='\t', header=False, index=False)
 
 
     @threaded
