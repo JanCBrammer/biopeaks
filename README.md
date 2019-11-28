@@ -24,7 +24,7 @@ all peaks, especially if the biosignal's quality is poor.
 # 2. User Guide
 
 ## Installation
-Note that currently, `biopeaks` has been build and tested on Windows. Support
+Note that currently, `biopeaks` has been built and tested on Windows. Support
 for Linux and macOS will follow as soon as possible.
 
 
@@ -320,7 +320,15 @@ frontend_test.runner()
 This will open an application, run a few tests on it and print the results to
 the Python console.
 
-# 5. Further Resources
+# 5. Changelog
+
+### Version 1.0.1 (November 28, 2019)
++ bugfix: `controller.save_signal()` now preserves the header if the data are
+saved to the same location (i.e., if `model.rpathsignal` and `model.wpathsignal` are
+identical)
+
+
+# 6. Further Resources
 List links to other OSS packages for further analyses based on statistics\
 pyHRV, biosppy, Neurokit
 
