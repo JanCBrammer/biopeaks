@@ -370,10 +370,10 @@ def runner():
                                peakfname='testdata_segmented_peaks.csv',
                                statsfname='testdata_segmented_stats.csv',
                                siglen=5100000,
-                               peaklen=108,
-                               avgperiod=3.8496,
-                               avgrate=16.5735,
-                               avgtidalamp=136.3657,
+                               peaklen=126,
+                               avgperiod=3.3224,
+                               avgrate=19.4442,
+                               avgtidalamp=131.1297,
                                segment=[3200, 3400])
 
     # batch processing with ECG data
