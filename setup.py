@@ -9,7 +9,7 @@ from setuptools import setup, find_namespace_packages
 
 setup(
     name="biopeaks",
-    version="1.0.0",
+    version="1.0.2",
     description="A graphical user interface for the analysis of OpenSignals ECG - and breathing biosignals",
     url="https://github.com/JohnDoenut/biopeaks",
     author="Jan C. Brammer",

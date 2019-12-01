@@ -263,7 +263,7 @@ the [OpenSignals convention](http://bitalino.com/datasheets/OpenSignals_File_For
 The functions used in the workflow are
 described in detail in the [functionality section](#Functionality).
 
-### examplary workflow on single file
+### examplary workflow on a single file
 Time to look at some biosignals! Before you start any workflow, set the desired
 options in the **optionspanel**. Make sure that the **_processing mode_** is
 set to _single file_ and [load the biosignal](#load-biosignal) to visually
@@ -326,6 +326,10 @@ the Python console.
 + bugfix: `controller.save_signal()` now preserves the header if the data are
 saved to the same location (i.e., if `model.rpathsignal` and `model.wpathsignal` are
 identical)
+
+### Version 1.0.2 (December 1, 2019)
++ enhancement: `resp.resp_extrema()` is now based on zerocrossings and makes
+fewer assumptions about breathing rate
 
 
 # 6. Further Resources
