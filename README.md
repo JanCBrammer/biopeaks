@@ -32,7 +32,7 @@ for Linux and macOS will follow as soon as possible.
 If you don't have experience with installing Python packages and/or if you
 aren't sure if you have Python on your computer start by setting up Python.
 Go to https://www.anaconda.com/distribution/ and install the latest 
-distribution for your operating system (make sure to choose a Python 3.x version).
+distribution for your operating system (make sure to choose a Python 3.7 version or greater).
 Follow the [installation instructions](https://docs.anaconda.com/anaconda/install/)
 in case you're unsure about something. Once you've installed Anaconda (this can
 take a while), open an
@@ -310,7 +310,7 @@ controller).
 # 4. Tests
 The test data have been recorded with\
 software: opensignals v2.0.0, 20190805\
-hardware: BITalino (r)evolution (firmware 1281)\
+hardware: BITalino (r)evolution (firmware 1281)
 
 The tests can be run from a Python console:
 ```
