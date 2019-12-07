@@ -11,7 +11,6 @@ import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks as find_peaks_scipy
 from itertools import islice
-from shutil import copyfile
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
 getOpenFileName = QFileDialog.getOpenFileName
@@ -123,8 +122,8 @@ class Controller(QObject):
                                                          'for saving the '
                                                          'peaks',
                                                          '\home')
-            
-            
+
+
     def get_wpathstats(self):
         # count number of items selected for saving
         nitems = sum(self._model.savestats.values())
@@ -150,7 +149,7 @@ class Controller(QObject):
                                                      'CSV (*.csv)')[0]
             if self._model.wpathstats:
                 self.save_stats()
-           
+
         elif self._model.batchmode == 'multiple files':
             self._model.wdirstats = getExistingDirectory(None,
                                                          'Choose a directory '
@@ -185,7 +184,7 @@ class Controller(QObject):
         self.nmethods = 4
         self.filenb = 0
         self.nfiles = len(self._model.fpaths)
-        
+
         self.get_wpathpeaks()
         self.get_wpathstats()
 
@@ -247,7 +246,7 @@ class Controller(QObject):
                 self.save_stats()
             else:
                 self.dispatcher(1)
-            
+
 
     @threaded
     def read_chan(self, path):
@@ -382,7 +381,7 @@ class Controller(QObject):
             endsamp = int(np.rint(self._model.segment[1] *
                                   self._model.sfreq))
             data = data.iloc[begsamp:endsamp, :]
-            
+
         with open(self._model.wpathsignal, 'w', newline='') as newfile:
             for line in header:
                 newfile.write(line)
@@ -440,6 +439,10 @@ class Controller(QObject):
         # x coordinate of cursor position
         extend = int(np.rint(self._model.sfreq * 0.1))
         searchrange = np.arange(cursor - extend, cursor + extend)
+        # make sure that searchrange doesn't extend beyond signal
+        retainidcs = np.logical_and(searchrange > 0,
+                                    searchrange < self._model.signal.size)
+        searchrange = searchrange[retainidcs]
         if event.key == 'd':
             peakidx = np.argmin(np.abs(self._model.peaks - cursor))
             # only delete peaks that are within search range
@@ -525,8 +528,8 @@ class Controller(QObject):
              self._model.tidalampintp) = resp_stats(extrema=self._model.peaks,
                                                     signal=self._model.signal,
                                                     sfreq=self._model.sfreq)
-            
-            
+
+
     @threaded
     def save_stats(self):
         savekeys = []
@@ -543,4 +546,3 @@ class Controller(QObject):
                 savearray[:, i] = self._model.tidalampintp
         savearray = pd.DataFrame(savearray)
         savearray.to_csv(self._model.wpathstats, index=False, header=savekeys)
-                
