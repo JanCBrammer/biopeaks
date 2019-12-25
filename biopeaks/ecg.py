@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Jan 18 11:01:04 2019
-
-@author: John Doe
-"""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,24 +8,25 @@ from .analysis_utils import (moving_average, threshold_normalization,
                              interp_stats, update_indices)
 
 
-def ecg_peaks(signal, sfreq, enable_plot=False):
-    """ 
-    enable_plot is for debugging purposes when the function is called in
-    isolation
+def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
+              gradthreshweight=1.5, minlenweight=0.4, enable_plot=False):
     """
-
+    enable_plot is for debugging and demonstration purposes when the function
+    is called in isolation
+    """
     # initiate plot
     if enable_plot is True:
         plt.figure()
         ax1 = plt.subplot(211)
         ax2 = plt.subplot(212, sharex=ax1)
-        
+
     filt = butter_highpass_filter(signal, .5, sfreq)
+
     grad = np.gradient(filt)
     absgrad = np.abs(grad)
-    smoothgrad = moving_average(absgrad, int(np.rint(0.125 * sfreq)))
-    avggrad = moving_average(smoothgrad, int(np.rint(1 * sfreq)))
-    gradthreshold = 1.5 * avggrad
+    smoothgrad = moving_average(absgrad, int(np.rint(smoothwindow * sfreq)))
+    avggrad = moving_average(smoothgrad, int(np.rint(avgwindow * sfreq)))
+    gradthreshold = gradthreshweight * avggrad
     mindelay = int(np.rint(sfreq * 0.3))
 
     # visualize thresholding
@@ -38,47 +34,47 @@ def ecg_peaks(signal, sfreq, enable_plot=False):
         ax1.plot(filt)
         ax2.plot(smoothgrad)
         ax2.plot(gradthreshold)
-        
+
     # identify start and end of QRS
     qrs = smoothgrad > gradthreshold
     beg_qrs = np.where(np.logical_and(np.logical_not(qrs[0:-1]), qrs[1:]))[0]
     end_qrs = np.where(np.logical_and(qrs[0:-1], np.logical_not(qrs[1:])))[0]
     # throw out QRS-ends that precede first QRS-start
     end_qrs = end_qrs[end_qrs > beg_qrs[0]]
-    
-    # identify R-peaks within QRS (ignore QRS that are too short
+
+    # identify R-peaks within QRS (ignore QRS that are too short)
     num_qrs = min(beg_qrs.size, end_qrs.size)
-    min_len = np.mean(end_qrs[:num_qrs] - beg_qrs[:num_qrs]) * 0.4
+    min_len = np.mean(end_qrs[:num_qrs] - beg_qrs[:num_qrs]) * minlenweight
     peaks = [0]
-    
+
     for i in range(num_qrs):
-        
+
         beg = beg_qrs[i]
         end = end_qrs[i]
         len_qrs = end - beg
-                
+
         if len_qrs < min_len:
             continue
-            
+
         # visualize QRS intervals
         if enable_plot is True:
-            ax2.axvspan(beg, end, facecolor='m', alpha=0.5)
-        
+            ax2.axvspan(beg, end, facecolor="m", alpha=0.5)
+
         # find local maxima and their prominence within QRS
         data = signal[beg:end]
         locmax, props = find_peaks(data, prominence=(None, None))
-        
+
         if locmax.size > 0:
             # identify most prominent local maximum
             peak = beg + locmax[np.argmax(props["prominences"])]
             # enforce minimum delay between peaks
             if peak - peaks[-1] > mindelay:
                 peaks.append(peak)
- 
+
     peaks.pop(0)
-            
+
     if enable_plot is True:
-        ax1.scatter(np.arange(filt.size)[peaks], filt[peaks], c='r')
+        ax1.scatter(peaks, filt[peaks], c="r")
 
     return np.asarray(peaks).astype(int)
 
@@ -294,11 +290,3 @@ def ecg_period(peaks, sfreq, nsamp):
 
 
     return peaks.astype(int), periodintp, rateintp
-
-#path = r'C:\Users\JohnDoe\Desktop\beats.csv'
-#peaks = np.ravel(pd.read_csv(path))
-#
-#get_rr(peaks, 1000, 100)
-#
-#savearray = pd.DataFrame(peaks)
-#savearray.to_csv(r'C:\Users\JohnDoe\Desktop\beats_corrected.csv', index=False, header=['peaks'])
