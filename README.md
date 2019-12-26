@@ -332,7 +332,7 @@ identical)
 + enhancement: `resp.resp_extrema()` is now based on zerocrossings and makes
 fewer assumptions about breathing rate
 
-### Version 1.0.3 (December 25, 2019)
+### Version 1.0.3 (December 26, 2019)
 + enhancement: improved sensitivity of `ecg.ecg_peaks()` without decreasing
 precision in moderately dynamic conditions (handbike) while maintaining
 high performance in resting conditions (sitting). Performance has been
