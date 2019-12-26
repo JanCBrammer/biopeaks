@@ -435,6 +435,8 @@ class Controller(QObject):
         if self._model.peaks is None:
             return
         cursor = int(np.rint(event.xdata * self._model.sfreq))
+        if not isinstance(cursor, float):
+            return
         # search peak in a window of 200 msec, centered on selected
         # x coordinate of cursor position
         extend = int(np.rint(self._model.sfreq * 0.1))

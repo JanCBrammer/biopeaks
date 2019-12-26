@@ -1,15 +1,10 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Nov 14 15:48:29 2019
-
-@author: John Doe
-"""
 
 from setuptools import setup, find_namespace_packages
 
 setup(
     name="biopeaks",
-    version="1.0.2",
+    version="1.0.3",
     description="A graphical user interface for the analysis of OpenSignals ECG - and breathing biosignals",
     url="https://github.com/JohnDoenut/biopeaks",
     author="Jan C. Brammer",

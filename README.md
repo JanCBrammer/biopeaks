@@ -32,7 +32,8 @@ for Linux and macOS will follow as soon as possible.
 If you don't have experience with installing Python packages and/or if you
 aren't sure if you have Python on your computer start by setting up Python.
 Go to https://www.anaconda.com/distribution/ and install the latest 
-distribution for your operating system (make sure to choose a Python 3.7 version or greater).
+distribution for your operating system (make sure to choose "Python 3.7 version"
+or greater).
 Follow the [installation instructions](https://docs.anaconda.com/anaconda/install/)
 in case you're unsure about something. Once you've installed Anaconda (this can
 take a while), open an
@@ -330,6 +331,26 @@ identical)
 ### Version 1.0.2 (December 1, 2019)
 + enhancement: `resp.resp_extrema()` is now based on zerocrossings and makes
 fewer assumptions about breathing rate
+
+### Version 1.0.3 (December 25, 2019)
++ enhancement: improved sensitivity of `ecg.ecg_peaks()` without decreasing
+precision in moderately dynamic conditions (handbike) while maintaining
+high performance in resting conditions (sitting). Performance has been
+evaluated on lead 2 of all 25 subjects in the [Glasgow University Database (GUDB)](http://researchdata.gla.ac.uk/716/).
+The GUBD has not been used to optimize `ecg.ecg_peaks()` in any way prior to
+the performance evaluation. The tolerance for peak detection was set to one
+sample.
+
+|condition|metric     |summary|version 1.0.2|version 1.0.3
+|:-------:|:---------:|:-----:|:-----------:|:-----------:
+|sitting  |precision  |mean   |.999         |.998         
+|         |           |std    |.002         |.005         
+|         |sensitivity|mean   |.996         |.996         
+|         |           |std    |.008         |.004         
+|handbike |precision  |mean   |.904         |.930         
+|         |           |std    |.135         |.127         
+|         |sensitivity|mean   |.789         |.857         
+|         |           |std    |.281         |.247         
 
 
 # 6. Further Resources
