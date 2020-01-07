@@ -94,11 +94,12 @@ elements.
 
 ## Functionality
 ### load biosignal
-Before loading the biosignal, you need to select the desired options in
-**optionspanel** -> **_channels_**. First, select your _modality_ (ECG for
-electrocardiogram, and RESP for breathing). Next, you need to specify which
-_biosignal channel_ contains the biosignal corresponding to your modality. You
-can let the _biosignal channel_ be inferred from the _modality_, or select a
+Before loading the biosignal, you need to select the modality of your biosignal
+in **optionspanel** -> **_processing options_** -> _modality_ (ECG for
+electrocardiogram, and RESP for breathing). Next, under **optionspanel** -> **_channels_** you need to
+specify which _biosignal channel_ contains the biosignal corresponding to your
+modality. You can let the _biosignal channel_ be inferred from the modality,
+or select a
 specific analog channel (A1 through A6). The first option only works if the
 biosignal has been declared as belonging to a specific modality in the
 OpenSignals recording software. For example an ECG channel must have been
@@ -223,13 +224,15 @@ quality as well as the placement of the peaks. Manually checking and editing
 peak placement is the only way to guarantee sensible statistics. Only use
 batch processing if you are sure that the biosignal's quality is sufficient!
 
+You can configure your batch processing in the **optionspanel**.
 To enable batch processing, select 
-**optionspanel** -> **_processing mode_** -> _multiple files_. Make sure to
-select the correct _modality_ and _biosignal channel_ in
-**optionspanel** -> **_channels_**. Further, indicate if you'd like to save
-the peaks during batch processing: **optionspanel** -> **_peak options_** ->
+**_processing options_** -> _mode_ -> multiple files. Make sure to
+select the correct _modality_ in the **_processing options_** as well. Also select
+the desired _biosignal channel_ in **_channels_**. Further, indicate if you'd
+like to save
+the peaks during batch processing: **_peak options_** ->
 _save peaks during batch processing_. Also, select the statistics you'd like
-to save: **optionspanel** -> **_select statictics for saving_**. Now, select
+to save: **_select statictics for saving_**. Now, select
 all files that should be included in the batch: **menubar** -> **_biosignal_**
 -> _load_. A dialog will let you select the files (select multiple files with
 the appropriate keyboard commands of your operating system). Next, a dialog
@@ -340,6 +343,10 @@ evaluated on lead 2 of all 25 subjects in the [Glasgow University Database (GUDB
 The GUBD has not been used to optimize `ecg.ecg_peaks()` in any way prior to
 the performance evaluation. The tolerance for peak detection was set to one
 sample.
+
+### Version 1.0.4 (January 07, 2020)
++ bugfix: `controller.edit_peaks()` works properly again
++ enhancement: moved the modality menu to processing options
 
 |condition|metric     |summary|version 1.0.2|version 1.0.3
 |:-------:|:---------:|:-----:|:-----------:|:-----------:
