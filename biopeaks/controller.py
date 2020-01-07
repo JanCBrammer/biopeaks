@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jun  3 18:47:13 2019
 
-@author: John Doe
-"""
-
+from .ecg import ecg_peaks, ecg_period
+from .resp import resp_extrema, resp_stats
 import os
 import json
 import pandas as pd
@@ -17,8 +14,6 @@ getOpenFileName = QFileDialog.getOpenFileName
 getOpenFileNames = QFileDialog.getOpenFileNames
 getSaveFileName = QFileDialog.getSaveFileName
 getExistingDirectory = QFileDialog.getExistingDirectory
-from .ecg import ecg_peaks, ecg_period
-from .resp import resp_extrema, resp_stats
 peakfuncs = {'ECG': ecg_peaks,
              'RESP': resp_extrema}
 
@@ -435,8 +430,6 @@ class Controller(QObject):
         if self._model.peaks is None:
             return
         cursor = int(np.rint(event.xdata * self._model.sfreq))
-        if not isinstance(cursor, float):
-            return
         # search peak in a window of 200 msec, centered on selected
         # x coordinate of cursor position
         extend = int(np.rint(self._model.sfreq * 0.1))
