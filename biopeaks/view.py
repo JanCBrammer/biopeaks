@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jun  3 18:47:12 2019
-
-@author: John Doe
-"""
 
 from PyQt5.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                              QVBoxLayout, QHBoxLayout, QCheckBox,
@@ -89,7 +84,7 @@ class View(QMainWindow):
         # peak editing
         self.editcheckbox = QCheckBox('edit peaks', self)
         self.editcheckbox.stateChanged.connect(self._model.set_peakseditable)
-        
+
         # peak saving batch
         self.savecheckbox = QCheckBox('save peaks during batch processing',
                                        self)
@@ -132,8 +127,9 @@ class View(QMainWindow):
                                                         set_markerchan)
         # initialize with default value
         self._model.set_markerchan(self.markerschanmenu.currentText())
-        
+
         # processing mode (batch or single file)
+        self.batchmenulabel = QLabel("mode")
         self.batchmenu = QComboBox(self)
         self.batchmenu.addItem('single file')
         self.batchmenu.addItem('multiple files')
@@ -292,19 +288,19 @@ class View(QMainWindow):
         # define GUI layout
         self.vlayout0 = QVBoxLayout(self.centwidget)
         self.vlayout1 = QVBoxLayout()
-        self.vlayoutA = QVBoxLayout()
+        self.vlayoutA = QFormLayout()
         self.vlayoutB = QFormLayout()
         self.vlayoutC = QVBoxLayout()
         self.vlayoutD = QVBoxLayout()
         self.hlayout0 = QHBoxLayout()
         self.hlayout1 = QHBoxLayout()
 
-        self.optionsgroupA = QGroupBox('processing mode')
-        self.vlayoutA.addWidget(self.batchmenu)
+        self.optionsgroupA = QGroupBox('processing options')
+        self.vlayoutA.addRow(self.modmenulabel, self.modmenu)
+        self.vlayoutA.addRow(self.batchmenulabel, self.batchmenu)
         self.optionsgroupA.setLayout(self.vlayoutA)
 
         self.optionsgroupB = QGroupBox('channels')
-        self.vlayoutB.addRow(self.modmenulabel, self.modmenu)
         self.vlayoutB.addRow(self.sigchanmenulabel, self.sigchanmenu)
         self.vlayoutB.addRow(self.markerschanmenulabel, self.markerschanmenu)
         self.optionsgroupB.setLayout(self.vlayoutB)
@@ -518,8 +514,8 @@ class View(QMainWindow):
         if line:
             line.set_color(self.togglecolors[line.get_color()])
         self.canvas2.draw()
-        
-        
+
+
     def toggle_options(self, event):
         if event == "ECG":
             self.tidalampcheckbox.setEnabled(False)
