@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sun Jul 28 14:13:03 2019
-
-@author: John Doe
-"""
 
 '''
 I want to provide a few functional tests (as opposed to unit tests that cover
@@ -44,7 +39,6 @@ from biopeaks.view import View
 from biopeaks.controller import Controller
 
 
-
 class TestApplication(QApplication):
     def __init__(self, sys_argv):
         super(TestApplication, self).__init__(sys_argv)
@@ -75,7 +69,7 @@ class Tests:
         # is emitted; spy.wait() runs an event loop until it registers the
         # signal
         spy = QSignalSpy(signal)
-        if value == None:
+        if value is None:
             spy.wait()
         else:
             # wait for x*5 seconds (spy.wait() loops for 5 seconds)
@@ -200,7 +194,7 @@ class Tests:
         # 10. calculate stats
         #####################
         self._controller.calculate_stats()
-        
+
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
         assert np.around(np.mean(self._model.periodintp), 4) == avgperiod, \
@@ -213,7 +207,7 @@ class Tests:
             assert np.around(np.mean(self._model.tidalampintp), 4) == avgtidalamp, \
                     'failed to calculate tidal amplitude'
             print('calculated tidal amplitude successfully')
-            
+
         # 11. save stats
         ################
         self._view.periodcheckbox.setCheckState(Qt.Checked)
@@ -234,7 +228,7 @@ class Tests:
             assert np.around(stats["tidalamp"].mean(), 4) == avgtidalamp, \
                 "failed to save tidalamplitude}"
         print('saved statistics successfully')
-        
+
         # clean-up in case consecutive test are executed
         # reset model
         self._model.reset()
@@ -266,7 +260,7 @@ class Tests:
         if modality == "RESP":
             self._view.tidalampcheckbox.setCheckState(Qt.Checked)
         self._model.fpaths = sigfnames
-        
+
         # 2. process batch
         ##################
         # use a mockup of the controller's batch_processor in order to avoid
@@ -275,7 +269,7 @@ class Tests:
         self._controller.nmethods = 4
         self._controller.filenb = 0
         self._controller.nfiles = len(self._model.fpaths)
-        
+
         self._model.wdirpeaks = peakdir
         self._model.wdirstats = statsdir
 
@@ -285,7 +279,7 @@ class Tests:
 
         # initiate processing
         self._controller.dispatcher(1)
-        
+
         # wait for all files to be processed
         while self._controller.filenb < self._controller.nfiles:
 #            print(self._controller.filenb, self._controller.nfiles)
@@ -310,7 +304,7 @@ class Tests:
             # remove all files that have been saved during the test
             os.remove(self._model.rpathpeaks)
             self._model.reset()
-            
+
         # 3. check stats
         ################
         for sigfname, stat in zip(sigfnames, stats):
@@ -327,61 +321,61 @@ class Tests:
             print('saved statistics successfully')
             # remove all files that have been saved during the test
             os.remove(statsfname)
-           
+
         # restore original state of optionpanel
         self._view.savecheckbox.setCheckState(Qt.Unchecked)
         self._view.periodcheckbox.setCheckState(Qt.Unchecked)
         self._view.ratecheckbox.setCheckState(Qt.Unchecked)
         if modality == "RESP":
             self._view.tidalampcheckbox.setCheckState(Qt.Unchecked)
-            
-            
+
+
 def runner():
     testapp = TestApplication(sys.argv)
     testapp._view.show()
-    
-    # change from the current directory to testdata directory 
+
+    # change from the current directory to testdata directory
     THIS_DIR = os.path.dirname(os.path.abspath(__file__))
     datapath = os.path.join(THIS_DIR, "testdata")
     os.chdir(datapath)
 
-    # single file with ECG data
-    testapp._tests.single_file(modality='ECG',
-                               sigchan='ECG',
-                               markerchan='I1',
-                               mode='single file',
-                               sigfnameorig='testdata.txt',
-                               sigfnameseg='testdatasegmented.txt',
-                               peakfname='testdata_segmented_peaks.csv',
-                               statsfname='testdata_segmented_stats.csv',
-                               siglen=5100000,
-                               peaklen=92,
-                               avgperiod=1.0921,
-                               avgrate=55.1028,
-                               segment=[760, 860])
+    # # single file with ECG data
+    # testapp._tests.single_file(modality='ECG',
+    #                            sigchan='ECG',
+    #                            markerchan='I1',
+    #                            mode='single file',
+    #                            sigfnameorig='testdata.txt',
+    #                            sigfnameseg='testdatasegmented.txt',
+    #                            peakfname='testdata_segmented_peaks.csv',
+    #                            statsfname='testdata_segmented_stats.csv',
+    #                            siglen=5100000,
+    #                            peaklen=92,
+    #                            avgperiod=1.0921,
+    #                            avgrate=55.1028,
+    #                            segment=[760, 860])
 
-    # single file with breathing data
-    testapp._tests.single_file(modality='RESP',
-                               sigchan='RESP',
-                               markerchan='I1',
-                               mode='single file',
-                               sigfnameorig='testdata.txt',
-                               sigfnameseg='testdata_segmented.txt',
-                               peakfname='testdata_segmented_peaks.csv',
-                               statsfname='testdata_segmented_stats.csv',
-                               siglen=5100000,
-                               peaklen=126,
-                               avgperiod=3.3224,
-                               avgrate=19.4442,
-                               avgtidalamp=131.1297,
-                               segment=[3200, 3400])
+    # # single file with breathing data
+    # testapp._tests.single_file(modality='RESP',
+    #                            sigchan='RESP',
+    #                            markerchan='I1',
+    #                            mode='single file',
+    #                            sigfnameorig='testdata.txt',
+    #                            sigfnameseg='testdata_segmented.txt',
+    #                            peakfname='testdata_segmented_peaks.csv',
+    #                            statsfname='testdata_segmented_stats.csv',
+    #                            siglen=5100000,
+    #                            peaklen=126,
+    #                            avgperiod=3.3224,
+    #                            avgrate=19.4442,
+    #                            avgtidalamp=131.1297,
+    #                            segment=[3200, 3400])
 
     # batch processing with ECG data
     sigfiles = ['montage1A.txt', 'montage1J.txt', 'montage2A.txt',
                 'montage2J.txt', 'montage3A.txt', 'montage3J.txt']
-    peaklens = [310, 309, 256, 310, 303, 311]
-    stats = [(0.7922, 76.2559), (0.7299, 82.9561), (0.7974, 75.6404),
-             (0.7418, 81.5054), (0.7857, 76.9052), (0.7238, 83.5543)]
+    peaklens = [311, 311, 258, 310, 304, 311]
+    stats = [(0.7918, 76.3038), (0.7263, 83.5126), (0.7936, 76.0611),
+             (0.7417, 81.5123), (0.7856, 76.9144), (0.7227, 83.7338)]
     testapp._tests.batch_file(modality='ECG',
                               sigchan='ECG',
                               mode='multiple files',
@@ -390,6 +384,6 @@ def runner():
                               statsdir=datapath,
                               peaklens=peaklens,
                               stats=stats)
-    
+
     print("tests ran without errors, closing application")
     testapp.closeAllWindows() # QApplication quits once window is closed
