@@ -11,14 +11,16 @@ as the biosignal's instantaneous period, -rate and in the case of breathing,
 -tidal amplitude.
 The exact identification of the relevant peaks is a fundamental first step for 
 many subsequent analyses, such heart rate variability. Errors during peak
-identification can  significantly
+identification can significantly
 distort subsequent analyses. Therefore, the intention of `biopeaks`
 is to make peak identification convenient and precise. Especially the 
 visualization
 of the biosignals along with the peaks is crucial in determining if the 
 biosignal's quality is sufficient for further analysis. The ability to manually
 edit the peaks is equally important, since no algorithm can perfectly identify
-all peaks, especially if the biosignal's quality is poor.
+all peaks, especially if the biosignal's quality is poor. In addition to manually
+peak editing, for ECG,`biopeaks` automatically corrects errors in peak detection
+with a state-of-the-art [algorithm](https://www.tandfonline.com/doi/full/10.1080/03091902.2019.1640306).
 
 
 # 2. User Guide

@@ -2,6 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
 from scipy.signal import find_peaks, medfilt
 from .filters import butter_highpass_filter
 from .analysis_utils import (moving_average, threshold_normalization,
@@ -15,7 +16,7 @@ def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
     is called in isolation
     """
     # initiate plot
-    if enable_plot is True:
+    if enable_plot:
         plt.figure()
         ax1 = plt.subplot(211)
         ax2 = plt.subplot(212, sharex=ax1)
@@ -30,7 +31,7 @@ def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
     mindelay = int(np.rint(sfreq * 0.3))
 
     # visualize thresholding
-    if enable_plot is True:
+    if enable_plot:
         ax1.plot(filt)
         ax2.plot(smoothgrad)
         ax2.plot(gradthreshold)
@@ -57,7 +58,7 @@ def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
             continue
 
         # visualize QRS intervals
-        if enable_plot is True:
+        if enable_plot:
             ax2.axvspan(beg, end, facecolor="m", alpha=0.5)
 
         # find local maxima and their prominence within QRS
@@ -73,13 +74,13 @@ def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
 
     peaks.pop(0)
 
-    if enable_plot is True:
+    if enable_plot:
         ax1.scatter(peaks, filt[peaks], c="r")
 
     return np.asarray(peaks).astype(int)
 
 
-def ecg_period(peaks, sfreq, nsamp):
+def ecg_cleanperiod(peaks, sfreq, return_artifacts=False, enable_plot=False):
     """
     implementation of Jukka A. Lipponen & Mika P. Tarvainen (2019): A robust
     algorithm for heart rate variability time series artefact correction using
@@ -88,30 +89,30 @@ def ecg_period(peaks, sfreq, nsamp):
     """
     peaks = np.ravel(peaks)
 
-    # set free parameters
+    # Set free parameters.
     c1 = 0.13
     c2 = 0.17
     alpha = 5.2
     window_half = 45
     medfilt_order = 11
 
-    # compute period series (make sure it has same numer of elements as peaks);
-    # peaks are in samples, convert to seconds
+    # Compute period series (make sure it has same numer of elements as peaks);
+    # peaks are in samples, convert to seconds.
     rr = np.ediff1d(peaks, to_begin=0) / sfreq
-    # for subsequent analysis it is important that the first element has
-    # a value in a realistic range (e.g., for median filtering)
+    # For subsequent analysis it is important that the first element has
+    # a value in a realistic range (e.g., for median filtering).
     rr[0] = np.mean(rr)
 
-    # compute differences of consecutive periods
+    # Compute differences of consecutive periods.
     drrs = np.ediff1d(rr, to_begin=0)
     drrs[0] = np.mean(drrs)
-    # normalize by threshold
+    # Normalize by threshold.
     drrs, _ = threshold_normalization(drrs, alpha, window_half)
 
-    # pad drrs with one element
+    # Pad drrs with one element.
     padding = 2
-    drrs_pad = np.pad(drrs, padding, 'reflect')
-    # cast drrs to two-dimesnional subspace s1
+    drrs_pad = np.pad(drrs, padding, "reflect")
+    # Cast drrs to two-dimesnional subspace s1.
     s12 = np.zeros(drrs.size)
     for d in np.arange(padding, padding + drrs.size):
 
@@ -120,8 +121,8 @@ def ecg_period(peaks, sfreq, nsamp):
         elif drrs_pad[d] < 0:
             s12[d - padding] = np.min([drrs_pad[d - 1], drrs_pad[d + 1]])
 
-    # cast drrs to two-dimensional subspace s2 (looping over d a second
-    # consecutive time is choice to be explicit rather than efficient)
+    # Cast drrs to two-dimensional subspace s2 (looping over d a second
+    # consecutive time is choice to be explicit rather than efficient).
     s22 = np.zeros(drrs.size)
     for d in np.arange(padding, padding + drrs.size):
 
@@ -130,23 +131,18 @@ def ecg_period(peaks, sfreq, nsamp):
         elif drrs_pad[d] < 0:
             s22[d - padding] = np.min([drrs_pad[d + 1], drrs_pad[d + 2]])
 
-
-    # compute deviation of RRs from median RRs
-    # pad RR series before filtering
-    padding = medfilt_order // 2
-    rr_pad = np.pad(rr, padding, 'reflect')
+    # Compute deviation of RRs from median RRs.
+    padding = medfilt_order // 2    # pad RR series before filtering
+    rr_pad = np.pad(rr, padding, "reflect")
     medrr = medfilt(rr_pad, medfilt_order)
-    # remove padding
-    medrr = medrr[padding:padding + rr.size]
+    medrr = medrr[padding:padding + rr.size]    # remove padding
     mrrs = rr - medrr
     mrrs[mrrs < 0] = mrrs[mrrs < 0] * 2
-    # normalize by threshold
-    mrrs, th2 = threshold_normalization(mrrs, alpha, window_half)
+    mrrs, th2 = threshold_normalization(mrrs, alpha, window_half)    # normalize by threshold
 
-
-    # artifact identification
+    # Artifact identification
     #########################
-    # keep track of indices that need to be interpolated, removed, or added
+    # Keep track of indices that need to be interpolated, removed, or added.
     extra_idcs = []
     missed_idcs = []
     etopic_idcs = []
@@ -154,40 +150,41 @@ def ecg_period(peaks, sfreq, nsamp):
 
     for i in range(peaks.size - 2):
 
-        # check for etopic peaks
+        # Check for etopic peaks.
         if np.abs(drrs[i]) <= 1:
             continue
 
-        # based on figure 2a
+        # Based on Figure 2a.
         eq1 = np.logical_and(drrs[i] > 1, s12[i] < (-c1 * drrs[i] - c2))
         eq2 = np.logical_and(drrs[i] < -1, s12[i] > (-c1 * drrs[i] + c2))
 
         if np.any([eq1, eq2]):
-            # if any of the two equations is true
+            # If any of the two equations is true.
             etopic_idcs.append(i)
             continue
 
-        # if none of the two equations is true
-        # based on figure 2b
+        # If none of the two equations is true.
+        # Based on Figure 2b.
         if np.logical_or(np.abs(drrs[i]) > 1, np.abs(mrrs[i]) > 3):
-            # long
+            # Long beat.
             eq3 = np.logical_and(drrs[i] > 1, s22[i] < -1)
             eq4 = np.abs(mrrs[i]) > 3
-            # short
+            # Short beat.
             eq5 = np.logical_and(drrs[i] < -1, s22[i] > 1)
 
         if ~np.any([eq3, eq4, eq5]):
-            # if none of the three equations is true: normal beat
+            # Of none of the three equations is true: normal beat.
             continue
 
-        # if any of the three equations is true: check for missing or extra
-        # peaks
-        # missing
+        # If any of the three equations is true: check for missing or extra
+        # peaks.
+
+        # Missing.
         eq6 = np.abs(rr[i] / 2 - medrr[i]) < th2[i]
-        # extra
+        # Extra.
         eq7 = np.abs(rr[i] + rr[i + 1] - medrr[i]) < th2[i]
 
-        # check if short or extra
+        # Check if short or extra.
         if np.any([eq3, eq4]):
             if eq7:
                 extra_idcs.append(i)
@@ -195,7 +192,7 @@ def ecg_period(peaks, sfreq, nsamp):
                 longshort_idcs.append(i)
                 if np.abs(drrs[i + 1]) < np.abs(drrs[i + 2]):
                     longshort_idcs.append(i + 1)
-        # check if long or missing
+        # Check if long or missing.
         if eq5:
             if eq6:
                 missed_idcs.append(i)
@@ -204,89 +201,126 @@ def ecg_period(peaks, sfreq, nsamp):
                 if np.abs(drrs[i + 1]) < np.abs(drrs[i + 2]):
                     longshort_idcs.append(i + 1)
 
-#    # visualize artifact type indices
-#    plt.figure(0)
-#    plt.plot(rr)
-#    plt.scatter(longshort_idcs, rr[longshort_idcs], marker='v', c='m', s=100,
-#                zorder=3)
-#    plt.scatter(etopic_idcs, rr[etopic_idcs], marker='v', c='g', s=100,
-#                zorder=3)
-#    plt.scatter(extra_idcs, rr[extra_idcs], marker='v', c='y', s=100,
-#                zorder=3)
-#    plt.scatter(missed_idcs, rr[missed_idcs], marker='v', c='r', s=100,
-#                zorder=3)
-#
-#    # visualize first threshold
-#    plt.figure(1)
-#    plt.plot(np.abs(drrs))
-#    plt.axhline(1, c='r')
-#
-#    # visualize decision boundaries
-#    plt.figure(2)
-#    plt.scatter(drrs, s12)
-#    x = np.linspace(min(drrs), max(drrs), 1000)
-#    plt.plot(x, -c1 * x - c2)
-#    plt.plot(x, -c1 * x + c2)
-#    plt.vlines([-1, 1], ymin=min(s12), ymax=max(s12))
-#
-#    plt.figure(3)
-#    plt.scatter(drrs, s22)
-#    plt.vlines([-1, 1], ymin=min(s22), ymax=max(s22))
-#    plt.hlines([-1, 1], xmin=min(drrs), xmax=max(drrs))
+    if enable_plot:
+        # Visualize artifact type indices.
+        fig0, (ax0, ax1) = plt.subplots(nrows=2, ncols=1, sharex=True)
+        ax0.plot(rr, label="heart period")
+        ax0.scatter(longshort_idcs, rr[longshort_idcs], marker='v', c='m',
+                    s=100, zorder=3, label="long/short")
+        ax0.scatter(etopic_idcs, rr[etopic_idcs], marker='v', c='g', s=100,
+                    zorder=3, label="etopic")
+        ax0.scatter(extra_idcs, rr[extra_idcs], marker='v', c='y', s=100,
+                    zorder=3, label="false positive")
+        ax0.scatter(missed_idcs, rr[missed_idcs], marker='v', c='r', s=100,
+                    zorder=3, label="false negative")
+        ax0.legend(loc="upper right")
 
-    # artifact correction
+        # Visualize first threshold.
+        ax1.plot(np.abs(drrs), label="difference consecutive heart periods")
+        ax1.axhline(1, c='r', label="artifact threshold")
+        ax1.legend(loc="upper right")
+
+        # Visualize decision boundaries.
+        fig2, (ax2, ax3) = plt.subplots(nrows=1, ncols=2)
+        ax2.scatter(drrs, s12, marker="x", label="heart periods")
+        x = np.linspace(min(drrs), max(drrs), 1000)
+        verts0 = [(min(drrs), max(s12)),
+                  (min(drrs), -c1 * min(drrs) - c2),
+                  (-1, -c1 * -1 - c2),
+                  (-1, max(s12))]
+        poly0 = Polygon(verts0, alpha=0.3, facecolor="r", edgecolor=None,
+                        label="etopic periods")
+        ax2.add_patch(poly0)
+        verts1 = [(1, -c1 * 1 + c2),
+                  (1, min(s12)),
+                  (max(drrs), min(s12)),
+                  (max(drrs), -c1 * max(drrs) + c2)]
+        poly1 = Polygon(verts1, alpha=0.3, facecolor="r", edgecolor=None)
+        ax2.add_patch(poly1)
+        ax2.legend(loc="upper right")
+
+        ax3.scatter(drrs, s22, marker="x", label="heart periods")
+        verts2 = [(min(drrs), max(s22)),
+                  (min(drrs), 1),
+                  (-1, 1),
+                  (-1, max(s22))]
+        poly2 = Polygon(verts2, alpha=0.3, facecolor="r", edgecolor=None,
+                        label="short periods")
+        ax3.add_patch(poly2)
+        verts3 = [(1, -1),
+                  (1, min(s22)),
+                  (max(drrs), min(s22)),
+                  (max(drrs), -1)]
+        poly3 = Polygon(verts3, alpha=0.3, facecolor="y", edgecolor=None,
+                        label="long periods")
+        ax3.add_patch(poly3)
+        ax3.legend(loc="upper right")
+
+
+    # Artifact correction
     #####################
-    # the integrity of indices must be maintained if peaks are inserted or
+    # The integrity of indices must be maintained if peaks are inserted or
     # deleted: for each deleted beat, decrease indices following that beat in
     # all other index lists by 1; likewise, for each added beat, increment the
-    # indices following that beat in all other lists by 1
+    # indices following that beat in all other lists by 1.
 
-    # delete extra peaks
+    # Delete extra peaks.
     if extra_idcs:
-        # delete the extra peaks
         peaks = np.delete(peaks, extra_idcs)
-        # re-calculate the RR series
+        # Re-calculate the RR series.
         rr = np.ediff1d(peaks, to_begin=0) / sfreq
 #        print('extra: {}'.format(peaks[extra_idcs]))
-        # update remaining indices
+        # Update remaining indices.
         missed_idcs = update_indices(extra_idcs, missed_idcs, -1)
         etopic_idcs = update_indices(extra_idcs, etopic_idcs, -1)
         longshort_idcs = update_indices(extra_idcs, longshort_idcs, -1)
 
-    # add missing peaks
+    # Add missing peaks
     if missed_idcs:
-        # calculate the position(s) of new beat(s)
+        # Calculate the position(s) of new beat(s).
         prev_peaks = peaks[[i - 1 for i in missed_idcs]]
         next_peaks = peaks[missed_idcs]
         added_peaks = prev_peaks + (next_peaks - prev_peaks) / 2
-        # add the new peaks
+        # Add the new peaks.
         peaks = np.insert(peaks, missed_idcs, added_peaks)
-        # re-calculate the RR series
+        # Re-calculate the RR series.
         rr = np.ediff1d(peaks, to_begin=0) / sfreq
 #        print('missed: {}'.format(peaks[missed_idcs]))
-        # update remaining indices
+        # Update remaining indices.
         etopic_idcs = update_indices(missed_idcs, etopic_idcs, 1)
         longshort_idcs = update_indices(missed_idcs, longshort_idcs, 1)
 
-    # interpolate etopic as well as long or short peaks (important to do this
-    # after peaks are deleted and/or added)
+    # Interpolate etopic as well as long or short peaks (important to do this
+    # after peaks are deleted and/or added).
     interp_idcs = np.concatenate((etopic_idcs, longshort_idcs)).astype(int)
     if interp_idcs.size > 0:
         interp_idcs.sort(kind='mergesort')
-        # ignore the artifacts during interpolation
+        # Ignore the artifacts during interpolation
         x = np.delete(np.arange(0, rr.size), interp_idcs)
-        # interpolate artifacts
+        # Interpolate artifacts
         interp_artifacts = np.interp(interp_idcs, x, rr[x])
         rr[interp_idcs] = interp_artifacts
 #        print('interpolated: {}'.format(peaks[interp_idcs]))
-##        plt.figure(0)
-##        plt.plot(rr)
 
-    # interpolate rr at the signals sampling rate for plotting; the rate
-    # corresponding to the first peak is set to the mean RR
+    # The rate corresponding to the first peak is set to the mean RR.
     rr[0] = np.mean(rr)
-    periodintp = interp_stats(peaks, rr, nsamp)
+
+    if return_artifacts:
+        artifacts = {"etopic": etopic_idcs, "missed": missed_idcs,
+                     "extra": extra_idcs, "longshort": longshort_idcs}
+
+        return peaks.astype(int), rr, artifacts
+    else:
+        return peaks.astype(int), rr
+
+
+def ecg_period(peaks, sfreq, nsamp):
+
+    # Get corrected peaks and normal-to-normal intervals
+    peaks_clean, nn = ecg_cleanperiod(peaks, sfreq)
+
+    # interpolate rr at the signals sampling rate for plotting
+    periodintp = interp_stats(peaks_clean, nn, nsamp)
     rateintp = 60 / periodintp
 
-
-    return peaks.astype(int), periodintp, rateintp
+    return peaks_clean, periodintp, rateintp
