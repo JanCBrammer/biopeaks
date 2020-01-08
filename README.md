@@ -72,7 +72,7 @@ pip install biopeaks
 
 ## Layout of the interface
 
-![blank](biopeaks/images/screenshot_blank.png)
+![blank](biopeaks/images/screenshot_blank10.png)
 
 In the **menubar**, you can find three sections: **_biosignal_**, **_peaks_**,
 and **_statistics_**.
@@ -114,7 +114,7 @@ has been loaded successfully it is displayed in the upper **datadisplay**. If
 you selected a _marker channel_, the markers will be displayed in the middle
 **datadisplay**.
 
-![biosignal](biopeaks/images/screenshot_biosignal.png)
+![biosignal](biopeaks/images/screenshot_biosignal10.png)
 
 ### segment biosignal
 **menubar** -> **_biosignal_** -> _select segment_ opens the **segmentdialog**
@@ -133,7 +133,7 @@ If you click **_preview segment_**
 the segment will be displayed as a shaded region in the upper **datadisplay**
 but the segment won't be cut out yet. 
 
-![segmenthighlight](biopeaks/images/screenshot_segmenthighlight.png)
+![segmenthighlight](biopeaks/images/screenshot_segmenthighlight10.png)
 
 You can change the start and end values
 and preview the segment until you are certain that the desired segment is
@@ -154,7 +154,7 @@ saved in the original OpenSignals format containing all channels.
 **menubar** -> **_peaks_** -> _find_ automatically identifies the peaks in the
 biosignal. The peaks appear as dots displayed on top of the biosignal.
 
-![peaks](biopeaks/images/screenshot_peaks.png)
+![peaks](biopeaks/images/screenshot_peaks10.png)
 
 ### save peaks
 **menubar** -> **_peaks_** -> _save_ opens a file dialog that lets you select a
@@ -181,7 +181,7 @@ dots displayed on top of the biosignal.
 possible statistics for the selected _modality_. The statistics will be 
 displayed in the lowest **datadisplay**.
 
-![statistics](biopeaks/images/screenshot_statistics.png)
+![statistics](biopeaks/images/screenshot_statistics10.png)
 
 ### save statistics
 First select the statistics that you'd like to save: **optionspanel** ->
@@ -282,7 +282,7 @@ correct locations. However, if there are noisy intervals in the biosignal,
 peaks might be misplaced or not detected at all (i.e., false positives or
 false negatives).
 
-![noise](biopeaks/images/screenshot_noise.png)
+![noise](biopeaks/images/screenshot_noise10.png)
 
 If this is the case you can [edit the
 peak locations](#edit-peaks). Once you are confident that all the peaks are
@@ -326,14 +326,9 @@ the Python console.
 
 # 5. Changelog
 
-### Version 1.0.1 (November 28, 2019)
-+ bugfix: `controller.save_signal()` now preserves the header if the data are
-saved to the same location (i.e., if `model.rpathsignal` and `model.wpathsignal` are
-identical)
-
-### Version 1.0.2 (December 1, 2019)
-+ enhancement: `resp.resp_extrema()` is now based on zerocrossings and makes
-fewer assumptions about breathing rate
+### Version 1.0.4 (January 08, 2020)
++ bugfix: `controller.edit_peaks()` works properly again
++ enhancement: moved the modality menu to processing options
 
 ### Version 1.0.3 (December 26, 2019)
 + enhancement: improved sensitivity of `ecg.ecg_peaks()` without decreasing
@@ -343,10 +338,6 @@ evaluated on lead 2 of all 25 subjects in the [Glasgow University Database (GUDB
 The GUBD has not been used to optimize `ecg.ecg_peaks()` in any way prior to
 the performance evaluation. The tolerance for peak detection was set to one
 sample.
-
-### Version 1.0.4 (January 07, 2020)
-+ bugfix: `controller.edit_peaks()` works properly again
-+ enhancement: moved the modality menu to processing options
 
 |condition|metric     |summary|version 1.0.2|version 1.0.3
 |:-------:|:---------:|:-----:|:-----------:|:-----------:
@@ -358,6 +349,15 @@ sample.
 |         |           |std    |.135         |.127         
 |         |sensitivity|mean   |.789         |.857         
 |         |           |std    |.281         |.247         
+
+### Version 1.0.2 (December 1, 2019)
++ enhancement: `resp.resp_extrema()` is now based on zerocrossings and makes
+fewer assumptions about breathing rate
+
+### Version 1.0.1 (November 28, 2019)
++ bugfix: `controller.save_signal()` now preserves the header if the data are
+saved to the same location (i.e., if `model.rpathsignal` and `model.wpathsignal` are
+identical)
 
 
 # 6. Further Resources
