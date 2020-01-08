@@ -18,8 +18,8 @@ visualization
 of the biosignals along with the peaks is crucial in determining if the 
 biosignal's quality is sufficient for further analysis. The ability to manually
 edit the peaks is equally important, since no algorithm can perfectly identify
-all peaks, especially if the biosignal's quality is poor. In addition to manually
-peak editing, for ECG,`biopeaks` automatically corrects errors in peak detection
+all peaks, especially if the biosignal's quality is poor. In addition to offering 
+manual peak editing, for ECG,`biopeaks` automatically corrects errors in peak detection
 with a state-of-the-art [algorithm](https://www.tandfonline.com/doi/full/10.1080/03091902.2019.1640306).
 
 
