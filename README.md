@@ -120,7 +120,7 @@ you selected a _marker channel_, the markers will be displayed in the middle
 **menubar** -> **_biosignal_** -> _select segment_ opens the **segmentdialog**
 on the right side of the **datadisplay**.
 
-![segmentdialog](biopeaks/images/screenshot_segmentdialog.png)
+![segmentdialog](biopeaks/images/screenshot_segmentdialog10.png)
 
 Specify start and end of the segment in seconds either by entering values in
 the respective fields, or with the mouse. For the latter option, first click on
