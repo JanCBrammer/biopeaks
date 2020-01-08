@@ -339,36 +339,36 @@ def runner():
     datapath = os.path.join(THIS_DIR, "testdata")
     os.chdir(datapath)
 
-    # # single file with ECG data
-    # testapp._tests.single_file(modality='ECG',
-    #                            sigchan='ECG',
-    #                            markerchan='I1',
-    #                            mode='single file',
-    #                            sigfnameorig='testdata.txt',
-    #                            sigfnameseg='testdatasegmented.txt',
-    #                            peakfname='testdata_segmented_peaks.csv',
-    #                            statsfname='testdata_segmented_stats.csv',
-    #                            siglen=5100000,
-    #                            peaklen=92,
-    #                            avgperiod=1.0921,
-    #                            avgrate=55.1028,
-    #                            segment=[760, 860])
+    # single file with ECG data
+    testapp._tests.single_file(modality='ECG',
+                                sigchan='ECG',
+                                markerchan='I1',
+                                mode='single file',
+                                sigfnameorig='testdata.txt',
+                                sigfnameseg='testdatasegmented.txt',
+                                peakfname='testdata_segmented_peaks.csv',
+                                statsfname='testdata_segmented_stats.csv',
+                                siglen=5100000,
+                                peaklen=92,
+                                avgperiod=1.0921,
+                                avgrate=55.1028,
+                                segment=[760, 860])
 
-    # # single file with breathing data
-    # testapp._tests.single_file(modality='RESP',
-    #                            sigchan='RESP',
-    #                            markerchan='I1',
-    #                            mode='single file',
-    #                            sigfnameorig='testdata.txt',
-    #                            sigfnameseg='testdata_segmented.txt',
-    #                            peakfname='testdata_segmented_peaks.csv',
-    #                            statsfname='testdata_segmented_stats.csv',
-    #                            siglen=5100000,
-    #                            peaklen=126,
-    #                            avgperiod=3.3224,
-    #                            avgrate=19.4442,
-    #                            avgtidalamp=131.1297,
-    #                            segment=[3200, 3400])
+    # single file with breathing data
+    testapp._tests.single_file(modality='RESP',
+                                sigchan='RESP',
+                                markerchan='I1',
+                                mode='single file',
+                                sigfnameorig='testdata.txt',
+                                sigfnameseg='testdata_segmented.txt',
+                                peakfname='testdata_segmented_peaks.csv',
+                                statsfname='testdata_segmented_stats.csv',
+                                siglen=5100000,
+                                peaklen=126,
+                                avgperiod=3.3224,
+                                avgrate=19.4442,
+                                avgtidalamp=131.1297,
+                                segment=[3200, 3400])
 
     # batch processing with ECG data
     sigfiles = ['montage1A.txt', 'montage1J.txt', 'montage2A.txt',
