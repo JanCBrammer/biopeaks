@@ -350,8 +350,8 @@ def runner():
                                 statsfname='testdata_segmented_stats.csv',
                                 siglen=5100000,
                                 peaklen=92,
-                                avgperiod=1.0921,
-                                avgrate=55.1028,
+                                avgperiod=1.0920,
+                                avgrate=55.1081,
                                 segment=[760, 860])
 
     # single file with breathing data
@@ -373,9 +373,9 @@ def runner():
     # batch processing with ECG data
     sigfiles = ['montage1A.txt', 'montage1J.txt', 'montage2A.txt',
                 'montage2J.txt', 'montage3A.txt', 'montage3J.txt']
-    peaklens = [311, 311, 258, 310, 304, 311]
-    stats = [(0.7918, 76.3038), (0.7263, 83.5126), (0.7936, 76.0611),
-             (0.7417, 81.5123), (0.7856, 76.9144), (0.7227, 83.7338)]
+    peaklens = [311, 312, 260, 311, 304, 311]
+    stats = [(0.7915, 76.3451), (0.7254, 83.6942), (0.7883, 76.8264),
+             (0.7399, 81.7718), (0.7855, 76.9171), (0.7235, 83.6060)]
     testapp._tests.batch_file(modality='ECG',
                               sigchan='ECG',
                               mode='multiple files',

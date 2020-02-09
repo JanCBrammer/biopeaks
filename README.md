@@ -1,3 +1,5 @@
+![logo](biopeaks/images/logo.png)
+
 # 1. General Information
 
 `biopeaks` is a graphical user interface for biosignals recorded with the 
@@ -328,6 +330,9 @@ the Python console.
 
 # 5. Changelog
 
+### Version 1.0.5 (February 09, 2020)
++ enhancement: improved ECG artifact detection and correction
+
 ### Version 1.0.4 (January 08, 2020)
 + bugfix: `controller.edit_peaks()` works properly again
 + enhancement: moved the modality menu to processing options
@@ -365,5 +370,3 @@ identical)
 # 6. Further Resources
 List links to other OSS packages for further analyses based on statistics\
 pyHRV, biosppy, Neurokit
-
-
