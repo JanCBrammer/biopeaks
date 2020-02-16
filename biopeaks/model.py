@@ -9,9 +9,9 @@ import numpy as np
 from os import path
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, pyqtProperty
 
-        
+
 class Model(QObject):
-    
+
     # costum signals
     signal_changed = pyqtSignal(object)
     peaks_changed = pyqtSignal(object)
@@ -28,15 +28,15 @@ class Model(QObject):
 
     # the following model attributes aren't slots, but are set by controller
     # methods
-    
+
     @property
     def savestats(self):
         return self._savestats
-    
+
     @savestats.setter
     def savestats(self, value):
         self._savestats = value
-        
+
     @property
     def signal(self):
         return self._signal
@@ -49,7 +49,7 @@ class Model(QObject):
         # during batch processing)
         if value is not None and self.plotting:
             self.signal_changed.emit(value)
-        
+
     @property
     def peaks(self):
         return self._peaks
@@ -59,7 +59,7 @@ class Model(QObject):
         self._peaks = value
         if value is not None and self.plotting:
             self.peaks_changed.emit(value)
-            
+
     @property
     def period(self):
         return self._period
@@ -67,7 +67,7 @@ class Model(QObject):
     @period.setter
     def period(self, value):
         self._period = value
-        
+
     @property
     def periodintp(self):
         return self._periodintp
@@ -77,7 +77,7 @@ class Model(QObject):
         self._periodintp = value
         if value is not None and self.plotting:
             self.period_changed.emit(value)
-            
+
     @property
     def rateintp(self):
         return self._rateintp
@@ -87,7 +87,7 @@ class Model(QObject):
         self._rateintp = value
         if value is not None and self.plotting:
             self.rate_changed.emit(value)
-            
+
     @property
     def tidalampintp(self):
         return self._tidalampintp
@@ -97,7 +97,7 @@ class Model(QObject):
         self._tidalampintp = value
         if value is not None and self.plotting:
             self.tidalamp_changed.emit(value)
-        
+
     @property
     def sec(self):
         return self._sec
@@ -105,7 +105,7 @@ class Model(QObject):
     @sec.setter
     def sec(self, value):
         self._sec = value
-        
+
     @property
     def markers(self):
         return self._markers
@@ -115,7 +115,7 @@ class Model(QObject):
         self._markers = value
         if value is not None and self.plotting:
             self.markers_changed.emit(value)
-        
+
     @property
     def rpathsignal(self):
         return self._rpathsignal
@@ -126,7 +126,7 @@ class Model(QObject):
         if value is not None:
             _, displaypath = path.split(value)
             self.path_changed.emit(displaypath)
-            
+
     @property
     def wpathsignal(self):
         return self._wpathsignal
@@ -134,15 +134,15 @@ class Model(QObject):
     @wpathsignal.setter
     def wpathsignal(self, value):
         self._wpathsignal = value
-            
+
     @property
     def fpaths(self):
         return self._fpaths
-        
+
     @fpaths.setter
     def fpaths(self, value):
         self._fpaths = value
-        
+
     @property
     def wpathpeaks(self):
         return self._wpathpeaks
@@ -150,7 +150,7 @@ class Model(QObject):
     @wpathpeaks.setter
     def wpathpeaks(self, value):
         self._wpathpeaks = value
-        
+
     @property
     def rpathpeaks(self):
         return self._rpathpeaks
@@ -158,7 +158,7 @@ class Model(QObject):
     @rpathpeaks.setter
     def rpathpeaks(self, value):
         self._rpathpeaks = value
-        
+
     @property
     def wdirpeaks(self):
         return self._wdirpeaks
@@ -166,7 +166,7 @@ class Model(QObject):
     @wdirpeaks.setter
     def wdirpeaks(self, value):
         self._wdirpeaks = value
-        
+
     @property
     def wpathstats(self):
         return self._wpathstats
@@ -174,7 +174,7 @@ class Model(QObject):
     @wpathstats.setter
     def wpathstats(self, value):
         self._wpathstats = value
-        
+
     @property
     def wdirstats(self):
         return self._wdirstats
@@ -182,24 +182,32 @@ class Model(QObject):
     @wdirstats.setter
     def wdirstats(self, value):
         self._wdirstats = value
-        
+
     @property
     def status(self):
         return self._status
-    
+
     @status.setter
     def status(self, value):
         self._status = value
         if value is not None:
             self.status_changed.emit(value)
-        
+
+    @property
+    def filetype(self):
+        return self._filetype
+
+    @filetype.setter
+    def filetype(self, value):
+        self._filetype = value
+
     # the following model attributes are slots that are connected to signals
     # from the view or controller
-    
+
     @pyqtProperty(object)
     def segment(self):
         return self._segment
-    
+
     @pyqtSlot(object)
     def set_segment(self, values):
         try:
@@ -221,7 +229,7 @@ class Model(QObject):
                     self._status = 'invalid selection {}'.format(values)
         except:
             self._segment = None
-    
+
     @pyqtProperty(str)
     def batchmode(self):
         return self._batchmode
@@ -229,7 +237,7 @@ class Model(QObject):
     @pyqtSlot(str)
     def set_batchmode(self, value):
         self._batchmode = value
-        
+
     @pyqtProperty(str)
     def markerchan(self):
         return self._markerchan
@@ -237,7 +245,7 @@ class Model(QObject):
     @pyqtSlot(str)
     def set_markerchan(self, value):
         self._markerchan = value
-        
+
     @pyqtProperty(str)
     def signalchan(self):
         return self._signalchan
@@ -245,7 +253,7 @@ class Model(QObject):
     @pyqtSlot(str)
     def set_signalchan(self, value):
         self._signalchan = value
-        
+
     @pyqtProperty(str)
     def modality(self):
         return self._modality
@@ -253,7 +261,7 @@ class Model(QObject):
     @pyqtSlot(str)
     def set_modality(self, value):
         self._modality = value
-        
+
     @pyqtProperty(int)
     def peakseditable(self):
         return self._peakseditable
@@ -264,7 +272,7 @@ class Model(QObject):
             self._peakseditable = True
         elif value == 0:
             self._peakseditable = False
-            
+
     @pyqtProperty(int)
     def savebatchpeaks(self):
         return self._savebatchpeaks
@@ -275,7 +283,7 @@ class Model(QObject):
             self._savebatchpeaks = True
         elif value == 0:
             self._savebatchpeaks = False
-        
+
     @pyqtSlot(int)
     def progress(self, value):
         self._progress = value
@@ -285,7 +293,7 @@ class Model(QObject):
 
     def __init__(self):
         super().__init__()
-        
+
         self._signal = None
         self._peaks = None
         self._periodintp = None
@@ -314,6 +322,7 @@ class Model(QObject):
         self._wdirstats = None
         self._savebatchpeaks = False
         self._savestats = {"period":False, "rate":False, "tidalamp":False}
+        self._filetype = None
 
     def reset(self):
         self._signal = None
@@ -333,9 +342,9 @@ class Model(QObject):
         self._wpathsignal = None
         self._rpathsignal = None
         self._wpathstats = None
+        self._filetype = None
         # don't reset attributes that aren't ideosyncratic to the dataset
         # (e.g., channels, batchmode, savestats etc.); also don't reset
         # attributes that must be permanently accessible during batch
         # processing (e.g., fpaths, wdirpeaks, wdirstats)
         self.model_reset.emit()
-        

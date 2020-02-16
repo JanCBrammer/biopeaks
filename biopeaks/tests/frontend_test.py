@@ -341,7 +341,7 @@ def runner():
 
     # single file with ECG data
     testapp._tests.single_file(modality='ECG',
-                                sigchan='ECG',
+                                sigchan='A3',
                                 markerchan='I1',
                                 mode='single file',
                                 sigfnameorig='testdata.txt',
@@ -356,7 +356,7 @@ def runner():
 
     # single file with breathing data
     testapp._tests.single_file(modality='RESP',
-                                sigchan='RESP',
+                                sigchan='A2',
                                 markerchan='I1',
                                 mode='single file',
                                 sigfnameorig='testdata.txt',
@@ -377,7 +377,7 @@ def runner():
     stats = [(0.7915, 76.3451), (0.7254, 83.6942), (0.7883, 76.8264),
              (0.7399, 81.7718), (0.7855, 76.9171), (0.7235, 83.6060)]
     testapp._tests.batch_file(modality='ECG',
-                              sigchan='ECG',
+                              sigchan='A3',
                               mode='multiple files',
                               sigfnames=sigfiles,
                               peakdir=datapath,

@@ -101,7 +101,6 @@ class View(QMainWindow):
         # channel selection
         self.sigchanmenulabel = QLabel('biosignal channel')
         self.sigchanmenu = QComboBox(self)
-        self.sigchanmenu.addItem('infer from modality')
         self.sigchanmenu.addItem('A1')
         self.sigchanmenu.addItem('A2')
         self.sigchanmenu.addItem('A3')
