@@ -70,6 +70,12 @@ class Controller(QObject):
                 self._model.reset()
                 self.read_signal(path=self._model.fpaths[0])
 
+                # If requested, read marker channel.
+                if self._model.markerchan == "none":
+                    return
+                if self._model.loaded:
+                    self.read_marker(path=self.rpathsignal)
+
 
     def get_wpathsignal(self):
         if self._model.loaded:
@@ -246,7 +252,7 @@ class Controller(QObject):
         _, file_extension = os.path.splitext(path)
 
         if file_extension not in [".txt", ".edf"]:
-            self._model.status = "Error: wrong file format."
+            self._model.status = "Error: Please select an OpenSignals or EDF file."
             return
 
         if file_extension == ".txt":
@@ -259,31 +265,38 @@ class Controller(QObject):
                 self._model.status = output["status"]
                 return
 
-            self._model.rpathsignal = output["rpathsignal"]
-            # Important to set seconds PRIOR TO signal, otherwise plotting
-            # behaves unexpectadly (since plotting is triggered as soon as
-            # signal changes).
-            self._model.sec = output["sec"]
-            self._model.signal = output["signal"]
-            self._model.sfreq = output["sfreq"]
-            self._model.loaded = True
             self._model.filetype = "OpenSignals"
 
-            # If requested, read marker channel.
-            if self._model.markerchan == "none":
-                return
-            output = read_opensignals(path, self._model.markerchan,
-                                      channeltype="marker")
+        elif file_extension == ".edf":
+
+            # Read signal and associated metadata.
+            output = read_edf(path, self._model.signalchan,
+                              channeltype="signal")
             # If the io utility returns an error, print the error and return.
             if output["status"]:
                 self._model.status = output["status"]
                 return
-            self._model.markers = output["signal"]
 
-        elif file_extension == ".edf":
-            output = read_edf(path)
-            print(output)
-            # self._model.filetype = "EDF"
+            self._model.filetype = "EDF"
+
+        # Important to set seconds PRIOR TO signal, otherwise plotting
+        # behaves unexpectadly (since plotting is triggered as soon as
+        # signal changes).
+        self._model.sec = output["sec"]
+        self._model.signal = output["signal"]
+        self._model.sfreq = output["sfreq"]
+        self._model.loaded = True
+        self._model.rpathsignal = path
+
+
+    def read_marker(self, path):
+        output = read_opensignals(path, self._model.markerchan,
+                                  channeltype="marker")
+        # If the io utility returns an error, print the error and return.
+        if output["status"]:
+            self._model.status = output["status"]
+            return
+        self._model.markers = output["signal"]
 
 
     @threaded

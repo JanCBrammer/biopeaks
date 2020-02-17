@@ -2,34 +2,30 @@
 
 # 1. General Information
 
-`biopeaks` is a graphical user interface for biosignals recorded with the 
-[Bitalino](https://bitalino.com/en/) and [OpenSignals](https://bitalino.com/en/software).
-The interface is meant for processing biosignals with rhythmically occuring
-peaks that determine the dynamics of the biosignal. A typical example is heart
-rate derived from the R-peaks in an electrocardiogram (ECG).
-`biopeaks` identifies peaks (or more correctly: extrema) in ECG as well as
-breathing signals. Based on these peaks you can then calculate statistics, such
-as the biosignal's instantaneous period, -rate and in the case of breathing,
--tidal amplitude.
-The exact identification of the relevant peaks is a fundamental first step for 
-many subsequent analyses, such heart rate variability. Errors during peak
-identification can significantly
-distort subsequent analyses. Therefore, the intention of `biopeaks`
-is to make peak identification convenient and precise. Especially the 
-visualization
-of the biosignals along with the peaks is crucial in determining if the 
-biosignal's quality is sufficient for further analysis. The ability to manually
-edit the peaks is equally important, since no algorithm can perfectly identify
-all peaks, especially if the biosignal's quality is poor. In addition to offering 
-manual peak editing, for ECG,`biopeaks` automatically corrects errors in peak detection
-with a state-of-the-art [algorithm](https://www.tandfonline.com/doi/full/10.1080/03091902.2019.1640306).
+`biopeaks` is a graphical user interface for ECG and breathing signals. It processes
+these biosignals semi-automatically with sensible defaults and features the following
+functionality:
+
+* processing of open biosignal formats [EDF](https://en.wikipedia.org/wiki/European_Data_Format)
+as well as [OpenSignals](https://bitalino.com/en/software)
+* biosignal visualization
+* biosignal segmentation
+* extrema detection (R-peaks in ECG, exhalation troughs and inhalation
+peaks in breathing signals)
+* state-of-the-art [automatic artifact correction](https://www.tandfonline.com/doi/full/10.1080/03091902.2019.1640306)
+ for ECG extrema
+* manual editing of extrema (useful in case of poor biosignal quality)
+* calculation of instantaneous (heart- or breathing-) rate and period, as well as
+breathing amplitude
+* fully automatic batch processing
 
 
 # 2. User Guide
 
 ## Installation
-Note that currently, `biopeaks` has been built and tested on Windows. Support
-for Linux and macOS will follow as soon as possible.
+Note that currently, `biopeaks` has been built and tested on Windows. It should
+run on Linux and macOS as well and support for those platform will follow as soon
+as possible.
 
 
 ### Instructions for users without a Python installation
@@ -102,13 +98,8 @@ Before loading the biosignal, you need to select the modality of your biosignal
 in **optionspanel** -> **_processing options_** -> _modality_ (ECG for
 electrocardiogram, and RESP for breathing). Next, under **optionspanel** -> **_channels_** you need to
 specify which _biosignal channel_ contains the biosignal corresponding to your
-modality. You can let the _biosignal channel_ be inferred from the modality,
-or select a
-specific analog channel (A1 through A6). The first option only works if the
-biosignal has been declared as belonging to a specific modality in the
-OpenSignals recording software. For example an ECG channel must have been
-specified as "ECG" before the recording was started in OpenSignals. Optionally, in addition to the _biosignal channel_,
-you can select a _marker channel_. This is useful if you recorded a channel
+modality. Optionally, in addition to the _biosignal channel_, you can select a
+_marker channel_. This is useful if you recorded a channel
 that marks interesting events such as the onset of an experimental condition,
 button presses etc.. You can use the _marker channel_ to display any other
 channel alongside your _biosignal channel_. Once these options are selected,
@@ -152,7 +143,7 @@ statistics) will be also be segmented if they are already computed.
 **menubar** -> **_biosignal_** -> _save_ opens a file dialog that lets you
 select a directory and file name for saving the biosignal.
 Saving the biosignal can be useful after segmentation. Note that the file is
-saved in the original OpenSignals format containing all channels.
+saved in its original format containing all channels.
 
 ### find peaks
 **menubar** -> **_peaks_** -> _find_ automatically identifies the peaks in the
@@ -265,11 +256,11 @@ detailled description of how to use them.
 ## Getting started
 The following workflow is meant as an introduction to the interface. Many other
 workflows are possible and might make more sense given your 
-requirements. Note that `biopeaks` works with the OpenSignals text file format.
-However, you can analyze any data as long as you format the data according to
-the [OpenSignals convention](http://bitalino.com/datasheets/OpenSignals_File_Formats.pdf).
-The functions used in the workflow are
-described in detail in the [functionality section](#Functionality).
+requirements. Note that `biopeaks` works with the OpenSignals text file format
+as well as EDF files. However, you can analyze any data as long as you format the
+data according to either the [OpenSignals convention](http://bitalino.com/datasheets/OpenSignals_File_Formats.pdf)
+or the [EDF convention](https://www.edfplus.info/specs/index.html). The functions
+used in the workflow are described in detail in the [functionality section](#Functionality).
 
 ### examplary workflow on a single file
 Time to look at some biosignals! Before you start any workflow, set the desired
@@ -368,5 +359,4 @@ identical)
 
 
 # 6. Further Resources
-List links to other OSS packages for further analyses based on statistics\
-pyHRV, biosppy, Neurokit
+
