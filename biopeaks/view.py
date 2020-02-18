@@ -51,7 +51,7 @@ class View(QMainWindow):
         self.segmentspan = None
 
 
-        # figure1 for markers
+        # figure1 for marker
         self.figure1 = Figure()
         self.canvas1 = FigureCanvas(self.figure1)
         self.ax10 = self.figure1.add_subplot(1,1,1, sharex=self.ax00)
@@ -111,21 +111,21 @@ class View(QMainWindow):
         # initialize with default value
         self._model.set_signalchan(self.sigchanmenu.currentText())
 
-        self.markerschanmenulabel = QLabel('marker channel')
-        self.markerschanmenu = QComboBox(self)
-        self.markerschanmenu.addItem('none')
-        self.markerschanmenu.addItem('I1')
-        self.markerschanmenu.addItem('I2')
-        self.markerschanmenu.addItem('A1')
-        self.markerschanmenu.addItem('A2')
-        self.markerschanmenu.addItem('A3')
-        self.markerschanmenu.addItem('A4')
-        self.markerschanmenu.addItem('A5')
-        self.markerschanmenu.addItem('A6')
-        self.markerschanmenu.currentTextChanged.connect(self._model.
-                                                        set_markerchan)
+        self.markerchanmenulabel = QLabel('marker channel')
+        self.markerchanmenu = QComboBox(self)
+        self.markerchanmenu.addItem('none')
+        self.markerchanmenu.addItem('I1')
+        self.markerchanmenu.addItem('I2')
+        self.markerchanmenu.addItem('A1')
+        self.markerchanmenu.addItem('A2')
+        self.markerchanmenu.addItem('A3')
+        self.markerchanmenu.addItem('A4')
+        self.markerchanmenu.addItem('A5')
+        self.markerchanmenu.addItem('A6')
+        self.markerchanmenu.currentTextChanged.connect(self._model.
+                                                       set_markerchan)
         # initialize with default value
-        self._model.set_markerchan(self.markerschanmenu.currentText())
+        self._model.set_markerchan(self.markerchanmenu.currentText())
 
         # processing mode (batch or single file)
         self.batchmenulabel = QLabel("mode")
@@ -301,7 +301,7 @@ class View(QMainWindow):
 
         self.optionsgroupB = QGroupBox('channels')
         self.vlayoutB.addRow(self.sigchanmenulabel, self.sigchanmenu)
-        self.vlayoutB.addRow(self.markerschanmenulabel, self.markerschanmenu)
+        self.vlayoutB.addRow(self.markerchanmenulabel, self.markerchanmenu)
         self.optionsgroupB.setLayout(self.vlayoutB)
 
         self.optionsgroupC = QGroupBox('peak options')
@@ -332,7 +332,7 @@ class View(QMainWindow):
         # connect output widgets to external signals #
         ##############################################
         self._model.signal_changed.connect(self.plot_signal)
-        self._model.markers_changed.connect(self.plot_markers)
+        self._model.marker_changed.connect(self.plot_marker)
         self._model.peaks_changed.connect(self.plot_peaks)
         self._model.period_changed.connect(self.plot_period)
         self._model.rate_changed.connect(self.plot_rate)
@@ -382,12 +382,12 @@ class View(QMainWindow):
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
 
 
-    def plot_markers(self, value):
+    def plot_marker(self, value):
         self.ax10.clear()
         self.ax10.relim()
-        self.line10 = self.ax10.plot(self._model.sec, value)
+        self.line10 = self.ax10.plot(value[0], value[1])
         self.canvas1.draw()
-#        print("plot_markers listening")
+#        print("plot_marker listening")
 
 
     def plot_period(self, value):
@@ -525,10 +525,10 @@ class View(QMainWindow):
             self.editcheckbox.setEnabled(False)
             self.editcheckbox.setChecked(False)
             self.savecheckbox.setEnabled(True)
-            self.markerschanmenu.setEnabled(False)
+            self.markerchanmenu.setEnabled(False)
         elif event == "single file":
             self.editcheckbox.setEnabled(True)
-            self.markerschanmenu.setEnabled(True)
+            self.markerchanmenu.setEnabled(True)
             self.savecheckbox.setEnabled(False)
             self.savecheckbox.setChecked(False)
 

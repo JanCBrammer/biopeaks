@@ -15,7 +15,7 @@ class Model(QObject):
     # costum signals
     signal_changed = pyqtSignal(object)
     peaks_changed = pyqtSignal(object)
-    markers_changed = pyqtSignal(object)
+    marker_changed = pyqtSignal(object)
     segment_changed = pyqtSignal(object)
     # makes sure that the emitted stats signal has the same length as self._sec
     period_changed = pyqtSignal(object)
@@ -107,14 +107,22 @@ class Model(QObject):
         self._sec = value
 
     @property
-    def markers(self):
-        return self._markers
+    def marker(self):
+        return self._marker
 
-    @markers.setter
-    def markers(self, value):
-        self._markers = value
+    @marker.setter
+    def marker(self, value):
+        self._marker = value
         if value is not None and self.plotting:
-            self.markers_changed.emit(value)
+            # In case the marker channel is sampled at a different rate than
+            # signak channel (possible for EDF format), generate the seconds
+            # vector for the markers on the spot.
+            if len(value) != len(self._signal):
+                sec = np.linspace(0, len(value) / self.sfreqmarker,
+                                  len(value))
+            else:
+                sec = self._sec
+            self.marker_changed.emit([sec, value])
 
     @property
     def rpathsignal(self):
@@ -300,11 +308,12 @@ class Model(QObject):
         self._rateintp = None
         self._tidalampintp = None
         self._sec = None
-        self._markers = None
+        self._marker = None
         self._segment = None
         self._status = None
         self._progress = None
         self.sfreq = None
+        self.sfreqmarker = None
         self.loaded = False
         self.plotting = True
         self._signalchan = None
@@ -331,11 +340,12 @@ class Model(QObject):
         self._rateintp = None
         self._tidalampintp = None
         self._sec = None
-        self._markers = None
+        self._marker = None
         self._segment = None
         self._status = None
         self._progress = None
         self.sfreq = None
+        self.sfreqmarker = None
         self.loaded = False
         self._wpathpeaks = None
         self._rpathpeaks = None

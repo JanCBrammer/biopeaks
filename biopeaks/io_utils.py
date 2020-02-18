@@ -162,6 +162,7 @@ def read_edf(path, channel, channeltype):
 
     elif channeltype == "marker":
         output["signal"] = np.ravel(chansignal)
+        output["sfreq"] = chansfreq
 
     return output
 

@@ -70,12 +70,6 @@ class Controller(QObject):
                 self._model.reset()
                 self.read_signal(path=self._model.fpaths[0])
 
-                # If requested, read marker channel.
-                if self._model.markerchan == "none":
-                    return
-                if self._model.loaded:
-                    self.read_marker(path=self.rpathsignal)
-
 
     def get_wpathsignal(self):
         if self._model.loaded:
@@ -282,41 +276,49 @@ class Controller(QObject):
         # Important to set seconds PRIOR TO signal, otherwise plotting
         # behaves unexpectadly (since plotting is triggered as soon as
         # signal changes).
+        self._model.sfreq = output["sfreq"]
         self._model.sec = output["sec"]
         self._model.signal = output["signal"]
-        self._model.sfreq = output["sfreq"]
         self._model.loaded = True
         self._model.rpathsignal = path
 
+        # If requested, read marker channel.
+        if self._model.markerchan != "none":
+            self.read_marker(path)
+
 
     def read_marker(self, path):
-        output = read_opensignals(path, self._model.markerchan,
-                                  channeltype="marker")
+        if self._model.filetype == "OpenSignals":
+            output = read_opensignals(path, self._model.markerchan,
+                                      channeltype="marker")
+        elif self._model.filetype == "EDF":
+            output = read_edf(path, self._model.markerchan,
+                              channeltype="marker")
         # If the io utility returns an error, print the error and return.
         if output["status"]:
             self._model.status = output["status"]
             return
-        self._model.markers = output["signal"]
+        self._model.sfreqmarker = output["sfreq"]
+        self._model.marker = output["signal"]
 
 
     @threaded
     def segment_signal(self):
         self._model.status = "Segmenting signal."
-        # convert from seconds to samples
+        # Convert from seconds to samples.
         begsamp = int(np.rint(self._model.segment[0] * self._model.sfreq))
         endsamp = int(np.rint(self._model.segment[1] * self._model.sfreq))
         siglen = endsamp - begsamp
         sec = np.linspace(0, siglen / self._model.sfreq, siglen)
         self._model.sec = sec
         self._model.signal = self._model.signal[begsamp:endsamp]
+
         if self._model.peaks is not None:
             peakidcs = np.where((self._model.peaks >= begsamp) &
                                 (self._model.peaks <= endsamp))[0]
             peaks = self._model.peaks[peakidcs]
             peaks -= begsamp
             self._model.peaks = peaks
-        if self._model.markers is not None:
-            self._model.markers = self._model.markers[begsamp:endsamp]
         if self._model.periodintp is not None:
             self._model.periodintp = self._model.periodintp[begsamp:endsamp]
         if self._model.rateintp is not None:
@@ -325,6 +327,18 @@ class Controller(QObject):
             self._model.tidalampintp = self._model.tidalampintp[begsamp:
                                                                 endsamp]
 
+        # Since the marker channel might be sampled at a different rate in EDF
+        # data, treat it separately.
+        if self._model.marker is not None:
+            begsamp = int(np.rint(self._model.segment[0] *
+                                  self._model.sfreqmarker))
+            endsamp = int(np.rint(self._model.segment[1] *
+                                  self._model.sfreqmarker))
+            self._model.marker = self._model.marker[begsamp:endsamp]
+            if endsamp - begsamp <= 1:
+                self._model.status = "Error: There are not enough samples in" \
+                                     " the marker channel to resolve this" \
+                                     " segment."
 
     @threaded
     def save_signal(self):
@@ -488,7 +502,7 @@ class Controller(QObject):
     def save_stats(self):
         savekeys = []
         for key, value in self._model.savestats.items():
-            if value == True:
+            if value:
                 savekeys.append(key)
         savearray = np.zeros((self._model.signal.size, len(savekeys)))
         for i, key in enumerate(savekeys):
