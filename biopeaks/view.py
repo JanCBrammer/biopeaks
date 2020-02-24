@@ -372,8 +372,11 @@ class View(QMainWindow):
 
 
     def plot_segment(self, value):
-        # self.segementspan is listed in ax.patches
-        if self.ax00.patches:
+        # If an invalid signal has been selected reset the segmenter interface.
+        if value is None:
+            self.toggle_segmenter(1)
+            return
+        if self.ax00.patches:    # self.segementspan is listed in ax.patches
             self.ax00.patches[0].remove()
         self.segmentspan = self.ax00.axvspan(value[0], value[1], color='m',
                                              alpha=0.25)
@@ -451,24 +454,30 @@ class View(QMainWindow):
 
     def toggle_segmenter(self, value):
         if self._model.loaded:
-            # open segmenter when called from signalmenu
+            # Open segmenter when called from signalmenu or clear segmenter
+            # upon selection of invalid segment.
             if value == 1:
                 self.segmenter.setVisible(True)
                 self.confirmedit.setEnabled(False)
                 self.startedit.clear()
                 self.endedit.clear()
-            # close segmenter after segment has been confirmed
+                if self.ax00.patches:
+                    self.ax00.patches[0].remove()
+                    self.canvas0.draw()
+            # Close segmenter after segment has been confirmed.
             elif value == 0:
                 self.segmenter.setVisible(False)
                 if self.ax00.patches:
                     self.ax00.patches[0].remove()
-            # close segmenter after segmentation has been aborted (reset
-            # segment)
+                    self.canvas0.draw()
+            # Close segmenter after segmentation has been aborted (reset
+            # segment).
             elif value == 2:
-                self._model.set_segment(None)
+                self._model.set_segment([0, 0])    # This will reset the model to None
                 self.segmenter.setVisible(False)
                 if self.ax00.patches:
                     self.ax00.patches[0].remove()
+                    self.canvas0.draw()
 
 
     def enable_segmentedit(self):

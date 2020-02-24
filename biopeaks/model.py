@@ -218,25 +218,38 @@ class Model(QObject):
 
     @pyqtSlot(object)
     def set_segment(self, values):
-        try:
-            if values[0] and values[1]:
-                begsamp = float(values[0])
-                endsamp = float(values[1])
-                # check if values are inside temporal bounds
-                evalarray = [np.asarray([begsamp, endsamp]) >= self._sec[0],
-                             np.asarray([begsamp, endsamp]) <= self._sec[-1]]
-                if np.all(evalarray):
-                    # check if order is valid
-                    if begsamp < endsamp:
-                        self._status = 'valid selection {}'.format(values)
-                        self._segment = [begsamp, endsamp]
-                        self.segment_changed.emit(self._segment)
-                    else:
-                        self._status = 'invalid selection {}'.format(values)
-                else:
-                    self._status = 'invalid selection {}'.format(values)
-        except:
-            self._segment = None
+
+        self._segment = None
+
+        if values[0] and values[1]:
+            begsamp = float(values[0])
+            endsamp = float(values[1])
+            evalarray = [np.asarray([begsamp, endsamp]) >= self._sec[0],
+                         np.asarray([begsamp, endsamp]) <= self._sec[-1]]
+            # Ensure that values are inside temporal bounds.
+            if not np.all(evalarray):
+                self.status_changed.emit(f"Error: Invalid segment {begsamp} - "
+                                         f"{endsamp}.")
+                self.segment_changed.emit(self._segment)
+                return
+            # Ensure that order is valid.
+            if begsamp > endsamp:
+                self.status_changed.emit(f"Error: Invalid segment {begsamp} - "
+                                         f"{endsamp}.")
+                self.segment_changed.emit(self._segment)
+                return
+            # Ensure that the segment has a minimum duration of 5
+            # seconds. If this is not the case algorithms break
+            # (convolution kernel length etc.).
+            elif endsamp - begsamp < 5:
+                self.status_changed.emit(f"Please select a segment longer than "
+                                         f"5 seconds. The current segment is "
+                                         f"{endsamp - begsamp} seconds long.")
+                self.segment_changed.emit(self._segment)
+                return
+            self.status_changed.emit(f"Valid segment {begsamp} - {endsamp}.")
+            self._segment = [begsamp, endsamp]
+            self.segment_changed.emit(self._segment)
 
     @pyqtProperty(str)
     def batchmode(self):
