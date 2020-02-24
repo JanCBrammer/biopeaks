@@ -84,26 +84,26 @@ class Tests:
 
 
     def single_file(self, modality, sigchan, markerchan, mode, sigfnameorig,
-                    sigfnameseg, peakfname, statsfname, siglen, peaklen,
+                    sigfnameseg, peakfname, statsfname, siglen, peaksum,
                     segment, avgperiod, avgrate, avgtidalamp=None):
 
         # 1. set options
         ################
         QTest.keyClicks(self._view.modmenu, modality)
         QTest.keyClicks(self._view.sigchanmenu, sigchan)
-        QTest.keyClicks(self._view.markerschanmenu, markerchan)
+        QTest.keyClicks(self._view.markerchanmenu, markerchan)
         QTest.keyClicks(self._view.batchmenu, mode)
 
         # 2. load signal
         ################
-        self._controller.read_chan(path=sigfnameorig)
+        self._controller.read_signal(path=sigfnameorig)
         self.wait_for_signal(self._model.progress_changed, 1)
         # give a human reviewer some time to confirm the execution visually
         QTest.qWait(2000)
         assert np.size(self._model.signal) == siglen, 'failed to load signal'
         print('loaded signal successfully')
-        assert np.size(self._model.markers) == siglen, 'failed to load markers'
-        print('loaded markers successfully')
+        assert np.size(self._model.marker) == siglen, 'failed to load marker'
+        print('loaded marker successfully')
 
         # 3. segment signal
         ###################
@@ -133,7 +133,7 @@ class Tests:
         self._controller.find_peaks()
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
-        assert self._model.peaks.size == peaklen, 'failed to find peaks'
+        assert sum(self._model.peaks) == peaksum, 'failed to find peaks'
         print('found peaks successfully')
 
         # 6. edit peaks
@@ -160,7 +160,7 @@ class Tests:
         # case of a flat peak, hence discrepancies of a few msecs can arise;
         # set tolerance for deviation of re-inserted peak to 10 msec
         assert abs(self._model.peaks[0] / self._model.sfreq -
-                   demopeak) <= 0.015, 'failed to re-insert first peak'
+                    demopeak) <= 0.015, 'failed to re-insert first peak'
         print('re-inserted first peaks successfully')
 
         # 7. save peaks
@@ -175,7 +175,7 @@ class Tests:
 
         # 8. load segmented signal
         ##########################
-        self._controller.read_chan(path=sigfnameseg)
+        self._controller.read_signal(path=sigfnameseg)
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
         assert np.size(self._model.signal) == siglenseg, \
@@ -188,7 +188,11 @@ class Tests:
         self._controller.read_peaks()
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
-        assert self._model.peaks.size == peaklen, 'failed to re-load peaks'
+        # For the breathing, after peak editing, the re-inserted peak can
+        # be shifted by a few samples. This is not a bug, but inherent in the
+        # way extrema are added and deleted in controller.edit_peaks().
+        assert np.allclose(sum(self._model.peaks), peaksum, atol=10), \
+            'failed to re-load peaks'
         print('re-loaded peaks successfully')
 
         # 10. calculate stats
@@ -247,7 +251,7 @@ class Tests:
 
 
     def batch_file(self, modality, sigchan, mode, sigfnames, peakdir, statsdir,
-                   peaklens, stats):
+                   peaksums, stats):
 
         # 1. set options and set paths
         ##############################
@@ -289,16 +293,16 @@ class Tests:
         ################
         # load each peak file saved during batch processing and assess if
         # peaks have been identified correctly
-        for sigfname, peaklen in zip(sigfnames, peaklens):
+        for sigfname, peaksum in zip(sigfnames, peaksums):
             # load signal
-            self._controller.read_chan(path=sigfname)
+            self._controller.read_signal(path=sigfname)
             self.wait_for_signal(self._model.progress_changed, 1)
             # load peaks
             fpartname, _ = os.path.splitext(sigfname)
             self._model.rpathpeaks = f"{fpartname}_peaks.csv"
             self._controller.read_peaks()
             self.wait_for_signal(self._model.progress_changed, 1)
-            assert self._model.peaks.size == peaklen, \
+            assert sum(self._model.peaks) == peaksum, \
                     f"failed to load peaks for {sigfname}"
             print(f"loaded peaks for {sigfname} successfully")
             # remove all files that have been saved during the test
@@ -349,7 +353,7 @@ def runner():
                                 peakfname='testdata_segmented_peaks.csv',
                                 statsfname='testdata_segmented_stats.csv',
                                 siglen=5100000,
-                                peaklen=92,
+                                peaksum=4572190,
                                 avgperiod=1.0920,
                                 avgrate=55.1081,
                                 segment=[760, 860])
@@ -364,7 +368,7 @@ def runner():
                                 peakfname='testdata_segmented_peaks.csv',
                                 statsfname='testdata_segmented_stats.csv',
                                 siglen=5100000,
-                                peaklen=126,
+                                peaksum=13109234,
                                 avgperiod=3.3224,
                                 avgrate=19.4442,
                                 avgtidalamp=131.1297,
@@ -373,16 +377,16 @@ def runner():
     # batch processing with ECG data
     sigfiles = ['montage1A.txt', 'montage1J.txt', 'montage2A.txt',
                 'montage2J.txt', 'montage3A.txt', 'montage3J.txt']
-    peaklens = [311, 312, 260, 311, 304, 311]
-    stats = [(0.7915, 76.3451), (0.7254, 83.6942), (0.7883, 76.8264),
-             (0.7399, 81.7718), (0.7855, 76.9171), (0.7235, 83.6060)]
+    peaksums = [3808205, 3412337, 2643186, 3511241, 3611836, 3457932]
+    stats = [(0.7946, 76.1008), (0.7285, 83.1350), (0.7913, 76.5485),
+              (0.7418, 81.5021), (0.7856, 76.9168), (0.7235, 83.6043)]
     testapp._tests.batch_file(modality='ECG',
                               sigchan='A3',
                               mode='multiple files',
                               sigfnames=sigfiles,
                               peakdir=datapath,
                               statsdir=datapath,
-                              peaklens=peaklens,
+                              peaksums=peaksums,
                               stats=stats)
 
     print("tests ran without errors, closing application")
