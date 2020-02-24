@@ -211,7 +211,7 @@ be caught. Always check for errors manually! Note, that when editing breathing
 extrema, any edits that break the alternation of peaks and troughs
 (e.g., two consecutive peaks) will automatically be discarded when you save
 the extrema. If you already calculated statistics, don't forget to calculate
-them again after peak editing 
+them again after peak editing.
 
 ### batch processing
 **WARNING:** There is no substitute for manually checking the biosignal's
