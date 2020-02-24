@@ -2,7 +2,7 @@
 
 from .ecg import ecg_peaks, ecg_period
 from .resp import resp_extrema, resp_stats
-from .io_utils import read_opensignals, write_opensignals, read_edf
+from .io_utils import read_opensignals, write_opensignals, read_edf, write_edf
 import os
 import pandas as pd
 import numpy as np
@@ -330,10 +330,14 @@ class Controller(QObject):
         # Since the marker channel might be sampled at a different rate in EDF
         # data, treat it separately.
         if self._model.marker is not None:
+            if self._model.filetype == "EDF":
+                sfreq = self._model.sfreqmarker
+            elif self._model.filetype == "OpenSignals":
+                sfreq = self._model.sfreq
             begsamp = int(np.rint(self._model.segment[0] *
-                                  self._model.sfreqmarker))
+                                  sfreq))
             endsamp = int(np.rint(self._model.segment[1] *
-                                  self._model.sfreqmarker))
+                                  sfreq))
             self._model.marker = self._model.marker[begsamp:endsamp]
             if endsamp - begsamp <= 1:
                 self._model.status = "Error: There are not enough samples in" \
@@ -344,17 +348,21 @@ class Controller(QObject):
     def save_signal(self):
         self._model.status = "Saving signal."
 
-        if self._model.segment is not None:
-            begsamp = int(np.rint(self._model.segment[0] * self._model.sfreq))
-            endsamp = int(np.rint(self._model.segment[1] * self._model.sfreq))
-
         if self._model.filetype == "OpenSignals":
+            if self._model.segment is not None:
+                begsamp = int(np.rint(self._model.segment[0] *
+                                      self._model.sfreq))
+                endsamp = int(np.rint(self._model.segment[1] *
+                                      self._model.sfreq))
             write_opensignals(self._model.rpathsignal, self._model.wpathsignal,
                               segment=[begsamp, endsamp])
 
         elif self._model.filetype == "EDF":
-            pass
-
+            status = write_edf(self._model.rpathsignal,
+                               self._model.wpathsignal,
+                               segment=self._model.segment)
+            if status:
+                self._model.status = status
 
     @threaded
     def read_peaks(self):
@@ -513,4 +521,5 @@ class Controller(QObject):
             if key == 'tidalamp':
                 savearray[:, i] = self._model.tidalampintp
         savearray = pd.DataFrame(savearray)
-        savearray.to_csv(self._model.wpathstats, index=False, header=savekeys)
+        savearray.to_csv(self._model.wpathstats, index=False, header=savekeys,
+                         float_format="%.4f")
