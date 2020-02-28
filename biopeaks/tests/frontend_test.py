@@ -354,8 +354,8 @@ def runner():
                                 statsfname='testdata_segmented_stats.csv',
                                 siglen=5100000,
                                 peaksum=4572190,
-                                avgperiod=1.0920,
-                                avgrate=55.1081,
+                                avgperiod=1.0921,
+                                avgrate=55.1027,
                                 segment=[760, 860])
 
     # single file with breathing data
@@ -369,8 +369,8 @@ def runner():
                                 statsfname='testdata_segmented_stats.csv',
                                 siglen=5100000,
                                 peaksum=13109234,
-                                avgperiod=3.3224,
-                                avgrate=19.4442,
+                                avgperiod=3.3236,
+                                avgrate=19.4375,
                                 avgtidalamp=131.1297,
                                 segment=[3200, 3400])
 
@@ -378,8 +378,8 @@ def runner():
     sigfiles = ['montage1A.txt', 'montage1J.txt', 'montage2A.txt',
                 'montage2J.txt', 'montage3A.txt', 'montage3J.txt']
     peaksums = [3808205, 3412337, 2643186, 3511241, 3611836, 3457932]
-    stats = [(0.7946, 76.1008), (0.7285, 83.1350), (0.7913, 76.5485),
-              (0.7418, 81.5021), (0.7856, 76.9168), (0.7235, 83.6043)]
+    stats = [(0.7946, 76.0995), (0.7285, 83.1341), (0.7914, 76.5469),
+              (0.7418, 81.5011), (0.7856, 76.9153), (0.7236, 83.6030)]
     testapp._tests.batch_file(modality='ECG',
                               sigchan='A3',
                               mode='multiple files',

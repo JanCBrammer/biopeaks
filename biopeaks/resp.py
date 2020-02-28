@@ -140,7 +140,7 @@ def resp_stats(extrema, signal, sfreq):
     # calculate breathing period and rate
     # to each peak assign the horizontal difference to the preceding peak
     period = np.ediff1d(peaks, to_begin=0) / sfreq
-    period[0] = np.mean(period)
+    period[0] = np.mean(period[1:])
     periodintp = interp_stats(peaks, period, signal.size)
     rateintp = 60 / periodintp
 

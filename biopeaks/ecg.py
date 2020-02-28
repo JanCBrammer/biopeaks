@@ -86,7 +86,7 @@ def ecg_period(peaks, sfreq, nsamp):
     artifacts = _find_artifacts(peaks, sfreq)
     peaks_clean, nn = _correct_artifacts(artifacts, peaks, sfreq)
 
-    # Recursively apply the artifact correction until the number of artifact
+    # Iteratively apply the artifact correction until the number of artifact
     # reaches an equilibrium (i.e., the number of artifacts does not change
     # anymore from one iteration to the next).
     n_artifacts_previous = np.inf
@@ -132,11 +132,11 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
     rr = np.ediff1d(peaks, to_begin=0) / sfreq
     # For subsequent analysis it is important that the first element has
     # a value in a realistic range (e.g., for median filtering).
-    rr[0] = np.mean(rr)
+    rr[0] = np.mean(rr[1:])
 
     # Compute differences of consecutive periods.
     drrs = np.ediff1d(rr, to_begin=0)
-    drrs[0] = np.mean(drrs)
+    drrs[0] = np.mean(drrs[1:])
     # Normalize by threshold.
     drrs, _ = threshold_normalization(drrs, alpha, window_half)
 
@@ -357,6 +357,6 @@ def _correct_artifacts(artifacts, peaks, sfreq):
 
     # Compute normal-to-normal intervals.
     nn = np.ediff1d(peaks, to_begin=0) / sfreq
-    nn[0] = np.mean(nn)
+    nn[0] = np.mean(nn[1:])
 
     return peaks, nn
