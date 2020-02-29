@@ -72,28 +72,37 @@ class Controller(QObject):
 
 
     def get_wpathsignal(self):
-        if self._model.loaded:
-            self._model.wpathsignal = getSaveFileName(None, 'Save signal',
-                                                      'untitled.txt',
-                                                      'text (*.txt)')[0]
-            if self._model.wpathsignal:
-                self.save_signal()
-        else:
+        if not self._model.loaded:
             self._model.status = "Error: no data available."
+            return
+
+        if self._model.filetype == "OpenSignals":
+            filefilter = "OpenSignals (*.txt)"
+        elif self._model.filetype == "EDF":
+            filefilter = "EDF (*.edf)"
+        else:
+            return
+        self._model.wpathsignal = getSaveFileName(None, 'Save signal',
+                                                  "untitled",
+                                                  filefilter)[0]
+        if self._model.wpathsignal:
+            self.save_signal()
 
 
     def get_rpathpeaks(self):
-        if self._model.loaded:
-            if self._model.peaks is None:
-                self._model.rpathpeaks = getOpenFileName(None,
-                                                         'Choose your peaks',
-                                                         '\home')[0]
-                if self._model.rpathpeaks:
-                    self.read_peaks()
-            else:
-                self._model.status = "Error: peaks already in memory."
-        else:
+        if not self._model.loaded:
             self._model.status = "Error: no data available."
+            return
+
+        if self._model.peaks is not None:
+            self._model.status = "Error: peaks already in memory."
+            return
+
+        self._model.rpathpeaks = getOpenFileName(None,
+                                                 'Choose your peaks',
+                                                 '\home')[0]
+        if self._model.rpathpeaks:
+            self.read_peaks()
 
 
     def get_wpathpeaks(self):
@@ -354,8 +363,12 @@ class Controller(QObject):
                                       self._model.sfreq))
                 endsamp = int(np.rint(self._model.segment[1] *
                                       self._model.sfreq))
-            write_opensignals(self._model.rpathsignal, self._model.wpathsignal,
-                              segment=[begsamp, endsamp])
+                write_opensignals(self._model.rpathsignal,
+                                  self._model.wpathsignal,
+                                  segment=[begsamp, endsamp])
+            else:
+                write_opensignals(self._model.rpathsignal,
+                                  self._model.wpathsignal)
 
         elif self._model.filetype == "EDF":
             status = write_edf(self._model.rpathsignal,

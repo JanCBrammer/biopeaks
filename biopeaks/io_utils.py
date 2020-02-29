@@ -4,7 +4,7 @@ import json
 import pandas as pd
 import numpy as np
 from itertools import islice
-from struct import unpack
+from struct import pack
 
 
 def read_opensignals(rpath, channel, channeltype):
@@ -75,7 +75,7 @@ def write_opensignals(rpath, wpath, segment=None):
     """
     # Get the header.
     header = []
-    with open(rpath, 'rt') as oldfile:
+    with open(rpath, "rt") as oldfile:
         for line in islice(oldfile, 3):
             header.append(line)
     # Get the data.
@@ -85,7 +85,7 @@ def write_opensignals(rpath, wpath, segment=None):
         data = data.iloc[segment[0]:segment[1], :]
 
     # Write header and (segmented) data to the new file.
-    with open(wpath, 'w', newline='') as newfile:
+    with open(wpath, "w", newline='') as newfile:
         for line in header:
             newfile.write(line)
         data.to_csv(newfile, sep='\t', header=False, index=False)
@@ -106,26 +106,31 @@ def read_edf(rpath, channel, channeltype):
 
     chanidx = int(channel[1])
 
-    header = _read_edfheader(rpath, return_signal=True)
+    with open(rpath, "rb") as f:
+        info, _ = _read_edfheader(f)
+        signal = _read_edfsignal(f, info["end_header"])
 
-    if header["n_channels"] < chanidx:    # both indices are one-based
+    if info["n_channels"] < chanidx:    # both indices are one-based
         output["status"] = f"Error: {channeltype.capitalize()} channel not found."
         return output
 
-    chansignallen = header["n_epochs"] * header["n_samples"][chanidx - 1]
-    chansfreq = header["sfreqs"][chanidx - 1]
+    # Take care of improperly specified number of epochs.
+    if info["n_epochs"] == -1:
+        info["n_epochs"] = int(np.rint(signal.size / sum(info["n_samples"])))
+
+    chansignallen = info["n_epochs"] * info["n_samples"][chanidx - 1]
+    chansfreq = info["sfreqs"][chanidx - 1]
     sec = np.linspace(0, chansignallen / chansfreq, chansignallen)
 
-    chansignal = _read_edfchannel(header["signal"], header["n_samples"],
-                                  chanidx)
+    chansignal = _read_edfchannel(signal, info["n_samples"], chanidx)
 
     if channeltype == "signal":
         output["sec"] = sec
-        output["signal"] = np.ravel(chansignal)
+        output["signal"] = chansignal
         output["sfreq"] = chansfreq
 
     elif channeltype == "marker":
-        output["signal"] = np.ravel(chansignal)
+        output["signal"] = chansignal
         output["sfreq"] = chansfreq
 
     return output
@@ -140,90 +145,122 @@ def write_edf(rpath, wpath, segment=None):
     # If the data has been segmented, replace the removed parts of the data
     # with NaNs, since the data cannot be cut to sample precision because
     # epochs cannot be of variable duration.
-    header = _read_edfheader(rpath, return_signal=True)
+    with open(rpath, "rb") as f:
+        info, header = _read_edfheader(f)
+        signal = _read_edfsignal(f, info["end_header"])
 
     if segment is None:
-        # Copy file to new location.
-        return status
-
-    duration_segment = segment[1] - segment[0]
+        return
     # If the segment is shorter than the original epoch duration, abort the
     # writing process.
-    if duration_segment < header["duration_epoch"]:
+    duration_segment = segment[1] - segment[0]
+    if duration_segment < info["duration_epoch"]:
         status = f"Error: The segment is shorter than the epoch duration of " \
-                 f"{header['duration_epoch']} seconds in the original EDF file. " \
-                 f"Choose a segment longer than {header['duration_epoch']}."
-        print(duration_segment, header["duration_epoch"])
+                 f"{info['duration_epoch']} seconds in the original EDF file. " \
+                 f"Choose a segment longer than {info['duration_epoch']}."
+        print(duration_segment, info["duration_epoch"])
         return status
 
+    # Store the signal belonging to each channel as entry in a list.
+    chansignals = [_read_edfchannel(signal, info["n_samples"], i)
+                   for i in np.arange(info["n_channels"]) + 1]
+
+    # Cut out the segment from each channel.
+    for chan in range(info["n_channels"]):
+
+        beg_segment = int(np.rint(info["sfreqs"][chan] * segment[0]))
+        end_segment = int(np.rint(info["sfreqs"][chan] * segment[1]))
+        chansignals[chan] = chansignals[chan][beg_segment:end_segment]
+
     # Update file version.
-    version = header["version"] + 1
+    version = info["version"] + 1
     # Update number of epochs.
-    n_epochs = int(np.rint(duration_segment / header["duration_epoch"]))
+    n_epochs = int(np.floor(duration_segment / info["duration_epoch"]))    # rounding off is important, otherwise fraction of incomplete epoch could be appended
 
-    print(version, n_epochs, header["n_epochs"])
+    with open(wpath, "wb") as f:
 
-
-    # Write the data to the new file using the (updated) header information.
-
-    # Write segment to file using the original epoch duration.
-
-
-def _read_edfheader(rpath, return_signal=False):
-
-    header = {"version": None,
-              "end_header": None,
-              "n_epochs": None,
-              "duration_epoch": None,
-              "n_channels": None,
-              "n_samples": None,
-              "signal": None}
-
-    with open(rpath, 'rb') as f:
-
-        version = int(f.read(8).strip().decode())
-        # Use seek to skip ahead to the interesting bytes.
-        f.seek(184)
-        end_header = int(f.read(8).strip().decode())
-        # print(f"number of bytes in header: {end_header}")
+        # Copy the header to the new file ...
+        f.write(header)
+        # ... and update the required fields:
+        # Update version.
+        f.seek(0)
+        f.write(_padtrim(version, 8))
+        # Update number of epochs:
         f.seek(236)
-        n_epochs = int(f.read(8).strip().decode())
-        # print(f"number of epochs: {n_epochs}")
-        duration_epoch = float(f.read(8).strip().decode())
-        # print(f"epoch duration: {duration_epoch}")
-        n_channels = int(f.read(4).strip().decode())
-        # print(f"number of channels: {n_channels}")
-        # Get the number of samples channel per epoch.
-        f.seek(256 + (n_channels * 216))
-        n_samples = [int(f.read(8).strip().decode()) for i in range(n_channels)]
-        # print(f"each epoch contains {n_samples} samples per channel")
-        # Infer the sampling rate.
-        sfreqs = [int(np.rint(i / duration_epoch)) for i in n_samples]
-        # Skip to the start of the data records.
-        f.seek(end_header)
+        f.write(_padtrim(n_epochs, 8))
 
-        if return_signal:
-            # Read all the data.
-            signal = np.fromfile(f, dtype=np.int16)    # one sample is encoded as two-byte integer (16 bits)
+        # Write the segment to the new file using the original epoch duration.
+        f.seek(info["end_header"])
+        for epoch in range(n_epochs):
 
-            # Take care of improperly specified number of epochs.
-            if n_epochs == -1:
-                n_epochs = int(np.rint(signal.size / sum(n_samples)))
+            for chan in range(info["n_channels"]):
 
-            assert signal.size == sum(n_samples) * n_epochs
-        else:
-            signal = None
+                beg_epoch = epoch * info["n_samples"][chan]
+                end_epoch = beg_epoch + info["n_samples"][chan]
+                buffer = chansignals[chan][beg_epoch:end_epoch]
+                buffer = [pack('h', i) for i in buffer]    # convert to C type
+                for i in buffer:
+                    f.write(i)
 
-    header["version"] = version
-    header["end_header"] = end_header
-    header["n_epochs"] = n_epochs
-    header["duration_epoch"] = duration_epoch
-    header["n_channels"] = n_channels
-    header["n_samples"] = n_samples
-    header["sfreqs"] = sfreqs
-    header["signal"] = signal
 
-    return header
+def _read_edfheader(f):
+    """
+    Parameters
+    ----------
+    f : file
+        File opened in "rb" mode.
+
+    Returns
+    -------
+    info : dict
+        Pre-selected relevant header fields.
+    header : TYPE
+        A copy of the entire header.
+    """
+    version = int(f.read(8).strip().decode())
+    # Use seek to skip ahead to the interesting bytes.
+    f.seek(184)
+    end_header = int(f.read(8).strip().decode())
+    f.seek(236)
+    n_epochs = int(f.read(8).strip().decode())
+    duration_epoch = float(f.read(8).strip().decode())
+    n_channels = int(f.read(4).strip().decode())
+    # Get the number of samples per channel per epoch.
+    f.seek(256 + (n_channels * 216))    # within the channel specific section of the header, skip ahead to the number of samples fields
+    n_samples = [int(f.read(8).strip().decode()) for i in range(n_channels)]
+    # Infer the sampling rate.
+    sfreqs = [int(np.rint(i / duration_epoch)) for i in n_samples]
+
+    # Copy the entire header
+    f.seek(0)
+    header = f.read(end_header)
+
+    info = {"version": version,
+            "end_header": end_header,
+            "n_epochs": n_epochs,
+            "duration_epoch": duration_epoch,
+            "n_channels": n_channels,
+            "n_samples": n_samples,
+            "sfreqs": sfreqs}
+
+    return info, header
+
+
+def _read_edfsignal(f, position):
+    """
+    Parameters
+    ----------
+    f : file
+        File openend in "ab" mode.
+    position : TYPE
+        Start of the signal in bytes.
+    """
+    # Skip to the start of the data records.
+    f.seek(position)
+    # Read all the data.
+    signal = np.fromfile(f, dtype=np.int16)    # one sample is encoded as two-byte integer (16 bits)
+
+    return signal
 
 
 def _read_edfchannel(signal, n_samples, chanidx):
@@ -231,7 +268,7 @@ def _read_edfchannel(signal, n_samples, chanidx):
     Parameters
     ----------
     signal : Numpy array
-        As returned by `_read_edfheader()`.
+        As returned by `_read_edfsignal()`.
     n_samples : list
         As returned by `_read_edfheader()`.
     chanidx : int
@@ -242,14 +279,29 @@ def _read_edfchannel(signal, n_samples, chanidx):
     chansignal : list
         The channel with index `chanidx` in `signal`.
     """
-    n_totalsamples = sum(n_samples)
     n_chansamples = n_samples[chanidx - 1]
-
-    # Select the data belonging to the requested channel.
+    # Get the starting index of the channel within an epoch.
     channel_offset = np.cumsum(n_samples)[chanidx - 1] - n_chansamples
-    channel_stride = n_totalsamples
+    # Get the number of samples to skip from epoch to epoch.
+    channel_stride = sum(n_samples)
     chansignal = []
+    # Skip from epoch to epoch and read the signal belonging to the channel.
     for i in np.arange(channel_offset, signal.size, channel_stride):
         chansignal.append(signal[i:i + n_chansamples])
 
-    return chansignal
+    return np.ravel(chansignal)
+
+
+def _padtrim(entry, n_bytes):
+    """
+    Pad or trim an EDF header field entry to n_bytes bytes.
+    """
+    entry = str(entry)
+    n_bytes -= len(entry)
+    if n_bytes >= 0:
+        # Pad the input to the requested length.
+        entry = entry + " " * n_bytes
+    else:
+        # Trim the input to the specified length-
+        entry = entry[0:n_bytes]
+    return entry.encode()
