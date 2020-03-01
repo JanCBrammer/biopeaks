@@ -14,8 +14,8 @@ If you would manually test a certain flow of your app in a browser, such as
 registering an account, you could make that into a functional test"
 
 I won't use a dedicated test framework, but rather implement a test version of
-the qt application in which I simulate user interaction by directly interacting
-with the controller's methods (i.e. the tests won't simulate interaction with
+the GUI in which I simulate user interaction by directly interacting
+with the controller methods (i.e. the tests won't simulate interaction with
 the view, as would be the case in a framework like pytest-qt). I don't use
 pytest-qt since it doesn't offer (straightforward) interactions with nested
 menus. This approach results in a number of hacks, which isn't pretty but it
@@ -84,8 +84,9 @@ class Tests:
 
 
     def single_file(self, modality, sigchan, markerchan, mode, sigfnameorig,
-                    sigfnameseg, peakfname, statsfname, siglen, peaksum,
-                    segment, avgperiod, avgrate, avgtidalamp=None):
+                    sigfnameseg, peakfname, statsfname, siglen, siglenseg,
+                    markerlen, markerlenseg, peaksum, segment, avgperiod,
+                    avgrate, avgtidalamp=None):
 
         # 1. set options
         ################
@@ -102,7 +103,8 @@ class Tests:
         QTest.qWait(2000)
         assert np.size(self._model.signal) == siglen, 'failed to load signal'
         print('loaded signal successfully')
-        assert np.size(self._model.marker) == siglen, 'failed to load marker'
+        assert np.size(self._model.marker) == markerlen, 'failed to load marker'
+        # print(np.size(self._model.signal), np.size(self._model.marker))
         print('loaded marker successfully')
 
         # 3. segment signal
@@ -113,9 +115,12 @@ class Tests:
         # prune signal to segment
         self._controller.segment_signal()
         self.wait_for_signal(self._model.progress_changed, 1)
-        siglenseg = int((segment[1] - segment[0]) * self._model.sfreq)
-        assert np.size(self._model.signal) == siglenseg, \
-                'failed to load signal'
+        seg = int(np.rint((segment[1] - segment[0]) * self._model.sfreq))
+        assert np.size(self._model.signal) == seg, \
+                'failed to segment signal'
+        seg = int(np.rint((segment[1] - segment[0]) * self._model.sfreqmarker))
+        assert np.size(self._model.marker) == seg, \
+                'failed to segment marker'
         print('segmented signal successfully')
 
         # 4. save segmented signal
@@ -134,6 +139,7 @@ class Tests:
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
         assert sum(self._model.peaks) == peaksum, 'failed to find peaks'
+        # print(sum(self._model.peaks))
         print('found peaks successfully')
 
         # 6. edit peaks
@@ -158,9 +164,9 @@ class Tests:
         self._controller.edit_peaks(mock_key_event)
         # note that edit_peaks places the peak in the middle of the plateau in
         # case of a flat peak, hence discrepancies of a few msecs can arise;
-        # set tolerance for deviation of re-inserted peak to 10 msec
-        assert abs(self._model.peaks[0] / self._model.sfreq -
-                    demopeak) <= 0.015, 'failed to re-insert first peak'
+        # set tolerance for deviation of re-inserted peak to 25 msec
+        assert abs(self._model.peaks[0] /
+                   self._model.sfreq - demopeak) <= 0.025, 'failed to re-insert first peak'
         print('re-inserted first peaks successfully')
 
         # 7. save peaks
@@ -179,8 +185,11 @@ class Tests:
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
         assert np.size(self._model.signal) == siglenseg, \
-                'failed to load signal'
+                'failed to re-load signal'
         print('re-loaded signal successfully')
+        assert np.size(self._model.marker) == markerlenseg, \
+                'failed to re-load signal'
+        print('re-loaded marker successfully')
 
         # 9. load peaks found for segmented signal
         ###########################################
@@ -193,6 +202,7 @@ class Tests:
         # way extrema are added and deleted in controller.edit_peaks().
         assert np.allclose(sum(self._model.peaks), peaksum, atol=10), \
             'failed to re-load peaks'
+        # print(sum(self._model.peaks))
         print('re-loaded peaks successfully')
 
         # 10. calculate stats
@@ -203,13 +213,16 @@ class Tests:
         QTest.qWait(2000)
         assert np.around(np.mean(self._model.periodintp), 4) == avgperiod, \
                 'failed to calculate period'
+        # print(np.around(np.mean(self._model.periodintp), 4))
         print('calculated period successfully')
         assert np.around(np.mean(self._model.rateintp), 4) == avgrate, \
                 'failed to calculate rate'
+        # print(np.around(np.mean(self._model.rateintp), 4))
         print('calculated rate successfully')
         if modality == "RESP":
             assert np.around(np.mean(self._model.tidalampintp), 4) == avgtidalamp, \
                     'failed to calculate tidal amplitude'
+            # print(np.around(np.mean(self._model.tidalampintp), 4))
             print('calculated tidal amplitude successfully')
 
         # 11. save stats
@@ -231,6 +244,7 @@ class Tests:
         if modality == "RESP":
             assert np.around(stats["tidalamp"].mean(), 4) == avgtidalamp, \
                 "failed to save tidalamplitude}"
+            pass
         print('saved statistics successfully')
 
         # clean-up in case consecutive test are executed
@@ -343,40 +357,83 @@ def runner():
     datapath = os.path.join(THIS_DIR, "testdata")
     os.chdir(datapath)
 
-    # single file with ECG data
+    # single file with OpenSignals ECG data,
     testapp._tests.single_file(modality='ECG',
                                 sigchan='A3',
                                 markerchan='I1',
                                 mode='single file',
-                                sigfnameorig='testdata.txt',
+                                sigfnameorig='OSmontage0J.txt',
                                 sigfnameseg='testdatasegmented.txt',
                                 peakfname='testdata_segmented_peaks.csv',
                                 statsfname='testdata_segmented_stats.csv',
                                 siglen=5100000,
+                                siglenseg=100000,
+                                markerlen=5100000,
+                                markerlenseg=100000,
                                 peaksum=4572190,
                                 avgperiod=1.0921,
                                 avgrate=55.1027,
                                 segment=[760, 860])
 
-    # single file with breathing data
+    # single file with artificial EDF ECG data,
+    testapp._tests.single_file(modality='ECG',
+                                sigchan='A3',
+                                markerchan='A1',
+                                mode='single file',
+                                sigfnameorig='EDFmontage0.edf',
+                                sigfnameseg='testdatasegmented.edf',
+                                peakfname='testdata_segmented_peaks.csv',
+                                statsfname='testdata_segmented_stats.csv',
+                                siglen=180000,
+                                siglenseg=14000,
+                                markerlen=180000,
+                                markerlenseg=14000,
+                                peaksum=1228440,
+                                avgperiod=0.4000,
+                                avgrate=150.0000,
+                                segment=[11.51, 81.7])
+
+    # single file with OpenSignals breathing data
     testapp._tests.single_file(modality='RESP',
                                 sigchan='A2',
                                 markerchan='I1',
                                 mode='single file',
-                                sigfnameorig='testdata.txt',
+                                sigfnameorig='OSmontage0J.txt',
                                 sigfnameseg='testdata_segmented.txt',
                                 peakfname='testdata_segmented_peaks.csv',
                                 statsfname='testdata_segmented_stats.csv',
                                 siglen=5100000,
+                                siglenseg=200000,
+                                markerlen=5100000,
+                                markerlenseg=200000,
                                 peaksum=13109234,
                                 avgperiod=3.3236,
                                 avgrate=19.4375,
                                 avgtidalamp=131.1297,
                                 segment=[3200, 3400])
 
-    # batch processing with ECG data
-    sigfiles = ['montage1A.txt', 'montage1J.txt', 'montage2A.txt',
-                'montage2J.txt', 'montage3A.txt', 'montage3J.txt']
+    # single file with artificial EDF breathing data
+    testapp._tests.single_file(modality='RESP',
+                                sigchan='A5',
+                                markerchan='A1',
+                                mode='single file',
+                                sigfnameorig='EDFmontage0.edf',
+                                sigfnameseg='testdata_segmented.edf',
+                                peakfname='testdata_segmented_peaks.csv',
+                                statsfname='testdata_segmented_stats.csv',
+                                siglen=45000,
+                                siglenseg=3800,
+                                markerlen=180000,
+                                markerlenseg=15200,
+                                peaksum=288034,
+                                avgperiod=1.0002,
+                                avgrate=59.9865,
+                                avgtidalamp=16350.0000,
+                                segment=[602.6, 679.26])
+
+    # batch processing with OpenSignals ECG data
+    sigfiles = ['OSmontage1A.txt', 'OSmontage1J.txt', 'OSmontage2A.txt',
+                'OSmontage2J.txt', 'OSmontage3A.txt', 'OSmontage3J.txt']
     peaksums = [3808205, 3412337, 2643186, 3511241, 3611836, 3457932]
     stats = [(0.7946, 76.0995), (0.7285, 83.1341), (0.7914, 76.5469),
               (0.7418, 81.5011), (0.7856, 76.9153), (0.7236, 83.6030)]

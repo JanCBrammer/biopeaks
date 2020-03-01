@@ -64,11 +64,12 @@ def read_opensignals(rpath, channel, channeltype):
 
     elif channeltype == "marker":
         output["signal"] = np.ravel(signal)
+        output["sfreq"] = sfreq
 
     return output
 
 
-def write_opensignals(rpath, wpath, segment=None):
+def write_opensignals(rpath, wpath, segment):
     """
     segment : list
     Start and end of segments in samples.
@@ -80,11 +81,10 @@ def write_opensignals(rpath, wpath, segment=None):
             header.append(line)
     # Get the data.
     data = pd.read_csv(rpath, delimiter='\t', header=None, comment='#')
-    # If the signal has been segmented apply segmentation to all channels.
-    if segment is not None:
-        data = data.iloc[segment[0]:segment[1], :]
+    # Apply segmentation to all channels.
+    data = data.iloc[segment[0]:segment[1], :]
 
-    # Write header and (segmented) data to the new file.
+    # Write header and segmented data to the new file.
     with open(wpath, "w", newline='') as newfile:
         for line in header:
             newfile.write(line)
@@ -136,21 +136,17 @@ def read_edf(rpath, channel, channeltype):
     return output
 
 
-def write_edf(rpath, wpath, segment=None):
+def write_edf(rpath, wpath, segment):
     """
     segment : list
     Start and end of segments in seconds.
     """
     status = False
-    # If the data has been segmented, replace the removed parts of the data
-    # with NaNs, since the data cannot be cut to sample precision because
-    # epochs cannot be of variable duration.
+
     with open(rpath, "rb") as f:
         info, header = _read_edfheader(f)
         signal = _read_edfsignal(f, info["end_header"])
 
-    if segment is None:
-        return
     # If the segment is shorter than the original epoch duration, abort the
     # writing process.
     duration_segment = segment[1] - segment[0]
@@ -185,7 +181,7 @@ def write_edf(rpath, wpath, segment=None):
         # Update version.
         f.seek(0)
         f.write(_padtrim(version, 8))
-        # Update number of epochs:
+        # Update number of epochs.
         f.seek(236)
         f.write(_padtrim(n_epochs, 8))
 
@@ -231,7 +227,7 @@ def _read_edfheader(f):
     # Infer the sampling rate.
     sfreqs = [int(np.rint(i / duration_epoch)) for i in n_samples]
 
-    # Copy the entire header
+    # Copy the entire header.
     f.seek(0)
     header = f.read(end_header)
 
@@ -246,17 +242,17 @@ def _read_edfheader(f):
     return info, header
 
 
-def _read_edfsignal(f, position):
+def _read_edfsignal(f, startsignal):
     """
     Parameters
     ----------
     f : file
         File openend in "ab" mode.
-    position : TYPE
+    startsignal : TYPE
         Start of the signal in bytes.
     """
     # Skip to the start of the data records.
-    f.seek(position)
+    f.seek(startsignal)
     # Read all the data.
     signal = np.fromfile(f, dtype=np.int16)    # one sample is encoded as two-byte integer (16 bits)
 

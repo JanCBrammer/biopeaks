@@ -2,5 +2,6 @@
 <qresource>
     <file alias="python_icon.png">biopeaks/images/python_icon.png</file>
     <file alias="mouse_icon.png">biopeaks/images/mouse_icon.png</file>
+    <file alias="logo.png">biopeaks/images/logo.png</file>
 </qresource>
 </RCC>

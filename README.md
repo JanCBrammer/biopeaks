@@ -2,11 +2,11 @@
 
 # 1. General Information
 
-`biopeaks` is a graphical user interface for ECG and breathing signals. It processes
-these biosignals semi-automatically with sensible defaults and features the following
+`biopeaks` is a graphical user interface for electrocardiogram (ECG) and breathing biosignals.
+It processes these biosignals semi-automatically with sensible defaults and features the following
 functionality:
 
-* processing of open biosignal formats [EDF](https://en.wikipedia.org/wiki/European_Data_Format)
+* processing of the open biosignal formats [EDF](https://en.wikipedia.org/wiki/European_Data_Format)
 as well as [OpenSignals](https://bitalino.com/en/software)
 * biosignal visualization
 * biosignal segmentation
@@ -17,7 +17,7 @@ peaks in breathing signals)
 * manual editing of extrema (useful in case of poor biosignal quality)
 * calculation of instantaneous (heart- or breathing-) rate and period, as well as
 breathing amplitude
-* fully automatic batch processing
+* fully automated batch processing
 
 
 # 2. User Guide
@@ -34,9 +34,8 @@ aren't sure if you have Python on your computer start by setting up Python.
 Go to https://www.anaconda.com/distribution/ and install the latest 
 distribution for your operating system (make sure to choose "Python 3.7 version"
 or greater).
-Follow the [installation instructions](https://docs.anaconda.com/anaconda/install/)
-in case you're unsure about something. Once you've installed Anaconda (this can
-take a while), open an
+Follow these [instructions](https://docs.anaconda.com/anaconda/install/)
+in case you're unsure about the installation. Once you've installed Anaconda, open an
 [Anaconda Prompt](https://docs.anaconda.com/anaconda/user-guide/getting-started/)
 and type
 
@@ -104,10 +103,12 @@ that marks interesting events such as the onset of an experimental condition,
 button presses etc.. You can use the _marker channel_ to display any other
 channel alongside your _biosignal channel_. Once these options are selected,
 you can load the biosignal: **menubar** -> **_biosignal_** -> _load_. A
-dialog will let you select the file containing the biosignal. If the biosignal
+dialog will let you select the file containing the biosignal. The file format
+(EDF or OpenSignals) is detected automatically. If the biosignal
 has been loaded successfully it is displayed in the upper **datadisplay**. If
 you selected a _marker channel_, the markers will be displayed in the middle
-**datadisplay**.
+**datadisplay**. The current file name is always displayed in the lower right
+corner of the interface.
 
 ![biosignal](biopeaks/images/screenshot_biosignal10.png)
 
@@ -122,7 +123,7 @@ the respective fields, or with the mouse. For the latter option, first click on
 the mouse icon in the respective field and then left-click anywhere on the
 upper **datadisplay** to select a time point. To see which time point is
 currently under the mouse cursor have a look at the x-coordinate
-displayed in the lower right corner of the interface (displayed when you hover 
+displayed in the lower right corner of the **datadisplay** (displayed when you hover 
 the mouse over the upper **datadisplay**).
 If you click **_preview segment_**
 the segment will be displayed as a shaded region in the upper **datadisplay**
@@ -137,12 +138,13 @@ segment_**. This also closes the **segmentdialog**. Alternatively, the
 **segmentdialog** can be closed any time by clicking **_abort segmentation_**.
 Clicking **_abort segmentation_** discards any values that might have been
 selected. You can segment the biosignal at any time. Other data (peaks,
-statistics) will be also be segmented if they are already computed.
+statistics) will be also be segmented if they are already computed. Note that
+the selected segment must have a minimum duration of five seconds.
 
 ### save biosignal
 **menubar** -> **_biosignal_** -> _save_ opens a file dialog that lets you
 select a directory and file name for saving the biosignal.
-Saving the biosignal can be useful after segmentation. Note that the file is
+Note that saving the biosignal is only possible after segmentation. The file is
 saved in its original format containing all channels.
 
 ### find peaks
@@ -155,8 +157,8 @@ biosignal. The peaks appear as dots displayed on top of the biosignal.
 **menubar** -> **_peaks_** -> _save_ opens a file dialog that lets you select a
 directory and file name for saving the peaks in a CSV file. The format of the
 file depends on the _modality_. For ECG, `biopeaks` saves a column containing
-the occurences of R-peaks in seconds. The first element contains the header
-"peaks". For breathing, `biopeaks` saves two columns containing the occurences
+the occurrences of R-peaks in seconds. The first element contains the header
+"peaks". For breathing, `biopeaks` saves two columns containing the occurrences
 of inhalation peaks and exhalation troughs respectively in seconds. The first
 row contains the header "peaks, troughs". Note that if there are less peaks
 than troughs or vice versa, the column with less elements will be padded with
@@ -198,13 +200,13 @@ catch these errors by visually inspecting the peak placement. If you spot
 errors in peak placement you can correct those manually. To do so make sure to
 select **optionspanel** -> **peak options** -> _edit peaks_. Now click on the
 upper **datadisplay** once to enable peak editing. To delete a peak place the 
-mouse cursor on top of it (or in it's vicinity) and press "d". To add a peak,
+mouse cursor in it's vicinity and press "d". To add a peak,
 press "a". Editing peaks is most convenient if you zoom in on the biosignal
 region that you want to edit using the [**displaytools**](#displaytools).
 The statistics
 can be a useful guide when editing peaks. Isolated, unusually large or small
 values in period or rate can indicate misplaced peaks. If the _modality_ is
-ECG, peaks are edited automatically during the
+ECG, peaks are corrected automatically during the
 [calculation of the statistics](#calculate-statistics).
 However, this does not guarantee that all errors in peak placement will
 be caught. Always check for errors manually! Note, that when editing breathing
@@ -238,8 +240,8 @@ Finally, a dialog will ask you to select a directory for saving the statistics
 (if you chose any statistics for saving). The statistics will be saved to a
 file
 with the same name as the biosignal file, with a "_stats" extension. Once all
-dialogs are closed, `biopeaks` loops over all files in the batch and performs
-the following actions for each of them: loading the biosignal, identifying the
+dialogs are closed, `biopeaks` carries out the following actions for each file
+in the batch: loading the biosignal, identifying the
 peaks, calculating the statistics and finally saving the desired data (peaks
 and/or statistics). Note that nothing will be shown in the **datadisplay**
 while the batch is processed. You can keep track of the progress by looking
@@ -250,20 +252,20 @@ processing.
 ### displaytools
 The **displaytools** allow you to interact with the biosignal. Have a look
 [here](https://matplotlib.org/3.1.1/users/navigation_toolbar.html) for a
-detailled description of how to use them.
+detailed description of how to use them.
 
 
 ## Getting started
-The following workflow is meant as an introduction to the interface. Many other
-workflows are possible and might make more sense given your 
+The following work-flow is meant as an introduction to the interface. Many other
+work flows are possible and might make more sense given your 
 requirements. Note that `biopeaks` works with the OpenSignals text file format
 as well as EDF files. However, you can analyze any data as long as you format the
 data according to either the [OpenSignals convention](http://bitalino.com/datasheets/OpenSignals_File_Formats.pdf)
 or the [EDF convention](https://www.edfplus.info/specs/index.html). The functions
-used in the workflow are described in detail in the [functionality section](#Functionality).
+used in the examplary work-flow are described in detail in the [functionality section](#Functionality).
 
 ### examplary workflow on a single file
-Time to look at some biosignals! Before you start any workflow, set the desired
+Time to look at some biosignals! Before you start any work-flow, set the desired
 options in the **optionspanel**. Make sure that the **_processing mode_** is
 set to _single file_ and [load the biosignal](#load-biosignal) to visually
 check its quality using the [**displaytools**](#displaytools). Next, if you
@@ -292,9 +294,7 @@ or using them for your own computations.
 
 
 # 3. Contributor Guide
-Please report any bug by [opening an issue](https://help.github.com/en/github/managing-your-work-on-github/creating-an-issue).
-If you
-have a question please also open an issue. 
+Please report any bug or question by [opening an issue](https://help.github.com/en/github/managing-your-work-on-github/creating-an-issue).
 Pull requests for new features, improvements, and bug fixes are very welcome!
 
 The application is structured according to a variant of the
@@ -320,6 +320,25 @@ This will open an application, run a few tests on it and print the results to
 the Python console.
 
 # 5. Changelog
+
+### Version 1.1.5 (March 01, 2020)
++ enhancement: added support for [EDF files](https://en.wikipedia.org/wiki/European_Data_Format)
++ enhancement: `ecg.ecg_peaks()` now filters out power-line noise at 50Hz. This
+further increases the performance on the [Glasgow University Database (GUDB)](http://researchdata.gla.ac.uk/716/).
+Again, the GUBD has not been used to optimize `ecg.ecg_peaks()` in any way prior to
+the performance evaluation. The tolerance for peak detection was set to one
+sample.
+
+|condition|metric     |summary|version 1.0.2|version 1.0.3|version 1.1.5
+|:-------:|:---------:|:-----:|:-----------:|:-----------:|:-----------:
+|sitting  |precision  |mean   |.999         |.998         |.998
+|         |           |std    |.002         |.005         |.002
+|         |sensitivity|mean   |.996         |.996         |.998
+|         |           |std    |.008         |.004         |.004
+|handbike |precision  |mean   |.904         |.930         |.984
+|         |           |std    |.135         |.127         |.022
+|         |sensitivity|mean   |.789         |.857         |.984
+|         |           |std    |.281         |.247         |.025
 
 ### Version 1.0.5 (February 09, 2020)
 + enhancement: improved ECG artifact detection and correction

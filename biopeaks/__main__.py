@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jun  3 18:47:10 2019
-
-@author: John Doe
-"""
 
 import sys
 from PyQt5.QtWidgets import QApplication
@@ -18,14 +13,14 @@ class Application(QApplication):
         self._model = Model()
         self._controller = Controller(self._model)
         self._view = View(self._model, self._controller)
-        
-    
+
+
 def main():
     app = Application(sys.argv)
     app._view.show()
     sys.exit(app.exec_())
-    
+
 
 if __name__ == '__main__':
     main()
-    
+

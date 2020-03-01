@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Sep 21 16:13:35 2019
-
-@author: John Doe
-"""
 
 import numpy as np
 from scipy.stats import iqr
@@ -26,7 +21,7 @@ def threshold_normalization(data, alpha, window_half):
     else:
         data_pad = np.pad(data, wh, 'reflect')
         for i in np.arange(wh, wh + data.size):
-            th[i - wh] = alpha * (iqr(np.abs(data_pad[i - wh:i + wh])) / 2)     
+            th[i - wh] = alpha * (iqr(np.abs(data_pad[i - wh:i + wh])) / 2)
         # normalize data by threshold (remove padding)
         data_th = np.divide(data_pad[wh:wh + data.size], th)
     return data_th, th
@@ -63,5 +58,5 @@ def interp_stats(peaks, stats, nsamp):
     # rate
     samples = np.arange(0, nsamp)
     statsintp = f(samples)
-    
+
     return statsintp

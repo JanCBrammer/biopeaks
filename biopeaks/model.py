@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jun  3 18:47:12 2019
-
-@author: John Doe
-"""
 
 import numpy as np
 from os import path

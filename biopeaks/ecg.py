@@ -195,12 +195,14 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
 
         # If none of the two equations is true.
         # Check for long or short beats (based on Figure 2b).
-        if np.logical_or(np.abs(drrs[i]) > 1, np.abs(mrrs[i]) > 3):
-            # Long beat.
-            eq3 = np.logical_and(drrs[i] > 1, s22[i] < -1)
-            eq4 = np.abs(mrrs[i]) > 3
-            # Short beat.
-            eq5 = np.logical_and(drrs[i] < -1, s22[i] > 1)
+        if ~np.any([np.abs(drrs[i]) > 1, np.abs(mrrs[i]) > 3]):
+            continue
+
+        # Long beat.
+        eq3 = np.logical_and(drrs[i] > 1, s22[i] < -1)
+        eq4 = np.abs(mrrs[i]) > 3
+        # Short beat.
+        eq5 = np.logical_and(drrs[i] < -1, s22[i] > 1)
 
         if ~np.any([eq3, eq4, eq5]):
             # If none of the three equations is true: normal beat.
@@ -329,8 +331,12 @@ def _correct_artifacts(artifacts, peaks, sfreq):
     # Add missing peaks.
     if missed_idcs:
         # Calculate the position(s) of new beat(s). Make sure to not generate
-        # negative indices.
-        prev_peaks = peaks[[i - 1 for i in missed_idcs if i >= 1]]
+        # negative indices. prev_peaks and next_peaks must have the same
+        # number of elements.
+        missed_idcs = np.array(missed_idcs)
+        valid_idcs = np.logical_and(missed_idcs > 1, missed_idcs < len(peaks))
+        missed_idcs = missed_idcs[valid_idcs]
+        prev_peaks = peaks[[i - 1 for i in missed_idcs]]
         next_peaks = peaks[missed_idcs]
         added_peaks = prev_peaks + (next_peaks - prev_peaks) / 2
         # Add the new peaks before the missed indices (see numpy docs).
@@ -345,9 +351,12 @@ def _correct_artifacts(artifacts, peaks, sfreq):
     if interp_idcs.size > 0:
         interp_idcs.sort(kind='mergesort')
         # Make sure to not generate negative indices, or indices that exceed
-        # the total number of peaks.
-        prev_peaks = peaks[[i - 1 for i in interp_idcs if i >= 1]]
-        next_peaks = peaks[[i + 1 for i in interp_idcs if i < len(peaks)]]
+        # the total number of peaks. prev_peaks and next_peaks must have the
+        # same number of elements.
+        valid_idcs = np.logical_and(interp_idcs > 1, interp_idcs < len(peaks))
+        interp_idcs = interp_idcs[valid_idcs]
+        prev_peaks = peaks[[i - 1 for i in interp_idcs]]
+        next_peaks = peaks[[i + 1 for i in interp_idcs]]
         peaks_interp = prev_peaks + (next_peaks - prev_peaks) / 2
         # Shift the R-peaks from the old to the new position.
         peaks = np.delete(peaks, interp_idcs)

@@ -357,18 +357,18 @@ class Controller(QObject):
     def save_signal(self):
         self._model.status = "Saving signal."
 
+        if self._model.segment is None:
+            self._model.status = "Error: Cannot save non-segmented file."
+            return
+
         if self._model.filetype == "OpenSignals":
-            if self._model.segment is not None:
-                begsamp = int(np.rint(self._model.segment[0] *
-                                      self._model.sfreq))
-                endsamp = int(np.rint(self._model.segment[1] *
-                                      self._model.sfreq))
-                write_opensignals(self._model.rpathsignal,
-                                  self._model.wpathsignal,
-                                  segment=[begsamp, endsamp])
-            else:
-                write_opensignals(self._model.rpathsignal,
-                                  self._model.wpathsignal)
+            begsamp = int(np.rint(self._model.segment[0] *
+                                  self._model.sfreq))
+            endsamp = int(np.rint(self._model.segment[1] *
+                                  self._model.sfreq))
+            write_opensignals(self._model.rpathsignal,
+                              self._model.wpathsignal,
+                              segment=[begsamp, endsamp])
 
         elif self._model.filetype == "EDF":
             status = write_edf(self._model.rpathsignal,
@@ -387,6 +387,7 @@ class Controller(QObject):
             peaks = peaks * self._model.sfreq
             # reshape to a format understood by plotting function
             # (ndarray of type int)
+            peaks = peaks.to_numpy()
             peaks = np.rint(peaks).astype(int)
             self._model.peaks = peaks
         elif dfpeaks.shape[1] == 2:
