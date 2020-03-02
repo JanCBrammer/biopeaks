@@ -92,6 +92,20 @@ look in the [functionality section](#Functionality) for details on these
 elements.
 
 ## Functionality
+
++ [load biosignal](#load-biosignal)
++ [segment biosignal](#segment-biosignal)
++ [save biosignal](#save-biosignal)
++ [find peaks](#find-peaks)
++ [save peaks](#save-peaks)
++ [load peaks](#load-peaks)
++ [edit peaks](#edit-peaks)
++ [calculate statistics](#calculate-statistics)
++ [save statistics](#save-statistics)
++ [batch processing](#batch-processing)
++ [display tools](#displaytools)
+
+
 ### load biosignal
 Before loading the biosignal, you need to select the modality of your biosignal
 in **optionspanel** -> **_processing options_** -> _modality_ (ECG for
@@ -216,10 +230,11 @@ the extrema. If you already calculated statistics, don't forget to calculate
 them again after peak editing.
 
 ### batch processing
-**WARNING:** There is no substitute for manually checking the biosignal's
-quality as well as the placement of the peaks. Manually checking and editing
-peak placement is the only way to guarantee sensible statistics. Only use
-batch processing if you are sure that the biosignal's quality is sufficient!
+> :warning: There is no substitute for manually checking the biosignal's
+> quality as well as the placement of the peaks. Manually checking and editing
+> peak placement is the only way to guarantee sensible statistics. Only use
+> batch processing if you are sure that the biosignal's quality is sufficient!
+> :warning:
 
 You can configure your batch processing in the **optionspanel**.
 To enable batch processing, select 
