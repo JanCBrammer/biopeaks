@@ -51,7 +51,9 @@ class Model(QObject):
 
     @peaks.setter
     def peaks(self, value):
-        self._peaks = value
+
+        if isinstance(value, np.ndarray) and value.size > 1:
+            self._peaks = value
         if value is not None and self.plotting:
             self.peaks_changed.emit(value)
 
