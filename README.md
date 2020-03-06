@@ -1,12 +1,12 @@
 ![logo](biopeaks/images/logo.png)
 
-1. [General Information](#General-Information)
-2. [Citation](#Citation)
-3. [User Guide](#User-Guide)
-4. [Contributer Guide](#Contributor-Guide)
-5. [Tests](#Tests)
-6. [Changelog](#Changelog)
-7. [Further Resources](#Further-Resources)
+1. [General Information](#1.-General-Information)
+2. [Citation](#2.-Citation)
+3. [User Guide](#3.-User-Guide)
+4. [Contributer Guide](#4.-Contributor-Guide)
+5. [Tests](#5.-Tests)
+6. [Changelog](#6.-Changelog)
+7. [Further Resources](#7.-Further-Resources)
 
 
 # 1. General Information
@@ -352,7 +352,7 @@ the Python console.
 # 6. Changelog
 
 ### Version 1.1.5 (March 01, 2020)
-+ enhancement: added support for [EDF files](https://en.wikipedia.org/wiki/European_Data_Format)
++ enhancement: added support for [EDF files](https://en.wikipedia.org/wiki/European_Data_Format).
 + enhancement: `ecg.ecg_peaks()` now filters out power-line noise at 50Hz. This
 further increases the performance on the [Glasgow University Database (GUDB)](http://researchdata.gla.ac.uk/716/).
 Again, the GUBD has not been used to optimize `ecg.ecg_peaks()` in any way prior to
@@ -371,11 +371,11 @@ sample.
 |         |           |std    |.281         |.247         |.025
 
 ### Version 1.0.5 (February 09, 2020)
-+ enhancement: improved ECG artifact detection and correction
++ enhancement: improved ECG artifact detection and correction.
 
 ### Version 1.0.4 (January 08, 2020)
-+ bugfix: `controller.edit_peaks()` works properly again
-+ enhancement: moved the modality menu to processing options
++ bugfix: `controller.edit_peaks()` works properly again.
++ enhancement: moved the modality menu to processing options.
 
 ### Version 1.0.3 (December 26, 2019)
 + enhancement: improved sensitivity of `ecg.ecg_peaks()` without decreasing
@@ -399,12 +399,12 @@ sample.
 
 ### Version 1.0.2 (December 1, 2019)
 + enhancement: `resp.resp_extrema()` is now based on zerocrossings and makes
-fewer assumptions about breathing rate
+fewer assumptions about breathing rate.
 
 ### Version 1.0.1 (November 28, 2019)
 + bugfix: `controller.save_signal()` now preserves the header if the data are
 saved to the same location (i.e., if `model.rpathsignal` and `model.wpathsignal` are
-identical)
+identical).
 
 
 # 7. Further Resources
