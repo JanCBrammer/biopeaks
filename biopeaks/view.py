@@ -402,7 +402,8 @@ class View(QMainWindow):
         else:
             self.line20 = self.ax20.plot(self._model.sec, value)
         self.ax20.set_ylim(bottom=min(value), top=max(value))
-        self.ax20.set_ylabel('period')
+        self.ax20.set_title('period', pad=0, fontweight='heavy')
+        self.ax20.grid(True, axis="y")
         self.navitools.update()
         self.canvas2.draw()
 #        print("plot_period listening")
@@ -417,7 +418,8 @@ class View(QMainWindow):
         else:
             self.line21 = self.ax21.plot(self._model.sec, value)
         self.ax21.set_ylim(bottom=min(value), top=max(value))
-        self.ax21.set_ylabel('rate')
+        self.ax21.set_title('rate', pad=0, fontweight='heavy')
+        self.ax21.grid(True, axis="y")
         self.navitools.update()
         self.canvas2.draw()
 #        print("plot_rate listening")
@@ -432,7 +434,8 @@ class View(QMainWindow):
         else:
             self.line22 = self.ax22.plot(self._model.sec, value)
         self.ax22.set_ylim(bottom=min(value), top=max(value))
-        self.ax22.set_ylabel('amplitude')
+        self.ax22.set_title('amplitude', pad=0, fontweight='heavy')
+        self.ax22.grid(True, axis="y")
         self.navitools.update()
         self.canvas2.draw()
 #        print("plot_tidalamp listening")
@@ -528,8 +531,12 @@ class View(QMainWindow):
         if event == "ECG":
             self.tidalampcheckbox.setEnabled(False)
             self.tidalampcheckbox.setChecked(False)
+            self.ax22.set_visible(False)
+            self.canvas2.draw()
         elif event == "RESP":
             self.tidalampcheckbox.setEnabled(True)
+            self.ax22.set_visible(True)
+            self.canvas2.draw()
         elif event == "multiple files":
             self.editcheckbox.setEnabled(False)
             self.editcheckbox.setChecked(False)
