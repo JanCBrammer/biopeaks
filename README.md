@@ -1,5 +1,14 @@
 ![logo](biopeaks/images/logo.png)
 
+1. [General Information](#General-Information)
+2. [Citation](#Citation)
+3. [User Guide](#User-Guide)
+4. [Contributer Guide](#Contributor-Guide)
+5. [Tests](#Tests)
+6. [Changelog](#Changelog)
+7. [Further Resources](#Further-Resources)
+
+
 # 1. General Information
 
 `biopeaks` is a graphical user interface for electrocardiogram (ECG) and breathing biosignals.
