@@ -19,8 +19,14 @@ peaks in breathing signals)
 breathing amplitude
 * fully automated batch processing
 
+# 2. Citation
 
-# 2. User Guide
+[![DOI](https://www.zenodo.org/badge/172897525.svg)](https://www.zenodo.org/badge/latestdoi/172897525)
+
+You can cite `biopeaks` as 
+> Jan C. Brammer. (2020, March 6). JanCBrammer/biopeaks: Version 1.1.5 (Version v1.1.5). Zenodo. http://doi.org/10.5281/zenodo.3698562
+
+# 3. User Guide
 
 ## Installation
 Note that currently, `biopeaks` has been built and tested on Windows. It should
@@ -308,7 +314,7 @@ Also, save the peaks if you're planning on [reloading](#load-peaks) them later
 or using them for your own computations.
 
 
-# 3. Contributor Guide
+# 4. Contributor Guide
 Please report any bug or question by [opening an issue](https://help.github.com/en/github/managing-your-work-on-github/creating-an-issue).
 Pull requests for new features, improvements, and bug fixes are very welcome!
 
@@ -321,7 +327,7 @@ controller class, whereas the model has no reference to any of the other
 components of the architecture (i.e., the model is agnostic to the view and
 controller).
 
-# 4. Tests
+# 5. Tests
 The test data have been recorded with\
 software: opensignals v2.0.0, 20190805\
 hardware: BITalino (r)evolution (firmware 1281)
@@ -334,7 +340,7 @@ frontend_test.runner()
 This will open an application, run a few tests on it and print the results to
 the Python console.
 
-# 5. Changelog
+# 6. Changelog
 
 ### Version 1.1.5 (March 01, 2020)
 + enhancement: added support for [EDF files](https://en.wikipedia.org/wiki/European_Data_Format)
@@ -392,5 +398,5 @@ saved to the same location (i.e., if `model.rpathsignal` and `model.wpathsignal`
 identical)
 
 
-# 6. Further Resources
+# 7. Further Resources
 
