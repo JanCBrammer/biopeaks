@@ -1,15 +1,15 @@
 ![logo](biopeaks/images/logo.png)
 
-1. [General Information](#1.-General-Information)
-2. [Citation](#2.-Citation)
-3. [User Guide](#3.-User-Guide)
-4. [Contributer Guide](#4.-Contributor-Guide)
-5. [Tests](#5.-Tests)
-6. [Changelog](#6.-Changelog)
-7. [Further Resources](#7.-Further-Resources)
++ [General Information](#general-information)
++ [Citation](#citation)
++ [User Guide](#user-guide)
++ [Contributer Guide](#contributor-guide)
++ [Tests](#tests)
++ [Changelog](#changelog)
++ [Further Resources](#further-resources)
 
 
-# 1. General Information
+# General Information
 
 `biopeaks` is a graphical user interface for electrocardiogram (ECG) and breathing biosignals.
 It processes these biosignals semi-automatically with sensible defaults and features the following
@@ -28,14 +28,15 @@ peaks in breathing signals)
 breathing amplitude
 * fully automated batch processing
 
-# 2. Citation
+
+# Citation
 
 [![DOI](https://www.zenodo.org/badge/172897525.svg)](https://www.zenodo.org/badge/latestdoi/172897525)
 
 You can cite `biopeaks` as 
 > Jan C. Brammer. (2020, March 6). JanCBrammer/biopeaks: Version 1.1.5 (Version v1.1.5). Zenodo. http://doi.org/10.5281/zenodo.3698562
 
-# 3. User Guide
+# User Guide
 
 ## Installation
 Note that currently, `biopeaks` has been built and tested on Windows. It should
@@ -103,7 +104,7 @@ segmenters
 between them up or down. Beneath the **optionspanel**, in the lower left
 corner, you find the **displaytools**. These allow you to interact with the
 biosignal. Have a
-look in the [functionality section](#Functionality) for details on these
+look in the [functionality section](#functionality) for details on these
 elements.
 
 ## Functionality
@@ -292,7 +293,7 @@ requirements. Note that `biopeaks` works with the OpenSignals text file format
 as well as EDF files. However, you can analyze any data as long as you format the
 data according to either the [OpenSignals convention](http://bitalino.com/datasheets/OpenSignals_File_Formats.pdf)
 or the [EDF convention](https://www.edfplus.info/specs/index.html). The functions
-used in the examplary work-flow are described in detail in the [functionality section](#Functionality).
+used in the examplary work-flow are described in detail in the [functionality section](#functionality).
 
 ### examplary workflow on a single file
 Time to look at some biosignals! Before you start any work-flow, set the desired
@@ -323,7 +324,7 @@ Also, save the peaks if you're planning on [reloading](#load-peaks) them later
 or using them for your own computations.
 
 
-# 4. Contributor Guide
+# Contributor Guide
 Please report any bug or question by [opening an issue](https://help.github.com/en/github/managing-your-work-on-github/creating-an-issue).
 Pull requests for new features, improvements, and bug fixes are very welcome!
 
@@ -336,7 +337,7 @@ controller class, whereas the model has no reference to any of the other
 components of the architecture (i.e., the model is agnostic to the view and
 controller).
 
-# 5. Tests
+# Tests
 The test data have been recorded with\
 software: opensignals v2.0.0, 20190805\
 hardware: BITalino (r)evolution (firmware 1281)
@@ -349,7 +350,7 @@ frontend_test.runner()
 This will open an application, run a few tests on it and print the results to
 the Python console.
 
-# 6. Changelog
+# Changelog
 
 ### Version 1.1.5 (March 01, 2020)
 + enhancement: added support for [EDF files](https://en.wikipedia.org/wiki/European_Data_Format).
@@ -407,7 +408,7 @@ saved to the same location (i.e., if `model.rpathsignal` and `model.wpathsignal`
 identical).
 
 
-# 7. Further Resources
+# Further Resources
 Check out these free alternatives:
 + https://www.medisig.com/signalplant/
 + https://physiodatatoolbox.leidenuniv.nl/
