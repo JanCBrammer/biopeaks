@@ -15,26 +15,26 @@
 It processes these biosignals semi-automatically with sensible defaults and features the following
 functionality:
 
-* processing of the open biosignal formats [EDF](https://en.wikipedia.org/wiki/European_Data_Format)
+* works with files in the open biosignal formats [EDF](https://en.wikipedia.org/wiki/European_Data_Format)
 as well as [OpenSignals](https://bitalino.com/en/software)
-* biosignal visualization
+* interactive biosignal visualization
 * biosignal segmentation
-* extrema detection (R-peaks in ECG, exhalation troughs and inhalation
+* automatic extrema detection (R-peaks in ECG, exhalation troughs and inhalation
 peaks in breathing signals)
-* state-of-the-art [automatic artifact correction](https://www.tandfonline.com/doi/full/10.1080/03091902.2019.1640306)
+* automatic state-of-the-art [artifact correction](https://www.tandfonline.com/doi/full/10.1080/03091902.2019.1640306)
  for ECG extrema
 * manual editing of extrema (useful in case of poor biosignal quality)
 * calculation of instantaneous (heart- or breathing-) rate and period, as well as
 breathing amplitude
-* fully automated batch processing
+* batch processing
 
 
 # Citation
+Click on the badge below to cite `biopeaks` in a format of your choice.
+
 
 [![DOI](https://www.zenodo.org/badge/172897525.svg)](https://www.zenodo.org/badge/latestdoi/172897525)
 
-You can cite `biopeaks` as 
-> Jan C. Brammer. (2020, March 6). JanCBrammer/biopeaks: Version 1.1.5 (Version v1.1.5). Zenodo. http://doi.org/10.5281/zenodo.3698562
 
 # User Guide
 
@@ -338,9 +338,13 @@ components of the architecture (i.e., the model is agnostic to the view and
 controller).
 
 # Tests
-The test data have been recorded with\
+
+## Frontend
+The OpenSignals test data have been recorded with\
 software: opensignals v2.0.0, 20190805\
 hardware: BITalino (r)evolution (firmware 1281)
+
+The EDF test data have been downloaded from https://www.teuniz.net/edf_bdf_testfiles/
 
 The tests can be run from a Python console:
 ```
@@ -350,7 +354,25 @@ frontend_test.runner()
 This will open an application, run a few tests on it and print the results to
 the Python console.
 
+## Backend
+In order to validate the performance of the ECG peak detector `ecg.ecg_peaks()`,
+please download the [Glasgow University Database (GUDB)](http://researchdata.gla.ac.uk/716/).
+In addition you need to install the [wfdb](https://github.com/MIT-LCP/wfdb-python) package either with conda
+```
+conda install -c conda-forge wfdb
+```
+or pip.
+
+```
+pip install wfdb
+```
+
+You can then run the `benchmark_GUBD` script in the test folder.
+
 # Changelog
+
+### Version 1.1.6 (March 06, 2020)
++ enhancement: some small improvements of the statistics panel in **datadisplay**.
 
 ### Version 1.1.5 (March 01, 2020)
 + enhancement: added support for [EDF files](https://en.wikipedia.org/wiki/European_Data_Format).
