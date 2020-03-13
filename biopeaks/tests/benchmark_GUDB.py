@@ -9,7 +9,7 @@ from biopeaks.ecg import ecg_peaks
 from wfdb.processing import compare_annotations
 
 
-GUDB_dir = r"directory\containing\GUDB"
+GUDB_dir = r"directory\containing\GUDB\subjects"
 
 os.chdir(GUDB_dir)
 
@@ -26,6 +26,9 @@ sensitivity = []
 precision = []
 
 sfreq = 250
+tolerance = 1    # tolerance must be in samples for wfdb
+print(f"Setting tolerance for match between algorithmic and manual annotation"
+      f" to 1 sample, corresponding to {1 / sfreq} seconds at a sampling rate of {sfreq}.")
 
 for record, annotation in zip(records, annotations):
 
@@ -45,11 +48,7 @@ for record, annotation in zip(records, annotations):
 
     if algopeaks.size > 1:
 
-        # Tolerance for match between algorithmic and manual annotation (in
-        # sec): corresponds to one sample
-        tolerance = 1 / sfreq
-        comparitor = compare_annotations(manupeaks, algopeaks,
-                                         int(np.rint(tolerance * sfreq)))
+        comparitor = compare_annotations(manupeaks, algopeaks, tolerance)
         tp = comparitor.tp
         fp = comparitor.fp
         fn = comparitor.fn
