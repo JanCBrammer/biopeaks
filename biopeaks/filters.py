@@ -62,13 +62,18 @@ def butter_bandstop_filter(data, lowcut, highcut, fs, order=5):
     return y
 
 
+def moving_average(signal, window_size):
+    return np.convolve(signal, np.ones((window_size,)) / window_size,
+                       mode='same')
+
+
 def powerline_filter(data, sfreq):
-    """This is a way of smoothing out 50Hz power-line noise from the signal as
-    implemented in BioSPPy."""
+    """Smoothing out 50Hz power-line noise with a kernel the width of one
+    period of 50 Hz."""
     if sfreq >= 100:
-        b = np.ones(int(0.02 * sfreq)) / 50.
+        b = np.ones(int(sfreq / 50))
     else:
-        b = np.ones(2) / 50.
-    a = [1]
+        b = np.ones(2)
+    a = [len(b)]
     y = filtfilt(b, a, data, method="pad")
     return y

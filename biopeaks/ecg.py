@@ -4,9 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from scipy.signal import find_peaks, medfilt
-from .filters import butter_highpass_filter, powerline_filter
-from .analysis_utils import (moving_average, threshold_normalization,
-                             interp_stats, update_indices)
+from .filters import butter_highpass_filter, powerline_filter, moving_average
+from .analysis_utils import (threshold_normalization, interp_stats,
+                             update_indices)
 
 
 def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
