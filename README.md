@@ -3,7 +3,7 @@
 + [General Information](#general-information)
 + [Citation](#citation)
 + [User Guide](#user-guide)
-+ [Contributer Guide](#contributor-guide)
++ [Contributor Guide](#contributor-guide)
 + [Tests](#tests)
 + [Changelog](#changelog)
 + [Further Resources](#further-resources)
