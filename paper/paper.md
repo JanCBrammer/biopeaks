@@ -10,7 +10,7 @@ tags:
   - feature extraction
 authors:
   - name: Jan C. Brammer
-    orcid:
+    orcid: 0000-0002-7664-3753
     affiliation: 1
 affiliations:
   - name: Behavioral Science Institute, Radboud University Nijmegen, Nijmegen, The Netherlands
