@@ -46,13 +46,13 @@ Finally, based on the extrema, the analyst can extract features from the biosign
 amplitude differences between the extrema. For example, have a look at Fig. 1 through 3, which illustrate the extraction of
 heart period, breathing period, and breathing (inhalation) amplitude respectively.
 
-![figure1](figure1)
+![figure1](Figure_1.png)
 *Figure 1*: Extraction of heart period from R-peaks in an ECG signal
 
-![figure2](figure2)
+![figure2](Figure_2.png)
 *Figure 2*: Extraction of breathing period from inhalation peaks in a breathing signal
 
-![figure3](figure3)
+![figure3](Figure_3.png)
 *Figure 3*: Extraction of inhalation amplitude from breathing extrema in a breathing signal
 
 
