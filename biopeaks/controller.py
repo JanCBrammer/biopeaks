@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .ecg import ecg_peaks, ecg_period
+from .heart import ecg_peaks, ppg_peaks, heart_period
 from .resp import resp_extrema, resp_stats
 from .io_utils import read_opensignals, write_opensignals, read_edf, write_edf
 import os
@@ -13,8 +13,9 @@ getOpenFileName = QFileDialog.getOpenFileName
 getOpenFileNames = QFileDialog.getOpenFileNames
 getSaveFileName = QFileDialog.getSaveFileName
 getExistingDirectory = QFileDialog.getExistingDirectory
-peakfuncs = {'ECG': ecg_peaks,
-             'RESP': resp_extrema}
+peakfuncs = {"ECG": ecg_peaks,
+             "PPG": ppg_peaks,
+             "RESP": resp_extrema}
 
 
 # threading is implemented according to https://pythonguis.com/courses/
@@ -462,7 +463,7 @@ class Controller(QObject):
     def save_peaks(self):
         self._model.status = "Saving peaks."
         # save peaks in seconds
-        if self._model.modality == 'ECG':
+        if self._model.modality in ["ECG", "PPG"]:
             savearray = pd.DataFrame(self._model.peaks / self._model.sfreq)
             savearray.to_csv(self._model.wpathpeaks, index=False,
                              header=['peaks'])
@@ -506,12 +507,12 @@ class Controller(QObject):
         if (self._model.peaks is None) or (np.size(self._model.peaks) < 2):
             self._model.status = "Error: no peaks available."
             return
-        if self._model.modality == 'ECG':
+        if self._model.modality in ["ECG", "PPG"]:
             (self._model.peaks,
              self._model.periodintp,
-             self._model.rateintp) = ecg_period(peaks=self._model.peaks,
-                                                sfreq=self._model.sfreq,
-                                                nsamp=self._model.signal.size)
+             self._model.rateintp) = heart_period(peaks=self._model.peaks,
+                                                  sfreq=self._model.sfreq,
+                                                  nsamp=self._model.signal.size)
         elif self._model.modality == 'RESP':
             (self._model.periodintp,
              self._model.rateintp,

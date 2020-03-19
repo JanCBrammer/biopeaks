@@ -18,7 +18,7 @@ import biopeaks.resources    # noqa
 class CustomNavigationToolbar(NavigationToolbar):
     # only retain desired functionality of navitoolbar
     toolitems = [t for t in NavigationToolbar.toolitems if t[0] in
-                 ('Home', 'Pan', 'Zoom', 'Back', 'Forward')]
+                 ("Home", "Pan", "Zoom", "Back", "Forward")]
 
 
 class View(QMainWindow):
@@ -36,7 +36,7 @@ class View(QMainWindow):
         # define GUI layout and connect input widgets to external slots #
         #################################################################
 
-        self.setWindowTitle('biopeaks')
+        self.setWindowTitle("biopeaks")
         self.setGeometry(50, 50, 1750, 750)
         self.setWindowIcon(QIcon(":/python_icon.png"))
 
@@ -82,46 +82,46 @@ class View(QMainWindow):
         self.navitools = CustomNavigationToolbar(self.canvas0, self)
 
         # peak editing
-        self.editcheckbox = QCheckBox('edit peaks', self)
+        self.editcheckbox = QCheckBox("edit peaks", self)
         self.editcheckbox.stateChanged.connect(self._model.set_peakseditable)
 
         # peak saving batch
-        self.savecheckbox = QCheckBox('save peaks during batch processing',
+        self.savecheckbox = QCheckBox("save peaks during batch processing",
                                        self)
         self.savecheckbox.stateChanged.connect(self._model.set_savebatchpeaks)
 
         # selecting stats for saving
-        self.periodcheckbox = QCheckBox('period', self)
-        self.periodcheckbox.stateChanged.connect(lambda: self.select_stats('period'))
-        self.ratecheckbox = QCheckBox('rate', self)
-        self.ratecheckbox.stateChanged.connect(lambda: self.select_stats('rate'))
-        self.tidalampcheckbox = QCheckBox('tidal amplitude', self)
-        self.tidalampcheckbox.stateChanged.connect(lambda: self.select_stats('tidalamp'))
+        self.periodcheckbox = QCheckBox("period", self)
+        self.periodcheckbox.stateChanged.connect(lambda: self.select_stats("period"))
+        self.ratecheckbox = QCheckBox("rate", self)
+        self.ratecheckbox.stateChanged.connect(lambda: self.select_stats("rate"))
+        self.tidalampcheckbox = QCheckBox("tidal amplitude", self)
+        self.tidalampcheckbox.stateChanged.connect(lambda: self.select_stats("tidalamp"))
 
         # channel selection
-        self.sigchanmenulabel = QLabel('biosignal channel')
+        self.sigchanmenulabel = QLabel("biosignal channel")
         self.sigchanmenu = QComboBox(self)
-        self.sigchanmenu.addItem('A1')
-        self.sigchanmenu.addItem('A2')
-        self.sigchanmenu.addItem('A3')
-        self.sigchanmenu.addItem('A4')
-        self.sigchanmenu.addItem('A5')
-        self.sigchanmenu.addItem('A6')
+        self.sigchanmenu.addItem("A1")
+        self.sigchanmenu.addItem("A2")
+        self.sigchanmenu.addItem("A3")
+        self.sigchanmenu.addItem("A4")
+        self.sigchanmenu.addItem("A5")
+        self.sigchanmenu.addItem("A6")
         self.sigchanmenu.currentTextChanged.connect(self._model.set_signalchan)
         # initialize with default value
         self._model.set_signalchan(self.sigchanmenu.currentText())
 
-        self.markerchanmenulabel = QLabel('marker channel')
+        self.markerchanmenulabel = QLabel("marker channel")
         self.markerchanmenu = QComboBox(self)
-        self.markerchanmenu.addItem('none')
-        self.markerchanmenu.addItem('I1')
-        self.markerchanmenu.addItem('I2')
-        self.markerchanmenu.addItem('A1')
-        self.markerchanmenu.addItem('A2')
-        self.markerchanmenu.addItem('A3')
-        self.markerchanmenu.addItem('A4')
-        self.markerchanmenu.addItem('A5')
-        self.markerchanmenu.addItem('A6')
+        self.markerchanmenu.addItem("none")
+        self.markerchanmenu.addItem("I1")
+        self.markerchanmenu.addItem("I2")
+        self.markerchanmenu.addItem("A1")
+        self.markerchanmenu.addItem("A2")
+        self.markerchanmenu.addItem("A3")
+        self.markerchanmenu.addItem("A4")
+        self.markerchanmenu.addItem("A5")
+        self.markerchanmenu.addItem("A6")
         self.markerchanmenu.currentTextChanged.connect(self._model.
                                                        set_markerchan)
         # initialize with default value
@@ -130,8 +130,8 @@ class View(QMainWindow):
         # processing mode (batch or single file)
         self.batchmenulabel = QLabel("mode")
         self.batchmenu = QComboBox(self)
-        self.batchmenu.addItem('single file')
-        self.batchmenu.addItem('multiple files')
+        self.batchmenu.addItem("single file")
+        self.batchmenu.addItem("multiple files")
         self.batchmenu.currentTextChanged.connect(self._model.set_batchmode)
         self.batchmenu.currentTextChanged.connect(self.toggle_options)
         # initialize with default value
@@ -139,10 +139,11 @@ class View(QMainWindow):
         self.toggle_options(self.batchmenu.currentText())
 
         # modality selection
-        self.modmenulabel = QLabel('modality')
+        self.modmenulabel = QLabel("modality")
         self.modmenu = QComboBox(self)
-        self.modmenu.addItem('ECG')
-        self.modmenu.addItem('RESP')
+        self.modmenu.addItem("ECG")
+        self.modmenu.addItem("PPG")
+        self.modmenu.addItem("RESP")
         self.modmenu.currentTextChanged.connect(self._model.set_modality)
         self.modmenu.currentTextChanged.connect(self.toggle_options)
         # initialize with default value
@@ -153,40 +154,40 @@ class View(QMainWindow):
         # the menu and closed from within itself (see mapping of segmentermap);
         # it provides utilities to select a segment from the signal
         self.segmentermap = QSignalMapper(self)
-        self.segmenter = QDockWidget('select a segment', self)
+        self.segmenter = QDockWidget("select a segment", self)
         # disable closing such that widget can only be closed by confirming
         # selection or custom button
         self.segmenter.setFeatures(QDockWidget.NoDockWidgetFeatures)
         # limit number of decimals to two
-        regex = QRegExp('[0-9]*\.?[0-9]{2}')
+        regex = QRegExp("[0-9]*\.?[0-9]{2}")
         validator = QRegExpValidator(regex)
 
-        self.startlabel = QLabel('start')
+        self.startlabel = QLabel("start")
         self.startedit = QLineEdit()
         self.startedit.setValidator(validator)
 
-        self.endlabel = QLabel('end')
+        self.endlabel = QLabel("end")
         self.endedit = QLineEdit()
         self.endedit.setValidator(validator)
 
         segmentfromcursor = QAction(QIcon(":/mouse_icon.png"),
-                                    'select with mouse',
+                                    "select with mouse",
                                     self)
         segmentfromcursor.triggered.connect(self.enable_segmentedit)
         self.startedit.addAction(segmentfromcursor, 1)
         self.endedit.addAction(segmentfromcursor, 1)
 
-        self.previewedit = QPushButton('preview segment')
+        self.previewedit = QPushButton("preview segment")
         lambdafn = lambda: self._model.set_segment([self.startedit.text(),
                                                     self.endedit.text()])
         self.previewedit.clicked.connect(lambdafn)
 
-        self.confirmedit = QPushButton('confirm segment')
+        self.confirmedit = QPushButton("confirm segment")
         self.confirmedit.clicked.connect(self._controller.segment_signal)
         self.confirmedit.clicked.connect(self.segmentermap.map)
         self.segmentermap.setMapping(self.confirmedit, 0)
 
-        self.abortedit = QPushButton('abort segmentation')
+        self.abortedit = QPushButton("abort segmentation")
         self.abortedit.clicked.connect(self.segmentermap.map)
         # reset the segment to None
         self.segmentermap.setMapping(self.abortedit, 2)
@@ -209,46 +210,46 @@ class View(QMainWindow):
         menubar = self.menuBar()
 
         # signal menu
-        signalmenu = menubar.addMenu('biosignal')
+        signalmenu = menubar.addMenu("biosignal")
 
-        openSignal = QAction('load', self)
+        openSignal = QAction("load", self)
         openSignal.triggered.connect(self._controller.get_fpaths)
         signalmenu.addAction(openSignal)
 
-        segmentSignal = QAction('select segment', self)
+        segmentSignal = QAction("select segment", self)
         segmentSignal.triggered.connect(self.segmentermap.map)
         self.segmentermap.setMapping(segmentSignal, 1)
         signalmenu.addAction(segmentSignal)
 
         self.segmentermap.mapped.connect(self.toggle_segmenter)
 
-        saveSignal = QAction('save', self)
+        saveSignal = QAction("save", self)
         saveSignal.triggered.connect(self._controller.get_wpathsignal)
         signalmenu.addAction(saveSignal)
 
         # peak menu
-        peakmenu = menubar.addMenu('peaks')
+        peakmenu = menubar.addMenu("peaks")
 
-        findPeaks = QAction('find', self)
+        findPeaks = QAction("find", self)
         findPeaks.triggered.connect(self._controller.find_peaks)
         peakmenu.addAction(findPeaks)
 
-        savePeaks = QAction('save', self)
+        savePeaks = QAction("save", self)
         savePeaks.triggered.connect(self._controller.get_wpathpeaks)
         peakmenu.addAction(savePeaks)
 
-        loadPeaks = QAction('load', self)
+        loadPeaks = QAction("load", self)
         loadPeaks.triggered.connect(self._controller.get_rpathpeaks)
         peakmenu.addAction(loadPeaks)
 
         # stats menu
-        statsmenu = menubar.addMenu('statistics')
+        statsmenu = menubar.addMenu("statistics")
 
-        calculateStats = QAction('calculate', self)
+        calculateStats = QAction("calculate", self)
         calculateStats.triggered.connect(self._controller.calculate_stats)
         statsmenu.addAction(calculateStats)
 
-        saveStats = QAction('save', self)
+        saveStats = QAction("save", self)
         saveStats.triggered.connect(self._controller.get_wpathstats)
         statsmenu.addAction(saveStats)
 
@@ -271,9 +272,9 @@ class View(QMainWindow):
         # it processes keyboard events."
         self.canvas0.setFocusPolicy(Qt.ClickFocus)
         self.canvas0.setFocus()
-        self.canvas0.mpl_connect('key_press_event',
+        self.canvas0.mpl_connect("key_press_event",
                                  self._controller.edit_peaks)
-        self.canvas0.mpl_connect('button_press_event', self.get_xcursor)
+        self.canvas0.mpl_connect("button_press_event", self.get_xcursor)
 
         # arrange the three figure canvases in splitter object
         self.splitter = QSplitter(Qt.Vertical)
@@ -294,22 +295,22 @@ class View(QMainWindow):
         self.hlayout0 = QHBoxLayout()
         self.hlayout1 = QHBoxLayout()
 
-        self.optionsgroupA = QGroupBox('processing options')
+        self.optionsgroupA = QGroupBox("processing options")
         self.vlayoutA.addRow(self.modmenulabel, self.modmenu)
         self.vlayoutA.addRow(self.batchmenulabel, self.batchmenu)
         self.optionsgroupA.setLayout(self.vlayoutA)
 
-        self.optionsgroupB = QGroupBox('channels')
+        self.optionsgroupB = QGroupBox("channels")
         self.vlayoutB.addRow(self.sigchanmenulabel, self.sigchanmenu)
         self.vlayoutB.addRow(self.markerchanmenulabel, self.markerchanmenu)
         self.optionsgroupB.setLayout(self.vlayoutB)
 
-        self.optionsgroupC = QGroupBox('peak options')
+        self.optionsgroupC = QGroupBox("peak options")
         self.vlayoutC.addWidget(self.editcheckbox)
         self.vlayoutC.addWidget(self.savecheckbox)
         self.optionsgroupC.setLayout(self.vlayoutC)
 
-        self.optionsgroupD = QGroupBox('select statistics for saving')
+        self.optionsgroupD = QGroupBox("select statistics for saving")
         self.vlayoutD.addWidget(self.periodcheckbox)
         self.vlayoutD.addWidget(self.ratecheckbox)
         self.vlayoutD.addWidget(self.tidalampcheckbox)
@@ -353,7 +354,7 @@ class View(QMainWindow):
         # reset navitools history
         self.navitools.update()
         self.line00 = self.ax00.plot(self._model.sec, value, zorder=1)
-        self.ax00.set_xlabel('seconds', fontsize='large', fontweight='heavy')
+        self.ax00.set_xlabel("seconds", fontsize="large", fontweight="heavy")
         self.canvas0.draw()
 #        print("plot_signal listening")
 #        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
@@ -364,7 +365,7 @@ class View(QMainWindow):
         if self.ax00.collections:
             self.ax00.collections[0].remove()
         self.scat = self.ax00.scatter(self._model.sec[value],
-                                      self._model.signal[value], c='m',
+                                      self._model.signal[value], c="m",
                                       zorder=2)
         self.canvas0.draw()
 #        print("plot_peaks listening")
@@ -378,7 +379,7 @@ class View(QMainWindow):
             return
         if self.ax00.patches:    # self.segementspan is listed in ax.patches
             self.ax00.patches[0].remove()
-        self.segmentspan = self.ax00.axvspan(value[0], value[1], color='m',
+        self.segmentspan = self.ax00.axvspan(value[0], value[1], color="m",
                                              alpha=0.25)
         self.canvas0.draw()
         self.confirmedit.setEnabled(True)
@@ -398,11 +399,11 @@ class View(QMainWindow):
         self.ax20.relim()
         self.navitools.home()
         if self._model.savestats["period"]:
-            self.line20 = self.ax20.plot(self._model.sec, value, c='m')
+            self.line20 = self.ax20.plot(self._model.sec, value, c="m")
         else:
             self.line20 = self.ax20.plot(self._model.sec, value)
         self.ax20.set_ylim(bottom=min(value), top=max(value))
-        self.ax20.set_title('period', pad=0, fontweight='heavy')
+        self.ax20.set_title("period", pad=0, fontweight="heavy")
         self.ax20.grid(True, axis="y")
         self.navitools.update()
         self.canvas2.draw()
@@ -414,11 +415,11 @@ class View(QMainWindow):
         self.ax21.relim()
         self.navitools.home()
         if self._model.savestats["rate"]:
-            self.line21 = self.ax21.plot(self._model.sec, value, c='m')
+            self.line21 = self.ax21.plot(self._model.sec, value, c="m")
         else:
             self.line21 = self.ax21.plot(self._model.sec, value)
         self.ax21.set_ylim(bottom=min(value), top=max(value))
-        self.ax21.set_title('rate', pad=0, fontweight='heavy')
+        self.ax21.set_title("rate", pad=0, fontweight="heavy")
         self.ax21.grid(True, axis="y")
         self.navitools.update()
         self.canvas2.draw()
@@ -430,11 +431,11 @@ class View(QMainWindow):
         self.ax22.relim()
         self.navitools.home()
         if self._model.savestats["tidalamp"]:
-            self.line22 = self.ax22.plot(self._model.sec, value, c='m')
+            self.line22 = self.ax22.plot(self._model.sec, value, c="m")
         else:
             self.line22 = self.ax22.plot(self._model.sec, value)
         self.ax22.set_ylim(bottom=min(value), top=max(value))
-        self.ax22.set_title('amplitude', pad=0, fontweight='heavy')
+        self.ax22.set_title("amplitude", pad=0, fontweight="heavy")
         self.ax22.grid(True, axis="y")
         self.navitools.update()
         self.canvas2.draw()
@@ -487,21 +488,21 @@ class View(QMainWindow):
         # disable peak editing to avoid interference
         self.editcheckbox.setCheckState(0)
         if self.startedit.hasFocus():
-            self.segmentcursor = 'start'
+            self.segmentcursor = "start"
         elif self.endedit.hasFocus():
-            self.segmentcursor = 'end'
+            self.segmentcursor = "end"
 
 
     def get_xcursor(self, event):
         # event.button 1 corresponds to left mouse button
         if event.button == 1:
             # limit number of decimal places to two
-            if self.segmentcursor == 'start':
+            if self.segmentcursor == "start":
                 self.startedit.selectAll()
-                self.startedit.insert('{:.2f}'.format(event.xdata))
-            elif self.segmentcursor == 'end':
+                self.startedit.insert("{:.2f}".format(event.xdata))
+            elif self.segmentcursor == "end":
                 self.endedit.selectAll()
-                self.endedit.insert('{:.2f}'.format(event.xdata))
+                self.endedit.insert("{:.2f}".format(event.xdata))
             # disable segment cursor again after value has been set
             self.segmentcursor = False
 
@@ -513,13 +514,13 @@ class View(QMainWindow):
         """
         self._model.savestats[event] ^= True
         line = None
-        if event == 'period':
+        if event == "period":
             if self.line20:
                 line = self.line20[0]
-        elif event == 'rate':
+        elif event == "rate":
             if self.line21:
                 line = self.line21[0]
-        elif event == 'tidalamp':
+        elif event == "tidalamp":
             if self.line22:
                 line = self.line22[0]
         if line:
@@ -528,7 +529,7 @@ class View(QMainWindow):
 
 
     def toggle_options(self, event):
-        if event == "ECG":
+        if event in ["ECG", "PPG"]:
             self.tidalampcheckbox.setEnabled(False)
             self.tidalampcheckbox.setChecked(False)
             self.ax22.set_visible(False)

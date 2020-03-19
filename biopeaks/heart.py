@@ -4,13 +4,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from scipy.signal import find_peaks, medfilt
-from .filters import butter_highpass_filter, powerline_filter, moving_average
+from .filters import (butter_highpass_filter, powerline_filter,
+                      moving_average, butter_bandpass_filter)
 from .analysis_utils import (threshold_normalization, interp_stats,
                              update_indices)
 
 
 def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
-              gradthreshweight=1.5, minlenweight=0.4, enable_plot=False):
+              gradthreshweight=1.5, minlenweight=0.4, mindelay=.3,
+              enable_plot=False):
     """
     enable_plot is for debugging and demonstration purposes when the function
     is called in isolation.
@@ -28,7 +30,7 @@ def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
     smoothgrad = moving_average(absgrad, int(np.rint(smoothwindow * sfreq)))
     avggrad = moving_average(smoothgrad, int(np.rint(avgwindow * sfreq)))
     gradthreshold = gradthreshweight * avggrad
-    mindelay = int(np.rint(sfreq * 0.3))
+    mindelay = int(np.rint(sfreq * mindelay))
 
     # Visualize thresholds.
     if enable_plot:
@@ -80,7 +82,84 @@ def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
     return np.asarray(peaks).astype(int)
 
 
-def ecg_period(peaks, sfreq, nsamp):
+def ppg_peaks(signal, sfreq, peakwindow=.111, beatwindow=.667, beatoffset=.02,
+              mindelay=.3, enable_plot=True):
+    """
+    Implementation of Elgendi M, Norton I, Brearley M, Abbott D, Schuurmans D
+    (2013) Systolic Peak Detection in Acceleration Photoplethysmograms Measured
+    from Emergency Responders in Tropical Conditions. PLoS ONE 8(10): e76585.
+    doi:10.1371/journal.pone.0076585.
+
+    Enable_plot is for debugging and demonstration purposes when the function
+    is called in isolation.
+    """
+
+    if enable_plot:
+        fig, (ax0, ax1) = plt.subplots(nrows=2, ncols=1, sharex=True)
+
+    filt = powerline_filter(signal, sfreq)
+    filt = butter_bandpass_filter(filt, lowcut=.5, highcut=8, fs=sfreq)
+    filt[filt < 0] = 0
+    sqrd = filt**2
+
+    ma_peak = moving_average(sqrd, int(np.rint(peakwindow * sfreq)))
+    ma_beat = moving_average(sqrd, int(np.rint(beatwindow * sfreq)))
+    thr1 = ma_beat + beatoffset * np.mean(sqrd)
+
+    if enable_plot:
+        ax0.plot(signal)
+        ax1.plot(filt)
+        ax1.plot(sqrd)
+        ax1.plot(thr1)
+
+    # Identify start and end of PPG waves.
+    waves = ma_peak > thr1
+    beg_waves = np.where(np.logical_and(np.logical_not(waves[0:-1]),
+                                        waves[1:]))[0]
+    end_waves = np.where(np.logical_and(waves[0:-1],
+                                        np.logical_not(waves[1:])))[0]
+    # Throw out wave-ends that precede first wave-start.
+    end_waves = end_waves[end_waves > beg_waves[0]]
+
+    # Identify systolic peaks within waves (ignore waves that are too short).
+    num_waves = min(beg_waves.size, end_waves.size)
+    min_len = int(np.rint(peakwindow * sfreq))
+    min_delay = int(np.rint(mindelay * sfreq))
+    peaks = [0]
+
+    for i in range(num_waves):
+
+        beg = beg_waves[i]
+        end = end_waves[i]
+        len_wave = end - beg
+
+        if len_wave < min_len:
+            continue
+
+        # Visualize wave span.
+        if enable_plot:
+            ax1.axvspan(beg, end, facecolor="m", alpha=0.5)
+
+        # Find local maxima and their prominence within wave span.
+        data = signal[beg:end]
+        locmax, props = find_peaks(data, prominence=(None, None))
+
+        if locmax.size > 0:
+            # Identify most prominent local maximum.
+            peak = beg + locmax[np.argmax(props["prominences"])]
+            # Enforce minimum delay between peaks.
+            if peak - peaks[-1] > min_delay:
+                peaks.append(peak)
+
+    peaks.pop(0)
+
+    if enable_plot:
+        ax0.scatter(peaks, signal[peaks], c="r")
+
+    return np.asarray(peaks).astype(int)
+
+
+def heart_period(peaks, sfreq, nsamp):
 
     # Get corrected peaks and normal-to-normal intervals.
     artifacts = _find_artifacts(peaks, sfreq)
