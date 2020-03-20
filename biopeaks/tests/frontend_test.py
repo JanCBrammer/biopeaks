@@ -116,11 +116,12 @@ class Tests:
         self._controller.segment_signal()
         self.wait_for_signal(self._model.progress_changed, 1)
         seg = int(np.rint((segment[1] - segment[0]) * self._model.sfreq))
-        assert np.size(self._model.signal) == seg, \
+        assert np.allclose(np.size(self._model.signal), seg, atol=1), \
                 'failed to segment signal'
-        seg = int(np.rint((segment[1] - segment[0]) * self._model.sfreqmarker))
-        assert np.size(self._model.marker) == seg, \
-                'failed to segment marker'
+        if self._model.marker is not None:
+            seg = int(np.rint((segment[1] - segment[0]) * self._model.sfreqmarker))
+            assert np.allclose(np.size(self._model.marker), seg, atol=1), \
+                    'failed to segment marker'
         print('segmented signal successfully')
 
         # 4. save segmented signal
@@ -184,6 +185,7 @@ class Tests:
         self._controller.read_signal(path=sigfnameseg)
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
+        # print(np.size(self._model.signal), np.size(self._model.marker))
         assert np.size(self._model.signal) == siglenseg, \
                 'failed to re-load signal'
         print('re-loaded signal successfully')
@@ -356,6 +358,42 @@ def runner():
     THIS_DIR = os.path.dirname(os.path.abspath(__file__))
     datapath = os.path.join(THIS_DIR, "testdata")
     os.chdir(datapath)
+
+    # single file with OpenSignals PPG data,
+    testapp._tests.single_file(modality='PPG',
+                                sigchan='A1',
+                                markerchan='None',
+                                mode='single file',
+                                sigfnameorig='OSmontagePPG.txt',
+                                sigfnameseg='testdatasegmented.txt',
+                                peakfname='testdata_segmented_peaks.csv',
+                                statsfname='testdata_segmented_stats.csv',
+                                siglen=60001,
+                                siglenseg=8750,
+                                markerlen=1,
+                                markerlenseg=1,
+                                peaksum=461362,
+                                avgperiod=0.6558,
+                                avgrate=91.5198,
+                                segment=[20, 90])
+
+    # single file with artificial EDF PPG data,
+    testapp._tests.single_file(modality='PPG',
+                                sigchan='A5',
+                                markerchan='A1',
+                                mode='single file',
+                                sigfnameorig='EDFmontage0.edf',
+                                sigfnameseg='testdatasegmented.edf',
+                                peakfname='testdata_segmented_peaks.csv',
+                                statsfname='testdata_segmented_stats.csv',
+                                siglen=45000,
+                                siglenseg=3500,
+                                markerlen=180000,
+                                markerlenseg=14000,
+                                peaksum=123270,
+                                avgperiod=1.0000,
+                                avgrate=60.0000,
+                                segment=[11.51, 81.7])
 
     # single file with OpenSignals ECG data,
     testapp._tests.single_file(modality='ECG',
