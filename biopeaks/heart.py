@@ -83,7 +83,7 @@ def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
 
 
 def ppg_peaks(signal, sfreq, peakwindow=.111, beatwindow=.667, beatoffset=.02,
-              mindelay=.3, enable_plot=True):
+              mindelay=.3, enable_plot=False):
     """
     Implementation of Elgendi M, Norton I, Brearley M, Abbott D, Schuurmans D
     (2013) Systolic Peak Detection in Acceleration Photoplethysmograms Measured
@@ -97,8 +97,8 @@ def ppg_peaks(signal, sfreq, peakwindow=.111, beatwindow=.667, beatoffset=.02,
     if enable_plot:
         fig, (ax0, ax1) = plt.subplots(nrows=2, ncols=1, sharex=True)
 
-    filt = powerline_filter(signal, sfreq)
-    filt = butter_bandpass_filter(filt, lowcut=.5, highcut=8, fs=sfreq)
+    filt = butter_bandpass_filter(signal, lowcut=.5, highcut=8, fs=sfreq,
+                                  order=3)
     filt[filt < 0] = 0
     sqrd = filt**2
 
@@ -108,9 +108,10 @@ def ppg_peaks(signal, sfreq, peakwindow=.111, beatwindow=.667, beatoffset=.02,
 
     if enable_plot:
         ax0.plot(signal)
-        ax1.plot(filt)
-        ax1.plot(sqrd)
-        ax1.plot(thr1)
+        ax1.plot(filt, label="filtered")
+        ax1.plot(sqrd, label="squared")
+        ax1.plot(thr1, label="threshold")
+        ax1.legend(loc="upper right")
 
     # Identify start and end of PPG waves.
     waves = ma_peak > thr1
