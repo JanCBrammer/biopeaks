@@ -22,13 +22,13 @@ for subject in glob.glob("subject_*"):
     annotations.append(os.path.join(subject, condition,
                                     "annotation_cables.tsv"))
 
-sensitivity = []
-precision = []
-
 sfreq = 250
 tolerance = 1    # tolerance must be in samples for wfdb
 print(f"Setting tolerance for match between algorithmic and manual annotation"
       f" to 1 sample, corresponding to {1 / sfreq} seconds at a sampling rate of {sfreq}.")
+
+sensitivity = []
+precision = []
 
 for record, annotation in zip(records, annotations):
 
