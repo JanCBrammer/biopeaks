@@ -48,20 +48,6 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
     return y
 
 
-def butter_bandstop(lowcut, highcut, fs, order=5):
-    nyq = 0.5 * fs
-    low = lowcut / nyq
-    high = highcut / nyq
-    b, a = butter(order, [low, high], btype='bandstop')
-    return b, a
-
-
-def butter_bandstop_filter(data, lowcut, highcut, fs, order=5):
-    b, a = butter_bandstop(lowcut, highcut, fs, order=order)
-    y = filtfilt(b, a, data, method='pad')
-    return y
-
-
 def moving_average(signal, window_size):
     return np.convolve(signal, np.ones((window_size,)) / window_size,
                        mode='same')
