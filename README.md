@@ -11,7 +11,7 @@
 
 # General Information
 
-`biopeaks` is a graphical user interface for electrocardiogram (ECG) and breathing biosignals.
+`biopeaks` is a graphical user interface for electrocardiogram (ECG), photoplethysmogram (PPG) and breathing biosignals.
 It processes these biosignals semi-automatically with sensible defaults and features the following
 functionality:
 
@@ -19,10 +19,10 @@ functionality:
 as well as [OpenSignals](https://bitalino.com/en/software)
 * interactive biosignal visualization
 * biosignal segmentation
-* automatic extrema detection (R-peaks in ECG, exhalation troughs and inhalation
+* automatic extrema detection (R-peaks in ECG, systolic peaks in PPG, exhalation troughs and inhalation
 peaks in breathing signals)
 * automatic state-of-the-art [artifact correction](https://www.tandfonline.com/doi/full/10.1080/03091902.2019.1640306)
- for ECG extrema
+ for ECG and PPG extrema
 * manual editing of extrema (useful in case of poor biosignal quality)
 * calculation of instantaneous (heart- or breathing-) rate and period, as well as
 breathing amplitude
@@ -40,8 +40,7 @@ Click on the badge below to cite `biopeaks` in a format of your choice.
 
 ## Installation
 Note that currently, `biopeaks` has been built and tested on Windows. It should
-run on Linux and macOS as well and support for those platform will follow as soon
-as possible.
+run on Linux and macOS as well.
 
 
 ### Instructions for users without a Python installation
@@ -125,7 +124,8 @@ elements.
 ### load biosignal
 Before loading the biosignal, you need to select the modality of your biosignal
 in **optionspanel** -> **_processing options_** -> _modality_ (ECG for
-electrocardiogram, and RESP for breathing). Next, under **optionspanel** -> **_channels_** you need to
+electrocardiogram, PPG for photoplethysmogram, and RESP for breathing).
+Next, under **optionspanel** -> **_channels_** you need to
 specify which _biosignal channel_ contains the biosignal corresponding to your
 modality. Optionally, in addition to the _biosignal channel_, you can select a
 _marker channel_. This is useful if you recorded a channel
@@ -179,15 +179,17 @@ saved in its original format containing all channels.
 
 ### find peaks
 **menubar** -> **_peaks_** -> _find_ automatically identifies the peaks in the
-biosignal. The peaks appear as dots displayed on top of the biosignal.
+biosignal. The peaks appear as dots displayed on top of the biosignal. Make sure
+that the correct modality is selected in **optionspanel** -> **_processing options_** -> _modality_, 
+since `biopeaks` uses a modality-specific peak detector.
 
 ![peaks](biopeaks/images/screenshot_peaks10.png)
 
 ### save peaks
 **menubar** -> **_peaks_** -> _save_ opens a file dialog that lets you select a
 directory and file name for saving the peaks in a CSV file. The format of the
-file depends on the _modality_. For ECG, `biopeaks` saves a column containing
-the occurrences of R-peaks in seconds. The first element contains the header
+file depends on the _modality_. For ECG and PPG, `biopeaks` saves a column containing
+the occurrences of R-peaks or systolic peaks respectively in seconds. The first element contains the header
 "peaks". For breathing, `biopeaks` saves two columns containing the occurrences
 of inhalation peaks and exhalation troughs respectively in seconds. The first
 row contains the header "peaks, troughs". Note that if there are less peaks
@@ -236,7 +238,7 @@ region that you want to edit using the [**displaytools**](#displaytools).
 The statistics
 can be a useful guide when editing peaks. Isolated, unusually large or small
 values in period or rate can indicate misplaced peaks. If the _modality_ is
-ECG, peaks are corrected automatically during the
+ECG or PPG, peaks are corrected automatically during the
 [calculation of the statistics](#calculate-statistics).
 However, this does not guarantee that all errors in peak placement will
 be caught. Always check for errors manually! Note, that when editing breathing
@@ -355,7 +357,7 @@ This will open an application, run a few tests on it and print the results to
 the Python console.
 
 ## Backend
-In order to validate the performance of the ECG peak detector `ecg.ecg_peaks()`,
+In order to validate the performance of the ECG peak detector `heart.ecg_peaks()`,
 please download the [Glasgow University Database (GUDB)](http://researchdata.gla.ac.uk/716/).
 In addition you need to install the [wfdb](https://github.com/MIT-LCP/wfdb-python) package either with conda
 ```
@@ -366,10 +368,31 @@ or pip.
 ```
 pip install wfdb
 ```
+You can then run the `benchmark_ECG` script in the test folder.
 
-You can then run the `benchmark_GUBD` script in the test folder.
+In order to validate the performance of the PPG peak detector `heart.ppg_peaks()`
+please download the [Capnobase IEEE TBME benchmark dataset](http://www.capnobase.org/index.php?id=857).
+After extracting the PPG signals and peak annotations you can run the `benchmark_PPG` script in the test folder.
 
 # Changelog
+
+### Version 1.2.0 (March 20, 2020)
++ enhancement: added peak detection for photoplethysmogram (PPG) (heart.ppg_peaks()), based on
+[Elgendi et al., (2013)](https://journals.plos.org/plosone/article/comments?id=10.1371/journal.pone.0076585).
+The performance of heart.ppg_peaks() has been evaluated on the PPG signals of all
+42 subjects in the [Capnobase IEEE TBME benchmark dataset](http://www.capnobase.org/index.php?id=857).
+The dataset has not been used to optimize `heart.ppg_peaks()` in any way prior to
+the performance evaluation. The tolerance for peak detection was set to 50 milliseconds in
+accordance with [Elgendi et al., (2013)](https://journals.plos.org/plosone/article/comments?id=10.1371/journal.pone.0076585).
+
+|metric     |summary|version 1.2.0
+|:---------:|:-----:|:-----------:
+|precision  |mean   |.996         
+|           |std    |.004         
+|sensitivity|mean   |.999         
+|           |std    |.001         
+
++ bugfix: the PATCH version has been reset to 0 after incrementing MINOR version (https://semver.org/)
 
 ### Version 1.1.6 (March 06, 2020)
 + enhancement: some small improvements of the statistics panel in **datadisplay**.
