@@ -234,6 +234,10 @@ class View(QMainWindow):
         findPeaks.triggered.connect(self._controller.find_peaks)
         peakmenu.addAction(findPeaks)
 
+        autocorrectPeaks = QAction("autocorrect", self)
+        autocorrectPeaks.triggered.connect(self._controller.autocorrect_peaks)
+        peakmenu.addAction(autocorrectPeaks)
+
         savePeaks = QAction("save", self)
         savePeaks.triggered.connect(self._controller.get_wpathpeaks)
         peakmenu.addAction(savePeaks)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .heart import ecg_peaks, ppg_peaks, heart_period
+from .heart import ecg_peaks, ppg_peaks, autocorrect_peaks, heart_period
 from .resp import resp_extrema, resp_stats
 from .io_utils import read_opensignals, write_opensignals, read_edf, write_edf
 import os
@@ -418,6 +418,19 @@ class Controller(QObject):
                 self._model.status = "Error: peaks already in memory."
         else:
             self._model.status = "Error: no data available."
+
+
+    @threaded
+    def autocorrect_peaks(self):
+        if self._model.modality == "RESP":
+            self._model.status = "Only ECG or PPG peaks can be auto-corrected."
+            return
+        if self._model.peaks is None:
+            self._model.status = "Error: no peaks available."
+            return
+        self._model.status = f"Auto-correcting {self._model.modality} peaks"
+        self._model.peaks = autocorrect_peaks(self._model.peaks,
+                                              self._model.sfreq)
 
 
     def edit_peaks(self, event):

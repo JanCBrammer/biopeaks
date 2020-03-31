@@ -83,10 +83,10 @@ class Tests:
                     break
 
 
-    def single_file(self, modality, sigchan, markerchan, mode, sigfnameorig,
-                    sigfnameseg, peakfname, statsfname, siglen, siglenseg,
-                    markerlen, markerlenseg, peaksum, segment, avgperiod,
-                    avgrate, avgtidalamp=None):
+    def single_file(self, assertion, modality, sigchan, markerchan, mode,
+                    sigfnameorig, sigfnameseg, peakfname, statsfname, siglen,
+                    siglenseg, markerlen, markerlenseg, peaksum, segment,
+                    avgperiod, avgrate, avgtidalamp=None):
 
         # 1. set options
         ################
@@ -101,11 +101,15 @@ class Tests:
         self.wait_for_signal(self._model.progress_changed, 1)
         # give a human reviewer some time to confirm the execution visually
         QTest.qWait(2000)
-        assert np.size(self._model.signal) == siglen, 'failed to load signal'
-        print('loaded signal successfully')
-        assert np.size(self._model.marker) == markerlen, 'failed to load marker'
-        # print(np.size(self._model.signal), np.size(self._model.marker))
-        print('loaded marker successfully')
+        if assertion:
+            assert np.size(self._model.signal) == siglen, 'failed to load signal'
+            print('loaded signal successfully')
+            assert np.size(self._model.marker) == markerlen, 'failed to load marker'
+            print('loaded marker successfully')
+        else:
+            print(f"signal has {np.size(self._model.signal)} samples,"
+                  f" marker has {np.size(self._model.marker)} samples")
+
 
         # 3. segment signal
         ###################
@@ -116,13 +120,16 @@ class Tests:
         self._controller.segment_signal()
         self.wait_for_signal(self._model.progress_changed, 1)
         seg = int(np.rint((segment[1] - segment[0]) * self._model.sfreq))
-        assert np.allclose(np.size(self._model.signal), seg, atol=1), \
-                'failed to segment signal'
-        if self._model.marker is not None:
-            seg = int(np.rint((segment[1] - segment[0]) * self._model.sfreqmarker))
-            assert np.allclose(np.size(self._model.marker), seg, atol=1), \
-                    'failed to segment marker'
-        print('segmented signal successfully')
+        if assertion:
+            assert np.allclose(np.size(self._model.signal), seg, atol=1), \
+                    'failed to segment signal'
+            if self._model.marker is not None:
+                seg = int(np.rint((segment[1] - segment[0]) * self._model.sfreqmarker))
+                assert np.allclose(np.size(self._model.marker), seg, atol=1), \
+                        'failed to segment marker'
+            print('segmented signal successfully')
+        else:
+            print(f"segment has {seg} samples")
 
         # 4. save segmented signal
         ##########################
@@ -139,9 +146,12 @@ class Tests:
         self._controller.find_peaks()
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
-        assert sum(self._model.peaks) == peaksum, 'failed to find peaks'
-        # print(sum(self._model.peaks))
-        print('found peaks successfully')
+        if assertion:
+            assert sum(self._model.peaks) == peaksum, 'failed to find peaks'
+            print('found peaks successfully')
+        else:
+            print(f"sum of peaks is {sum(self._model.peaks)}")
+
 
         # 6. edit peaks
         ###############
@@ -185,13 +195,16 @@ class Tests:
         self._controller.read_signal(path=sigfnameseg)
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
-        # print(np.size(self._model.signal), np.size(self._model.marker))
-        assert np.size(self._model.signal) == siglenseg, \
-                'failed to re-load signal'
-        print('re-loaded signal successfully')
-        assert np.size(self._model.marker) == markerlenseg, \
-                'failed to re-load signal'
-        print('re-loaded marker successfully')
+        if assertion:
+            assert np.size(self._model.signal) == siglenseg, \
+                    'failed to re-load signal'
+            print('re-loaded signal successfully')
+            assert np.size(self._model.marker) == markerlenseg, \
+                    'failed to re-load signal'
+            print('re-loaded marker successfully')
+        else:
+            print(f"re-loaded signal has {np.size(self._model.signal)} samples,"
+                  f" re-loaded marker has {np.size(self._model.marker)} samples")
 
         # 9. load peaks found for segmented signal
         ###########################################
@@ -202,10 +215,13 @@ class Tests:
         # For the breathing, after peak editing, the re-inserted peak can
         # be shifted by a few samples. This is not a bug, but inherent in the
         # way extrema are added and deleted in controller.edit_peaks().
-        assert np.allclose(sum(self._model.peaks), peaksum, atol=10), \
-            'failed to re-load peaks'
-        # print(sum(self._model.peaks))
-        print('re-loaded peaks successfully')
+        if assertion:
+            assert np.allclose(sum(self._model.peaks), peaksum, atol=10), \
+                'failed to re-load peaks'
+            print('re-loaded peaks successfully')
+        else:
+            print(f"re-loaded peaks have sum {sum(self._model.peaks)}")
+
 
         # 10. calculate stats
         #####################
@@ -213,19 +229,25 @@ class Tests:
 
         self.wait_for_signal(self._model.progress_changed, 1)
         QTest.qWait(2000)
-        assert np.around(np.mean(self._model.periodintp), 4) == avgperiod, \
-                'failed to calculate period'
-        # print(np.around(np.mean(self._model.periodintp), 4))
-        print('calculated period successfully')
-        assert np.around(np.mean(self._model.rateintp), 4) == avgrate, \
-                'failed to calculate rate'
-        # print(np.around(np.mean(self._model.rateintp), 4))
-        print('calculated rate successfully')
+        if assertion:
+            assert np.around(np.mean(self._model.periodintp), 4) == avgperiod, \
+                    'failed to calculate period'
+
+            print('calculated period successfully')
+            assert np.around(np.mean(self._model.rateintp), 4) == avgrate, \
+                    'failed to calculate rate'
+            print('calculated rate successfully')
+        else:
+            print(f"mean period is {np.around(np.mean(self._model.periodintp), 4)}"
+                  f" mean rate is {np.around(np.mean(self._model.rateintp), 4)}")
         if modality == "RESP":
-            assert np.around(np.mean(self._model.tidalampintp), 4) == avgtidalamp, \
-                    'failed to calculate tidal amplitude'
-            # print(np.around(np.mean(self._model.tidalampintp), 4))
-            print('calculated tidal amplitude successfully')
+            if assertion:
+                assert np.around(np.mean(self._model.tidalampintp), 4) == avgtidalamp, \
+                        'failed to calculate tidal amplitude'
+                print('calculated tidal amplitude successfully')
+            else:
+                print(f" mean rate is {np.around(np.mean(self._model.tidalampintp), 4)}")
+
 
         # 11. save stats
         ################
@@ -239,15 +261,22 @@ class Tests:
         QTest.qWait(2000)
         # load and check content
         stats = pd.read_csv(statsfname)
-        assert np.around(stats["period"].mean(), 4) == avgperiod, \
-                "failed to save period"
-        assert np.around(stats["rate"].mean(), 4) == avgrate, \
-                "failed to save rate"
+        if assertion:
+            assert np.around(stats["period"].mean(), 4) == avgperiod, \
+                    "failed to save period"
+            assert np.around(stats["rate"].mean(), 4) == avgrate, \
+                    "failed to save rate"
+            print('saved statistics successfully')
+        else:
+            print(f"mean re-loaded period is {np.around(stats['period'].mean(), 4)}"
+                  f" mean re-loaded rate is {np.around(stats['rate'].mean(), 4)}")
         if modality == "RESP":
-            assert np.around(stats["tidalamp"].mean(), 4) == avgtidalamp, \
-                "failed to save tidalamplitude}"
-            pass
-        print('saved statistics successfully')
+            if assertion:
+                assert np.around(stats["tidalamp"].mean(), 4) == avgtidalamp, \
+                    "failed to save tidalamplitude}"
+            else:
+                print(f"mean re-loaded rate is {np.around(stats['tidalamp'].mean(), 4)}")
+
 
         # clean-up in case consecutive test are executed
         # reset model
@@ -266,8 +295,8 @@ class Tests:
         os.remove(sigfnameseg)
 
 
-    def batch_file(self, modality, sigchan, mode, sigfnames, peakdir, statsdir,
-                   peaksums, stats):
+    def batch_file(self, assertion, modality, sigchan, mode, sigfnames,
+                   peakdir, statsdir, peaksums, stats):
 
         # 1. set options and set paths
         ##############################
@@ -318,9 +347,12 @@ class Tests:
             self._model.rpathpeaks = f"{fpartname}_peaks.csv"
             self._controller.read_peaks()
             self.wait_for_signal(self._model.progress_changed, 1)
-            assert sum(self._model.peaks) == peaksum, \
-                    f"failed to load peaks for {sigfname}"
-            print(f"loaded peaks for {sigfname} successfully")
+            if assertion:
+                assert sum(self._model.peaks) == peaksum, \
+                        f"failed to load peaks for {sigfname}"
+                print(f"loaded peaks for {sigfname} successfully")
+            else:
+                print(f"sum of peaks is {sum(self._model.peaks)}")
             # remove all files that have been saved during the test
             os.remove(self._model.rpathpeaks)
             self._model.reset()
@@ -331,14 +363,22 @@ class Tests:
             fpartname, _ = os.path.splitext(sigfname)
             statsfname = f"{fpartname}_stats.csv"
             stats = pd.read_csv(statsfname)
-            assert np.around(stats["period"].mean(), 4) == stat[0], \
-                    f"failed to save period for {sigfname}"
-            assert np.around(stats["rate"].mean(), 4) == stat[1], \
-                    f"failed to save rate for {sigfname}"
+            if assertion:
+                assert np.around(stats["period"].mean(), 4) == stat[0], \
+                        f"failed to save period for {sigfname}"
+                assert np.around(stats["rate"].mean(), 4) == stat[1], \
+                        f"failed to save rate for {sigfname}"
+                print('saved statistics successfully')
+            else:
+                print(f"mean re-loaded period is {np.around(stats['period'].mean(), 4)}"
+                      f" mean re-loaded rate is {np.around(stats['rate'].mean(), 4)}")
             if modality == "RESP":
-                assert np.around(stats["tidalamp"].mean(), 4) == stat[2], \
-                    f"failed to save tidalamplitude for {sigfname}"
-            print('saved statistics successfully')
+                if assertion:
+                    assert np.around(stats["tidalamp"].mean(), 4) == stat[2], \
+                        f"failed to save tidalamplitude for {sigfname}"
+                else:
+                    print(f"mean re-loaded rate is {np.around(stats['tidalamp'].mean(), 4)}")
+
             # remove all files that have been saved during the test
             os.remove(statsfname)
 
@@ -350,7 +390,10 @@ class Tests:
             self._view.tidalampcheckbox.setCheckState(Qt.Unchecked)
 
 
-def runner():
+def runner(assertion=True):
+    """
+    Run with assertion=False to only print results and skip assertion.
+    """
     testapp = TestApplication(sys.argv)
     testapp._view.show()
 
@@ -360,7 +403,8 @@ def runner():
     os.chdir(datapath)
 
     # single file with OpenSignals PPG data,
-    testapp._tests.single_file(modality='PPG',
+    testapp._tests.single_file(assertion=assertion,
+                                modality='PPG',
                                 sigchan='A1',
                                 markerchan='None',
                                 mode='single file',
@@ -373,12 +417,13 @@ def runner():
                                 markerlen=1,
                                 markerlenseg=1,
                                 peaksum=461362,
-                                avgperiod=0.6558,
-                                avgrate=91.5198,
+                                avgperiod=0.6652,
+                                avgrate=90.7158,
                                 segment=[20, 90])
 
     # single file with artificial EDF PPG data,
-    testapp._tests.single_file(modality='PPG',
+    testapp._tests.single_file(assertion=assertion,
+                                modality='PPG',
                                 sigchan='A5',
                                 markerchan='A1',
                                 mode='single file',
@@ -396,7 +441,8 @@ def runner():
                                 segment=[11.51, 81.7])
 
     # single file with OpenSignals ECG data,
-    testapp._tests.single_file(modality='ECG',
+    testapp._tests.single_file(assertion=assertion,
+                                modality='ECG',
                                 sigchan='A3',
                                 markerchan='I1',
                                 mode='single file',
@@ -414,7 +460,8 @@ def runner():
                                 segment=[760, 860])
 
     # single file with artificial EDF ECG data,
-    testapp._tests.single_file(modality='ECG',
+    testapp._tests.single_file(assertion=assertion,
+                                modality='ECG',
                                 sigchan='A3',
                                 markerchan='A1',
                                 mode='single file',
@@ -432,7 +479,8 @@ def runner():
                                 segment=[11.51, 81.7])
 
     # single file with OpenSignals breathing data
-    testapp._tests.single_file(modality='RESP',
+    testapp._tests.single_file(assertion=assertion,
+                                modality='RESP',
                                 sigchan='A2',
                                 markerchan='I1',
                                 mode='single file',
@@ -451,7 +499,8 @@ def runner():
                                 segment=[3200, 3400])
 
     # single file with artificial EDF breathing data
-    testapp._tests.single_file(modality='RESP',
+    testapp._tests.single_file(assertion=assertion,
+                                modality='RESP',
                                 sigchan='A5',
                                 markerchan='A1',
                                 mode='single file',
@@ -472,10 +521,11 @@ def runner():
     # batch processing with OpenSignals ECG data
     sigfiles = ['OSmontage1A.txt', 'OSmontage1J.txt', 'OSmontage2A.txt',
                 'OSmontage2J.txt', 'OSmontage3A.txt', 'OSmontage3J.txt']
-    peaksums = [3808205, 3412337, 2643186, 3511241, 3611836, 3457932]
-    stats = [(0.7946, 76.0995), (0.7285, 83.1341), (0.7914, 76.5469),
-              (0.7418, 81.5011), (0.7856, 76.9153), (0.7236, 83.6030)]
-    testapp._tests.batch_file(modality='ECG',
+    peaksums = [3808244, 3412308, 2645824, 3523449, 3611836, 3457936]
+    stats = [(0.7950, 76.1123), (0.7288, 83.1468), (0.7894, 76.8911),
+             (0.7402, 81.7864), (0.7856, 76.9153), (0.7235, 83.6060)]
+    testapp._tests.batch_file(assertion=assertion,
+                              modality='ECG',
                               sigchan='A3',
                               mode='multiple files',
                               sigfnames=sigfiles,

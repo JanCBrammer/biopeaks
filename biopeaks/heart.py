@@ -162,9 +162,22 @@ def ppg_peaks(signal, sfreq, peakwindow=.111, beatwindow=.667, beatoffset=.02,
 
 def heart_period(peaks, sfreq, nsamp):
 
+    # Compute normal-to-normal intervals.
+    rr = np.ediff1d(peaks, to_begin=0) / sfreq
+    rr[0] = np.mean(rr[1:])
+
+    # Interpolate rr at the signals sampling rate for plotting.
+    periodintp = interp_stats(peaks, rr, nsamp)
+    rateintp = 60 / periodintp
+
+    return peaks, periodintp, rateintp
+
+
+def autocorrect_peaks(peaks, sfreq):
+
     # Get corrected peaks and normal-to-normal intervals.
     artifacts = _find_artifacts(peaks, sfreq)
-    peaks_clean, nn = _correct_artifacts(artifacts, peaks, sfreq)
+    peaks_clean = _correct_artifacts(artifacts, peaks, sfreq)
 
     # Iteratively apply the artifact correction until the number of artifact
     # reaches an equilibrium (i.e., the number of artifacts does not change
@@ -179,16 +192,12 @@ def heart_period(peaks, sfreq, nsamp):
         previous_diff = n_artifacts_previous - n_artifacts_current
 
         artifacts = _find_artifacts(peaks_clean, sfreq)
-        peaks_clean, nn = _correct_artifacts(artifacts, peaks_clean, sfreq)
+        peaks_clean = _correct_artifacts(artifacts, peaks_clean, sfreq)
 
         n_artifacts_previous = n_artifacts_current
         n_artifacts_current = sum([len(i) for i in artifacts.values()])
 
-    # Interpolate rr at the signals sampling rate for plotting.
-    periodintp = interp_stats(peaks_clean, nn, nsamp)
-    rateintp = 60 / periodintp
-
-    return peaks_clean, periodintp, rateintp
+    return peaks_clean
 
 
 def _find_artifacts(peaks, sfreq, enable_plot=False):
@@ -444,8 +453,4 @@ def _correct_artifacts(artifacts, peaks, sfreq):
         peaks.sort(kind="mergesort")
         peaks = np.unique(peaks)
 
-    # Compute normal-to-normal intervals.
-    nn = np.ediff1d(peaks, to_begin=0) / sfreq
-    nn[0] = np.mean(nn[1:])
-
-    return peaks, nn
+    return peaks
