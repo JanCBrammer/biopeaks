@@ -106,6 +106,36 @@ biosignal. Have a
 look in the [functionality section](#functionality) for details on these
 elements.
 
+
+## Getting started
+The following work-flow is meant as an introduction to the interface. Many other
+work flows are possible and might make more sense given your 
+requirements. Note that `biopeaks` works with the OpenSignals text file format
+as well as EDF files. However, you can analyze any data as long as you format the
+data according to either the [OpenSignals convention](http://bitalino.com/datasheets/OpenSignals_File_Formats.pdf)
+or the [EDF convention](https://www.edfplus.info/specs/index.html). The functions
+used in the exemplary work-flow are described in detail in the [functionality section](#functionality).
+
+### examplary workflow on a single file
+Before you start, select the desired options in the **optionspanel**. Make sure
+that the **_processing mode_** is set to _single file_ and
+[load the biosignal](#load-biosignal) to visually check its quality using the [**displaytools**](#displaytools).
+Next, you could [segment the biosignal](#segment-biosignal) based on a specific time interval
+or events in the markers. Now you can [identify the peaks](#find-peaks) in the biosignal.
+If the quality of the biosignal is sufficient, the peaks should be placed in the
+correct locations. However, if there are noisy intervals in the biosignal, peaks might be
+misplaced or not detected at all (i.e., false positives or false negatives).
+
+![noise](biopeaks/images/screenshot_noise10.png)
+
+If this is the case you can [edit the peak locations](#edit-peaks). Once you are
+confident that all the peaks are placed correctly you can [calculate statistics](#calculate-statistics).
+Finally, you can [save the biosignal](#save-biosignal), [peaks](#save-peaks), and/or
+[statistics](#save-statistics), depending on your requirements. If you have
+segmented the biosignal it is a good idea to save it so you can reproduce the work-flow
+later if necessary. Also, save the peaks if you're planning on [reloading](#load-peaks) them later
+or using them for your own computations.
+
 ## Functionality
 
 + [load biosignal](#load-biosignal)
@@ -115,6 +145,7 @@ elements.
 + [save peaks](#save-peaks)
 + [load peaks](#load-peaks)
 + [edit peaks](#edit-peaks)
++ [auto-correct peaks](#auto-correct-peaks)
 + [calculate statistics](#calculate-statistics)
 + [save statistics](#save-statistics)
 + [batch processing](#batch-processing)
@@ -126,17 +157,17 @@ Before loading the biosignal, you need to select the modality of your biosignal
 in **optionspanel** -> **_processing options_** -> _modality_ (ECG for
 electrocardiogram, PPG for photoplethysmogram, and RESP for breathing).
 Next, under **optionspanel** -> **_channels_** you need to
-specify which _biosignal channel_ contains the biosignal corresponding to your
-modality. Optionally, in addition to the _biosignal channel_, you can select a
-_marker channel_. This is useful if you recorded a channel
+specify which channel contains the _biosignal_ corresponding to your
+modality. Optionally, in addition to the _biosignal_, you can select a
+_marker_. This is useful if you recorded a channel
 that marks interesting events such as the onset of an experimental condition,
-button presses etc.. You can use the _marker channel_ to display any other
-channel alongside your _biosignal channel_. Once these options are selected,
+button presses etc.. You can use the _marker_ to display any other
+channel alongside your _biosignal_. Once these options are selected,
 you can load the biosignal: **menubar** -> **_biosignal_** -> _load_. A
 dialog will let you select the file containing the biosignal. The file format
 (EDF or OpenSignals) is detected automatically. If the biosignal
 has been loaded successfully it is displayed in the upper **datadisplay**. If
-you selected a _marker channel_, the markers will be displayed in the middle
+you selected a _marker_, it will be displayed in the middle
 **datadisplay**. The current file name is always displayed in the lower right
 corner of the interface.
 
@@ -178,10 +209,10 @@ Note that saving the biosignal is only possible after segmentation. The file is
 saved in its original format containing all channels.
 
 ### find peaks
-**menubar** -> **_peaks_** -> _find_ automatically identifies the peaks in the
-biosignal. The peaks appear as dots displayed on top of the biosignal. Make sure
-that the correct modality is selected in **optionspanel** -> **_processing options_** -> _modality_, 
+First make sure that the correct modality is selected in **optionspanel** -> **_processing options_** -> _modality_, 
 since `biopeaks` uses a modality-specific peak detector.
+Then, **menubar** -> **_peaks_** -> _find_ automatically identifies the peaks in the
+biosignal. The peaks appear as dots displayed on top of the biosignal. 
 
 ![peaks](biopeaks/images/screenshot_peaks10.png)
 
@@ -227,26 +258,30 @@ interpolated to match the biosignal's timescale (i.e., they represent
 instantaneous statistics sampled at the biosignal's sampling rate).
 
 ### edit peaks
-It happens that the automatic peak detection places peaks wrongly. You can
+It happens that the automatic peak detection places peaks wrongly or fails to
+detect some peaks. You can
 catch these errors by visually inspecting the peak placement. If you spot
 errors in peak placement you can correct those manually. To do so make sure to
-select **optionspanel** -> **peak options** -> _edit peaks_. Now click on the
+select **optionspanel** -> **peak options** -> _editable_. Now click on the
 upper **datadisplay** once to enable peak editing. To delete a peak place the 
 mouse cursor in it's vicinity and press "d". To add a peak,
 press "a". Editing peaks is most convenient if you zoom in on the biosignal
 region that you want to edit using the [**displaytools**](#displaytools).
-The statistics
+The statistics in the lowest **datadisplay**
 can be a useful guide when editing peaks. Isolated, unusually large or small
-values in period or rate can indicate misplaced peaks. If the _modality_ is
-ECG or PPG, peaks are corrected automatically during the
-[calculation of the statistics](#calculate-statistics).
-However, this does not guarantee that all errors in peak placement will
-be caught. Always check for errors manually! Note, that when editing breathing
+values in period or rate can indicate misplaced peaks. Note, that when editing breathing
 extrema, any edits that break the alternation of peaks and troughs
 (e.g., two consecutive peaks) will automatically be discarded when you save
 the extrema. If you already calculated statistics, don't forget to calculate
 them again after peak editing.
 
+### auto-correct peaks
+If the _modality_ is ECG or PPG, you can automatically correct the peaks with
+**menubar** -> **_peaks_** -> _autocorrect_. Note that the auto-correction tries
+to spread the peaks evenly across the signal which can lead to peaks that are
+slightly misplaced. Also, the auto-correction does not guarantee that
+all errors in peak placement will be caught. It is always good to check for errors manually!
+ 
 ### batch processing
 > :warning: There is no substitute for manually checking the biosignal's
 > quality as well as the placement of the peaks. Manually checking and editing
@@ -259,9 +294,10 @@ To enable batch processing, select
 **_processing options_** -> _mode_ -> multiple files. Make sure to
 select the correct _modality_ in the **_processing options_** as well. Also select
 the desired _biosignal channel_ in **_channels_**. Further, indicate if you'd
-like to save
-the peaks during batch processing: **_peak options_** ->
-_save peaks during batch processing_. Also, select the statistics you'd like
+like to save the peaks during batch processing: **_peak options_** ->
+_save during batch processing_. You can also choose to apply the auto-correction
+to the peaks by selecting **_peak options_** ->
+_correct during batch processing_. Also, select the statistics you'd like
 to save: **_select statictics for saving_**. Now, select
 all files that should be included in the batch: **menubar** -> **_biosignal_**
 -> _load_. A dialog will let you select the files (select multiple files with
@@ -287,43 +323,6 @@ The **displaytools** allow you to interact with the biosignal. Have a look
 [here](https://matplotlib.org/3.1.1/users/navigation_toolbar.html) for a
 detailed description of how to use them.
 
-
-## Getting started
-The following work-flow is meant as an introduction to the interface. Many other
-work flows are possible and might make more sense given your 
-requirements. Note that `biopeaks` works with the OpenSignals text file format
-as well as EDF files. However, you can analyze any data as long as you format the
-data according to either the [OpenSignals convention](http://bitalino.com/datasheets/OpenSignals_File_Formats.pdf)
-or the [EDF convention](https://www.edfplus.info/specs/index.html). The functions
-used in the examplary work-flow are described in detail in the [functionality section](#functionality).
-
-### examplary workflow on a single file
-Time to look at some biosignals! Before you start any work-flow, set the desired
-options in the **optionspanel**. Make sure that the **_processing mode_** is
-set to _single file_ and [load the biosignal](#load-biosignal) to visually
-check its quality using the [**displaytools**](#displaytools). Next, if you
-want, you can
-[segment the biosignal](#segment-biosignal) based on a specific time interval
-or events in
-the markers. Now, you can [identify the peaks](#find-peaks) in the biosignal.
-If the
-quality of the biosignal is sufficient, the peaks should be placed in the
-correct locations. However, if there are noisy intervals in the biosignal,
-peaks might be misplaced or not detected at all (i.e., false positives or
-false negatives).
-
-![noise](biopeaks/images/screenshot_noise10.png)
-
-If this is the case you can [edit the
-peak locations](#edit-peaks). Once you are confident that all the peaks are
-placed
-correctly you can [calculate statistics](#calculate-statistics). Finally,
-you can [save the biosignal](#save-biosignal), [peaks](#save-peaks), and/or
-[statistics](#save-statistics), depending on your requirements. If you have
-segmented the biosignal it is a
-good idea to save it so you can reproduce the workflow later if necessary.
-Also, save the peaks if you're planning on [reloading](#load-peaks) them later
-or using them for your own computations.
 
 
 # Contributor Guide
@@ -375,6 +374,12 @@ please download the [Capnobase IEEE TBME benchmark dataset](http://www.capnobase
 After extracting the PPG signals and peak annotations you can run the `benchmark_PPG` script in the test folder.
 
 # Changelog
+
+### Version 1.2.1 (April 01, 2020)
++ enhancement: auto-correction of ECG and PPG peaks is now optional (instead
+of being applied by default during the calculation of the statistics).
++ enhancement: improved baseline removal for respiration signals.
+
 
 ### Version 1.2.0 (March 20, 2020)
 + enhancement: added peak detection for photoplethysmogram (PPG) (heart.ppg_peaks()), based on

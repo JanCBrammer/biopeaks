@@ -30,13 +30,13 @@ Compared to application programming interfaces, a GUI allows for more intuitive 
 with the biosignal throughout its analysis.
 
 An analyst who wants to extract information from heart or breathing biosignals must perform multiple steps.
-First, the analyst must verify if the biosignal quality is sufficient for analysis. Biosignals can be corrupted
+First, they must verify if the biosignal quality is sufficient for analysis. Biosignals can be corrupted
 for a number of reasons, including movement artifacts, poor sensor placement and many more. `biopeaks` allows
 the analyst to quickly visualize a biosignal and interact with it (panning, zooming) in order to evaluate its quality.
 
 If the analyst deems the biosignal's quality sufficient they proceed to identify local extrema.
 Local extrema include R-peaks in electrocardiogram (ECG) and systolic peaks in photoplethysmogram (PPG), representing
-the contraction of the ventricular heart muscle and subsequent ejection of blood.  In breathing biosignals,
+the contraction of the ventricular heart muscle and subsequent ejection of blood. In breathing biosignals,
 the relevant local extrema are inhalation peaks and exhalation troughs.
 `biopeaks` detects these extrema automatically with sensible algorithmic defaults. Algorithmically identified
 extrema can be misplaced (false positives) or extrema might be missed (false negative). These
@@ -85,6 +85,8 @@ However, these come with the following drawbacks:
 + require some knowledge of (biomedical) digital signal processing [@artiifact; @physiodatatoolbox; @signalplant]
 + many steps from raw data to feature extraction [@artiifact; @physiodatatoolbox; @signalplant]
 + no possibility to export instantaneous features [@physiodatatoolbox; @signalplant]
++ no support for PPG [@artiifact; @signalplant]
++ no support for breathing biosignals [@artiifact]
 
 At the time of writing, `biopeaks` is used in multiple projects at the Gemhlab [@gemh].
 
