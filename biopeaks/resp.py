@@ -60,8 +60,8 @@ def resp_extrema(signal, sfreq):
     # their direct neighbor, i.e. define outliers in absolute amplitude
     # difference between neighboring extrema
     vertdiff = np.abs(np.diff(signal[extrema]))
-    avgvertdiff = np.mean(vertdiff)
-    minvert = np.where(vertdiff > avgvertdiff * 0.3)[0]
+    mediandiff = np.median(vertdiff)
+    minvert = np.where(vertdiff > mediandiff * 0.3)[0]
     extrema = extrema[minvert]
 
     # check if the alternation of peaks and troughs is unbroken: if alternation
