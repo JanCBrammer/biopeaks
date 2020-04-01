@@ -173,29 +173,31 @@ def heart_period(peaks, sfreq, nsamp):
     return peaks, periodintp, rateintp
 
 
-def autocorrect_peaks(peaks, sfreq):
+def autocorrect_peaks(peaks, sfreq, iterative=True):
 
     # Get corrected peaks and normal-to-normal intervals.
     artifacts = _find_artifacts(peaks, sfreq)
     peaks_clean = _correct_artifacts(artifacts, peaks, sfreq)
 
-    # Iteratively apply the artifact correction until the number of artifact
-    # reaches an equilibrium (i.e., the number of artifacts does not change
-    # anymore from one iteration to the next).
-    n_artifacts_previous = np.inf
-    n_artifacts_current = sum([len(i) for i in artifacts.values()])
+    if iterative:
 
-    previous_diff = 0
-
-    while n_artifacts_current - n_artifacts_previous != previous_diff:
-
-        previous_diff = n_artifacts_previous - n_artifacts_current
-
-        artifacts = _find_artifacts(peaks_clean, sfreq)
-        peaks_clean = _correct_artifacts(artifacts, peaks_clean, sfreq)
-
-        n_artifacts_previous = n_artifacts_current
+        # Iteratively apply the artifact correction until the number of artifact
+        # reaches an equilibrium (i.e., the number of artifacts does not change
+        # anymore from one iteration to the next).
+        n_artifacts_previous = np.inf
         n_artifacts_current = sum([len(i) for i in artifacts.values()])
+
+        previous_diff = 0
+
+        while n_artifacts_current - n_artifacts_previous != previous_diff:
+
+            previous_diff = n_artifacts_previous - n_artifacts_current
+
+            artifacts = _find_artifacts(peaks_clean, sfreq)
+            peaks_clean = _correct_artifacts(artifacts, peaks_clean, sfreq)
+
+            n_artifacts_previous = n_artifacts_current
+            n_artifacts_current = sum([len(i) for i in artifacts.values()])
 
     return peaks_clean
 
