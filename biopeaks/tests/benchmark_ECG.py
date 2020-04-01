@@ -5,7 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from biopeaks.ecg import ecg_peaks
+from biopeaks.heart import ecg_peak
 from wfdb.processing import compare_annotations
 
 
