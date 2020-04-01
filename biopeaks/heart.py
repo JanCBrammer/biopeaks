@@ -173,7 +173,7 @@ def heart_period(peaks, sfreq, nsamp):
     return peaks, periodintp, rateintp
 
 
-def autocorrect_peaks(peaks, sfreq, iterative=True):
+def correct_peaks(peaks, sfreq, iterative=True):
 
     # Get corrected peaks and normal-to-normal intervals.
     artifacts = _find_artifacts(peaks, sfreq)

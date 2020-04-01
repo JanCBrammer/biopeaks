@@ -246,7 +246,7 @@ class Tests:
                         'failed to calculate tidal amplitude'
                 print('calculated tidal amplitude successfully')
             else:
-                print(f" mean rate is {np.around(np.mean(self._model.tidalampintp), 4)}")
+                print(f" mean amplitude is {np.around(np.mean(self._model.tidalampintp), 4)}")
 
 
         # 11. save stats
@@ -275,7 +275,7 @@ class Tests:
                 assert np.around(stats["tidalamp"].mean(), 4) == avgtidalamp, \
                     "failed to save tidalamplitude}"
             else:
-                print(f"mean re-loaded rate is {np.around(stats['tidalamp'].mean(), 4)}")
+                print(f"mean re-loaded amplitude is {np.around(stats['tidalamp'].mean(), 4)}")
 
 
         # clean-up in case consecutive test are executed
@@ -296,7 +296,7 @@ class Tests:
 
 
     def batch_file(self, assertion, modality, sigchan, mode, sigfnames,
-                   peakdir, statsdir, peaksums, stats):
+                   peakdir, statsdir, peaksums, stats, correctpeaks=False):
 
         # 1. set options and set paths
         ##############################
@@ -304,6 +304,8 @@ class Tests:
         QTest.keyClicks(self._view.sigchanmenu, sigchan)
         QTest.keyClicks(self._view.batchmenu, mode)
         self._view.savecheckbox.setCheckState(Qt.Checked)
+        if correctpeaks:
+            self._view.correctcheckbox.setCheckState(Qt.Checked)
         self._view.periodcheckbox.setCheckState(Qt.Checked)
         self._view.ratecheckbox.setCheckState(Qt.Checked)
         if modality == "RESP":
@@ -315,7 +317,7 @@ class Tests:
         # use a mockup of the controller's batch_processor in order to avoid
         # calls to the controller's get_wpathpeaks and get_wpathstats methods
         self._controller.methodnb = 0
-        self._controller.nmethods = 4
+        self._controller.nmethods = 5
         self._controller.filenb = 0
         self._controller.nfiles = len(self._model.fpaths)
 
@@ -377,13 +379,14 @@ class Tests:
                     assert np.around(stats["tidalamp"].mean(), 4) == stat[2], \
                         f"failed to save tidalamplitude for {sigfname}"
                 else:
-                    print(f"mean re-loaded rate is {np.around(stats['tidalamp'].mean(), 4)}")
+                    print(f"mean re-loaded amplitude is {np.around(stats['tidalamp'].mean(), 4)}")
 
             # remove all files that have been saved during the test
             os.remove(statsfname)
 
         # restore original state of optionpanel
         self._view.savecheckbox.setCheckState(Qt.Unchecked)
+        self._view.correctcheckbox.setCheckState(Qt.Unchecked)
         self._view.periodcheckbox.setCheckState(Qt.Unchecked)
         self._view.ratecheckbox.setCheckState(Qt.Unchecked)
         if modality == "RESP":
@@ -492,10 +495,10 @@ def runner(assertion=True):
                                 siglenseg=200000,
                                 markerlen=5100000,
                                 markerlenseg=200000,
-                                peaksum=13109234,
-                                avgperiod=3.3236,
-                                avgrate=19.4375,
-                                avgtidalamp=131.1297,
+                                peaksum=13355662,
+                                avgperiod=3.2676,
+                                avgrate=19.7336,
+                                avgtidalamp=129.722,
                                 segment=[3200, 3400])
 
     # single file with artificial EDF breathing data
@@ -512,9 +515,9 @@ def runner(assertion=True):
                                 siglenseg=3800,
                                 markerlen=180000,
                                 markerlenseg=15200,
-                                peaksum=288034,
-                                avgperiod=1.0002,
-                                avgrate=59.9865,
+                                peaksum=276760,
+                                avgperiod=1.0000,
+                                avgrate=60.0003,
                                 avgtidalamp=16350.0000,
                                 segment=[602.6, 679.26])
 
@@ -532,7 +535,25 @@ def runner(assertion=True):
                               peakdir=datapath,
                               statsdir=datapath,
                               peaksums=peaksums,
-                              stats=stats)
+                              stats=stats,
+                              correctpeaks=False)
+
+    # batch processing with OpenSignals ECG data with autocorrection of peaks
+    sigfiles = ['OSmontage1A.txt', 'OSmontage1J.txt', 'OSmontage2A.txt',
+                'OSmontage2J.txt', 'OSmontage3A.txt', 'OSmontage3J.txt']
+    peaksums = [3808205, 3412337, 2643186, 3511241, 3611836, 3457932]
+    stats = [(0.7946, 76.0995), (0.7285, 83.1341), (0.7914, 76.5469),
+             (0.7418, 81.5011), (0.7856, 76.9153), (0.7236, 83.6030)]
+    testapp._tests.batch_file(assertion=assertion,
+                              modality='ECG',
+                              sigchan='A3',
+                              mode='multiple files',
+                              sigfnames=sigfiles,
+                              peakdir=datapath,
+                              statsdir=datapath,
+                              peaksums=peaksums,
+                              stats=stats,
+                              correctpeaks=True)
 
     print("tests ran without errors, closing application")
     testapp.closeAllWindows() # QApplication quits once window is closed

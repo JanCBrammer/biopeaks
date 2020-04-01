@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .heart import ecg_peaks, ppg_peaks, autocorrect_peaks, heart_period
+from .heart import ecg_peaks, ppg_peaks, correct_peaks, heart_period
 from .resp import resp_extrema, resp_stats
 from .io_utils import read_opensignals, write_opensignals, read_edf, write_edf
 import os
@@ -183,7 +183,7 @@ class Controller(QObject):
         '''
 
         self.methodnb = 0
-        self.nmethods = 4
+        self.nmethods = 5
         self.filenb = 0
         self.nfiles = len(self._model.fpaths)
 
@@ -224,8 +224,11 @@ class Controller(QObject):
             self.find_peaks()
         elif self.methodnb == 2:
             self.methodnb += 1
-            self.calculate_stats()
+            self.autocorrect_peaks()
         elif self.methodnb == 3:
+            self.methodnb += 1
+            self.calculate_stats()
+        elif self.methodnb == 4:
             self.methodnb += 1
             if self._model.wdirpeaks:
                 _, fname = os.path.split(fpath)
@@ -235,7 +238,7 @@ class Controller(QObject):
                 self.save_peaks()
             else:
                 self.dispatcher(1)
-        elif self.methodnb == 4:
+        elif self.methodnb == self.nmethods:
             # once all methods are executed, move to next file and start with
             # first method again
             self.methodnb = 0
@@ -428,9 +431,11 @@ class Controller(QObject):
         if self._model.peaks is None:
             self._model.status = "Error: no peaks available."
             return
+        if (self._model.batchmode == "multiple files" and
+            not self._model.correctbatchpeaks):
+            return
         self._model.status = f"Auto-correcting {self._model.modality} peaks"
-        self._model.peaks = autocorrect_peaks(self._model.peaks,
-                                              self._model.sfreq)
+        self._model.peaks = correct_peaks(self._model.peaks, self._model.sfreq)
 
 
     def edit_peaks(self, event):
@@ -476,7 +481,7 @@ class Controller(QObject):
     def save_peaks(self):
         self._model.status = "Saving peaks."
         # save peaks in seconds
-        if self._model.modality in ["ECG", "PPG"]:
+        if self._model.modality != "RESP":
             savearray = pd.DataFrame(self._model.peaks / self._model.sfreq)
             savearray.to_csv(self._model.wpathpeaks, index=False,
                              header=['peaks'])

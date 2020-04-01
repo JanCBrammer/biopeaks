@@ -302,6 +302,17 @@ class Model(QObject):
         elif value == 0:
             self._savebatchpeaks = False
 
+    @pyqtProperty(int)
+    def correctbatchpeaks(self):
+        return self._correctbatchpeaks
+
+    @pyqtSlot(int)
+    def set_correctbatchpeaks(self, value):
+        if value == 2:
+            self._correctbatchpeaks = True
+        elif value == 0:
+            self._correctbatchpeaks = False
+
     @pyqtSlot(int)
     def progress(self, value):
         self._progress = value
@@ -340,6 +351,7 @@ class Model(QObject):
         self._wpathstats = None
         self._wdirstats = None
         self._savebatchpeaks = False
+        self._correctbatchpeaks = False
         self._savestats = {"period":False, "rate":False, "tidalamp":False}
         self._filetype = None
 

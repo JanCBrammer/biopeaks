@@ -82,13 +82,17 @@ class View(QMainWindow):
         self.navitools = CustomNavigationToolbar(self.canvas0, self)
 
         # peak editing
-        self.editcheckbox = QCheckBox("edit peaks", self)
+        self.editcheckbox = QCheckBox("editable", self)
         self.editcheckbox.stateChanged.connect(self._model.set_peakseditable)
 
         # peak saving batch
-        self.savecheckbox = QCheckBox("save peaks during batch processing",
-                                       self)
+        self.savecheckbox = QCheckBox("save during batch processing", self)
         self.savecheckbox.stateChanged.connect(self._model.set_savebatchpeaks)
+
+        # peak auto-correction batch
+        self.correctcheckbox = QCheckBox("correct during batch processing",
+                                         self)
+        self.correctcheckbox.stateChanged.connect(self._model.set_correctbatchpeaks)
 
         # selecting stats for saving
         self.periodcheckbox = QCheckBox("period", self)
@@ -99,7 +103,7 @@ class View(QMainWindow):
         self.tidalampcheckbox.stateChanged.connect(lambda: self.select_stats("tidalamp"))
 
         # channel selection
-        self.sigchanmenulabel = QLabel("biosignal channel")
+        self.sigchanmenulabel = QLabel("biosignal")
         self.sigchanmenu = QComboBox(self)
         self.sigchanmenu.addItem("A1")
         self.sigchanmenu.addItem("A2")
@@ -111,7 +115,7 @@ class View(QMainWindow):
         # initialize with default value
         self._model.set_signalchan(self.sigchanmenu.currentText())
 
-        self.markerchanmenulabel = QLabel("marker channel")
+        self.markerchanmenulabel = QLabel("marker")
         self.markerchanmenu = QComboBox(self)
         self.markerchanmenu.addItem("none")
         self.markerchanmenu.addItem("I1")
@@ -312,6 +316,7 @@ class View(QMainWindow):
         self.optionsgroupC = QGroupBox("peak options")
         self.vlayoutC.addWidget(self.editcheckbox)
         self.vlayoutC.addWidget(self.savecheckbox)
+        self.vlayoutC.addWidget(self.correctcheckbox)
         self.optionsgroupC.setLayout(self.vlayoutC)
 
         self.optionsgroupD = QGroupBox("select statistics for saving")
@@ -546,12 +551,15 @@ class View(QMainWindow):
             self.editcheckbox.setEnabled(False)
             self.editcheckbox.setChecked(False)
             self.savecheckbox.setEnabled(True)
+            self.correctcheckbox.setEnabled(True)
             self.markerchanmenu.setEnabled(False)
         elif event == "single file":
             self.editcheckbox.setEnabled(True)
             self.markerchanmenu.setEnabled(True)
             self.savecheckbox.setEnabled(False)
             self.savecheckbox.setChecked(False)
+            self.correctcheckbox.setEnabled(False)
+            self.correctcheckbox.setChecked(False)
 
 
     def reset_plot(self):
