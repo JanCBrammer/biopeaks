@@ -1,17 +1,21 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from scipy.signal import detrend
-from .filters import butter_lowpass_filter
+from .filters import butter_bandpass_filter
 from .analysis_utils import interp_stats
 
 
 def resp_extrema(signal, sfreq):
 
-    # detrend and lowpass-filter the signal to be able to reliably detect zero
-    # crossings
-    signal = detrend(signal, type="linear")
-    signal = butter_lowpass_filter(signal, 3, sfreq)
+    # Slow baseline drifts / fluctuations must be removed from the raw
+    # breathing signal (i.e., the signal must be centered around zero), in
+    # in order to be able to reliable detect zero-crossings.
+
+    # Remove baseline by applying a lowcut at .05Hz (preserves breathing rates
+    # larger than 3 breath per minute) high frequency noise above 3 Hz
+    # preserves breathing rates slower than 180 breath per minute).
+    signal = butter_bandpass_filter(signal, lowcut=.05, highcut=3, fs=sfreq,
+                                    order=2)
 
     greater = signal > 0
     smaller = signal < 0
