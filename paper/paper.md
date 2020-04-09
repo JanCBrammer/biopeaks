@@ -30,10 +30,9 @@ Compared to application programming interfaces, a GUI allows for more intuitive 
 with the biosignal throughout its analysis.
 
 An analyst who wants to extract information from heart or breathing biosignals must perform multiple steps.
-First, they must verify if the biosignal quality is sufficient for analysis. Biosignals can be corrupted
+First, they must verify if the biosignals' quality is sufficient for analysis. Biosignals can be corrupted
 for a number of reasons, including movement artifacts, poor sensor placement and many more. `biopeaks` allows
-the analyst to quickly visualize a biosignal and interact with it (panning, zooming) in order to evaluate its quality.
-
+the analyst to quickly visualize a biosignal and interact with it (panning, zooming) to evaluate its quality.
 If the analyst deems the biosignal's quality sufficient they proceed to identify local extrema.
 Local extrema include R-peaks in electrocardiogram (ECG) and systolic peaks in photoplethysmogram (PPG), representing
 the contraction of the ventricular heart muscle and subsequent ejection of blood. In breathing biosignals,
@@ -41,13 +40,12 @@ the relevant local extrema are inhalation peaks and exhalation troughs.
 `biopeaks` detects these extrema automatically with sensible algorithmic defaults. Algorithmically identified
 extrema can be misplaced (false positives) or extrema might be missed (false negative). These
 errors can happen if there are small noisy segments in an otherwise clean biosignal. If left uncorrected, these
-errors significantly distort the subsequent analysis steps [@]. This is why `biopeaks` offers intuitive manual extrema editing
-(i.e., removing and adding extrema). Additionally, for cardiac biosignals, `biopeaks` automatically performs
-state-of-the-art extrema correction [@lipponen].
-
-Finally, based on the extrema, the analyst can extract features from the biosignal. The features are based on temporal or
-amplitude differences between the extrema. For example, Fig. 1 through 3 illustrate the extraction of instantaneous
-heart period, breathing period, and breathing (inhalation) amplitude respectively.
+errors significantly distort the subsequent analysis steps [@].`biopeaks` offers intuitive manual extrema editing
+(i.e., removing and adding extrema) to ensure the correct placement of extrema. Additionally, for cardiac biosignals,
+`biopeaks` offers state-of-the-art automatic extrema correction [@lipponen]. Finally, based on the extrema, the analyst
+can extract features from the biosignal. The features are based on temporal or amplitude differences between the extrema.
+For example, Fig. 1 through 3 illustrate the extraction of instantaneous heart period, breathing period, and breathing
+(inhalation) amplitude respectively.
 
 ![figure1](Figure_1.png)
 *Figure 1*: Extraction of heart period based on R-peaks in an ECG. Note that this is conceptually identical to the extraction
@@ -70,7 +68,7 @@ The GUI has the following functionality:
 + automatic extrema detection (R-peaks in ECG, systolic peaks in PPG, as well as exhalation troughs and inhalation peaks in breathing signals)
 with signal-specific, sensible defaults
 + automatic state-of-the-art artifact correction for ECG and PPG extrema [@lipponen]
-+ manual editing of extrema (useful in case of poor biosignal quality)
++ manual editing of extrema
 + extraction of instantaneous features: (heart- or breathing-) rate and period, as well as breathing amplitude
 + few steps from raw biosignal to feature extraction
 + does not require knowledge of (biomedical) digital signal processing
