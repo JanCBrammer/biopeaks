@@ -170,7 +170,7 @@ def heart_period(peaks, sfreq, nsamp):
     periodintp = interp_stats(peaks, rr, nsamp)
     rateintp = 60 / periodintp
 
-    return peaks, periodintp, rateintp
+    return periodintp, rateintp
 
 
 def correct_peaks(peaks, sfreq, iterative=True):

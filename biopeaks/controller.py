@@ -62,14 +62,15 @@ class Controller(QObject):
     def get_fpaths(self):
         self._model.fpaths = getOpenFileNames(None, 'Choose your data',
                                               '\home')[0]
-        if self._model.fpaths:
-            if (self._model.batchmode == 'multiple files' and
-                len(self._model.fpaths) >= 1):
-                self.batch_processor()
-            elif (self._model.batchmode == 'single file' and
-                  len(self._model.fpaths) == 1):
-                self._model.reset()
-                self.read_signal(path=self._model.fpaths[0])
+        if not self._model.fpaths:
+            return
+        if (self._model.batchmode == 'multiple files' and
+            len(self._model.fpaths) >= 1):
+            self.batch_processor()
+        elif (self._model.batchmode == 'single file' and
+              len(self._model.fpaths) == 1):
+            self._model.reset()
+            self.read_signal(path=self._model.fpaths[0])
 
 
     def get_wpathsignal(self):
@@ -136,16 +137,17 @@ class Controller(QObject):
         if self._model.batchmode == 'single file':
             # check is there is data for the selected stats
             for key, value in self._model.savestats.items():
-                if value:
-                    if key == "period" and self._model.periodintp is None:
-                        self._model.status = "Error: no statistics available."
-                        return
-                    elif key == "rate" and self._model.rateintp is None:
-                        self._model.status = "Error: no statistics available."
-                        return
-                    elif key == "tidalamp" and self._model.tidalampintp is None:
-                        self._model.status = "Error: no statistics available."
-                        return
+                if not value:
+                    continue
+                if key == "period" and self._model.periodintp is None:
+                    self._model.status = "Error: no statistics available."
+                    return
+                elif key == "rate" and self._model.rateintp is None:
+                    self._model.status = "Error: no statistics available."
+                    return
+                elif key == "tidalamp" and self._model.tidalampintp is None:
+                    self._model.status = "Error: no statistics available."
+                    return
             self._model.wpathstats = getSaveFileName(None, 'Save statistics',
                                                      'untitled.csv',
                                                      'CSV (*.csv)')[0]
@@ -327,8 +329,8 @@ class Controller(QObject):
         self._model.signal = self._model.signal[begsamp:endsamp]
 
         if self._model.peaks is not None:
-            peakidcs = np.where((self._model.peaks >= begsamp) &
-                                (self._model.peaks <= endsamp))[0]
+            peakidcs = np.where((self._model.peaks > begsamp) &
+                                (self._model.peaks < endsamp))[0]
             peaks = self._model.peaks[peakidcs]
             peaks -= begsamp
             self._model.peaks = peaks
@@ -342,20 +344,20 @@ class Controller(QObject):
 
         # Since the marker channel might be sampled at a different rate in EDF
         # data, treat it separately.
-        if self._model.marker is not None:
-            if self._model.filetype == "EDF":
-                sfreq = self._model.sfreqmarker
-            elif self._model.filetype == "OpenSignals":
-                sfreq = self._model.sfreq
-            begsamp = int(np.rint(self._model.segment[0] *
-                                  sfreq))
-            endsamp = int(np.rint(self._model.segment[1] *
-                                  sfreq))
-            self._model.marker = self._model.marker[begsamp:endsamp]
-            if endsamp - begsamp <= 1:
-                self._model.status = "Error: There are not enough samples in" \
-                                     " the marker channel to resolve this" \
-                                     " segment."
+        if self._model.marker is None:
+            return
+        if self._model.filetype == "EDF":
+            sfreq = self._model.sfreqmarker
+        elif self._model.filetype == "OpenSignals":
+            sfreq = self._model.sfreq
+        begsamp = int(np.rint(self._model.segment[0] *
+                              sfreq))
+        endsamp = int(np.rint(self._model.segment[1] *
+                              sfreq))
+        self._model.marker = self._model.marker[begsamp:endsamp]
+        if endsamp - begsamp <= 1:
+            self._model.status = "Error: There are not enough samples in the" \
+                                 " marker channel to resolve this segment."
 
     @threaded
     def save_signal(self):
@@ -412,15 +414,15 @@ class Controller(QObject):
     @threaded
     def find_peaks(self):
         self._model.status = "Finding peaks."
-        if self._model.loaded:
-            if self._model.peaks is None:
-                peakfunc = peakfuncs[self._model.modality]
-                self._model.peaks = peakfunc(self._model.signal,
-                                             self._model.sfreq)
-            else:
-                self._model.status = "Error: peaks already in memory."
-        else:
+        if not self._model.loaded:
             self._model.status = "Error: no data available."
+            return
+        if self._model.peaks is not None:
+            self._model.status = "Error: peaks already in memory."
+            return
+        peakfunc = peakfuncs[self._model.modality]
+        self._model.peaks = peakfunc(self._model.signal,
+                                     self._model.sfreq)
 
 
     @threaded
@@ -526,8 +528,7 @@ class Controller(QObject):
             self._model.status = "Error: no peaks available."
             return
         if self._model.modality in ["ECG", "PPG"]:
-            (self._model.peaks,
-             self._model.periodintp,
+            (self._model.periodintp,
              self._model.rateintp) = heart_period(peaks=self._model.peaks,
                                                   sfreq=self._model.sfreq,
                                                   nsamp=self._model.signal.size)
