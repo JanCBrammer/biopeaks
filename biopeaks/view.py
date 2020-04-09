@@ -162,8 +162,8 @@ class View(QMainWindow):
         # disable closing such that widget can only be closed by confirming
         # selection or custom button
         self.segmenter.setFeatures(QDockWidget.NoDockWidgetFeatures)
-        # limit number of decimals to two
-        regex = QRegExp("[0-9]*\.?[0-9]{2}")
+        # Limit number of decimals to four.
+        regex = QRegExp("[0-9]*\.?[0-9]{4}")
         validator = QRegExpValidator(regex)
 
         self.startlabel = QLabel("start")
