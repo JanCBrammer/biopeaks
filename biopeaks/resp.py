@@ -8,12 +8,13 @@ from .analysis_utils import interp_stats
 def resp_extrema(signal, sfreq):
 
     # Slow baseline drifts / fluctuations must be removed from the raw
-    # breathing signal (i.e., the signal must be centered around zero), in
-    # in order to be able to reliable detect zero-crossings.
+    # breathing signal (i.e., the signal must be centered around zero) in order
+    # to be able to reliable detect zero-crossings.
 
     # Remove baseline by applying a lowcut at .05Hz (preserves breathing rates
-    # larger than 3 breath per minute) high frequency noise above 3 Hz
-    # preserves breathing rates slower than 180 breath per minute).
+    # higher than 3 breath per minute) and high frequency noise by applying a
+    # highcut at 3 Hz (preserves breathing rates slower than 180 breath per
+    # minute).
     signal = butter_bandpass_filter(signal, lowcut=.05, highcut=3, fs=sfreq,
                                     order=2)
 
