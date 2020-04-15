@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
-from scipy.signal import find_peaks, medfilt
+from scipy.signal import find_peaks
 from .filters import (butter_highpass_filter, powerline_filter,
                       moving_average, butter_bandpass_filter)
-from .analysis_utils import (threshold_normalization, interp_stats,
-                             update_indices)
+from .analysis_utils import (compute_threshold, interp_stats, update_indices)
 
 
 def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
@@ -215,7 +215,7 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
     c1 = 0.13
     c2 = 0.17
     alpha = 5.2
-    window_half = 45
+    window_width = 91
     medfilt_order = 11
 
     # Compute period series (make sure it has same numer of elements as peaks);
@@ -225,16 +225,21 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
     # a value in a realistic range (e.g., for median filtering).
     rr[0] = np.mean(rr[1:])
 
-    # Compute differences of consecutive periods.
+    # Artifact identification #################################################
+    ###########################################################################
+
+    # Compute dRRs: time series of differences of consecutive periods (dRRs).
     drrs = np.ediff1d(rr, to_begin=0)
     drrs[0] = np.mean(drrs[1:])
     # Normalize by threshold.
-    drrs, _ = threshold_normalization(drrs, alpha, window_half)
+    th1 = compute_threshold(drrs, alpha, window_width)
+    drrs /= th1
 
+    # Cast dRRs to subspace s12.
     # Pad drrs with one element.
     padding = 2
     drrs_pad = np.pad(drrs, padding, "reflect")
-    # Cast drrs to two-dimesnional subspace s1.
+
     s12 = np.zeros(drrs.size)
     for d in np.arange(padding, padding + drrs.size):
 
@@ -243,94 +248,94 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
         elif drrs_pad[d] < 0:
             s12[d - padding] = np.min([drrs_pad[d - 1], drrs_pad[d + 1]])
 
-    # Cast drrs to two-dimensional subspace s2 (looping over index d a second
-    # consecutive time is choice to be explicit rather than efficient).
+    # Cast dRRs to subspace s22.
     s22 = np.zeros(drrs.size)
     for d in np.arange(padding, padding + drrs.size):
 
-        if drrs_pad[d] > 0:
-            s22[d - padding] = np.max([drrs_pad[d + 1], drrs_pad[d + 2]])
-        elif drrs_pad[d] < 0:
+        if drrs_pad[d] >= 0:
             s22[d - padding] = np.min([drrs_pad[d + 1], drrs_pad[d + 2]])
+        elif drrs_pad[d] < 0:
+            s22[d - padding] = np.max([drrs_pad[d + 1], drrs_pad[d + 2]])
 
-    # Compute deviation of RRs from median RRs.
-    padding = medfilt_order // 2    # pad RR series before filtering
-    rr_pad = np.pad(rr, padding, "reflect")
-    medrr = medfilt(rr_pad, medfilt_order)
-    medrr = medrr[padding:padding + rr.size]    # remove padding
+    # Compute mRRs: time series of deviation of RRs from median.
+    df = pd.DataFrame({'signal': rr})
+    medrr = df.rolling(medfilt_order, center=True,
+                       min_periods=1).median().signal.to_numpy()
     mrrs = rr - medrr
     mrrs[mrrs < 0] = mrrs[mrrs < 0] * 2
-    mrrs, th2 = threshold_normalization(mrrs, alpha, window_half)    # normalize by threshold
+    # Normalize by threshold.
+    th2 = compute_threshold(mrrs, alpha, window_width)
+    mrrs /= th2
 
-    # Artifact identification
-    #########################
-    # Keep track of indices that need to be interpolated, removed, or added.
+    # Artifact classification #################################################
+    ###########################################################################
+    # Artifact classes.
     extra_idcs = []
     missed_idcs = []
     ectopic_idcs = []
-    longshort_idcs = []
+    short_idcs = []
+    long_idcs = []
 
-    for i in range(peaks.size - 2):
+    for i in range(rr.size - 2):    # The flow control is implemented based on Figure 1
 
-        if np.abs(drrs[i]) <= 1:
+        if np.abs(drrs[i]) <= 1:    # Figure 1
             continue
-
-        # Check for ectopic peaks (based on Figure 2a).
-        eq1 = np.logical_and(drrs[i] > 1, s12[i] < (-c1 * drrs[i] - c2))
-        eq2 = np.logical_and(drrs[i] < -1, s12[i] > (-c1 * drrs[i] + c2))
+        eq1 = np.logical_and(drrs[i] > 1, s12[i] < (-c1 * drrs[i] - c2))    # Figure 2a
+        eq2 = np.logical_and(drrs[i] < -1, s12[i] > (-c1 * drrs[i] + c2))    # Figure 2a
 
         if np.any([eq1, eq2]):
             # If any of the two equations is true.
             ectopic_idcs.append(i)
             continue
-
         # If none of the two equations is true.
-        # Check for long or short beats (based on Figure 2b).
-        if ~np.any([np.abs(drrs[i]) > 1, np.abs(mrrs[i]) > 3]):
+        if ~np.any([np.abs(drrs[i]) > 1, np.abs(mrrs[i]) > 3]):    # Figure 1
             continue
 
         # Long beat.
-        eq3 = np.logical_and(drrs[i] > 1, s22[i] < -1)
-        eq4 = np.abs(mrrs[i]) > 3
+        eq3 = np.logical_and(drrs[i] > 1, s22[i] < -1)    # Figure 2b
+        eq4 = np.abs(mrrs[i]) > 3    # Figure 1
         # Short beat.
-        eq5 = np.logical_and(drrs[i] < -1, s22[i] > 1)
+        eq5 = np.logical_and(drrs[i] < -1, s22[i] > 1)    # Figure 2b
 
         if ~np.any([eq3, eq4, eq5]):
             # If none of the three equations is true: normal beat.
             continue
-
         # If any of the three equations is true: check for missing or extra
         # peaks.
 
-        # Missing.
-        eq6 = np.abs(rr[i] / 2 - medrr[i]) < th2[i]
-        # Extra.
-        eq7 = np.abs(rr[i] + rr[i + 1] - medrr[i]) < th2[i]
+        longshort_idcs = [i]
+        # Check if the following beat is also classified as long or short.
+        if np.abs(drrs[i + 1]) < np.abs(drrs[i + 2]):
+            longshort_idcs.append(i + 1)
 
-        # Check if short or extra.
-        if eq5:
-            if eq7:
-                extra_idcs.append(i)
-            else:
-                longshort_idcs.append(i)
-                if np.abs(drrs[i + 1]) < np.abs(drrs[i + 2]):
-                    longshort_idcs.append(i + 1)
-        # Check if long or missing.
-        if np.any([eq3, eq4]):
-            if eq6:
-                missed_idcs.append(i)
-            else:
-                longshort_idcs.append(i)
-                if np.abs(drrs[i + 1]) < np.abs(drrs[i + 2]):
-                    longshort_idcs.append(i + 1)
+        for j in longshort_idcs:
+            # Missing.
+            eq6 = np.abs(rr[j] / 2 - medrr[j]) < th2[j]    # Figure 1
+            # Extra.
+            eq7 = np.abs(rr[j] + rr[j + 1] - medrr[j]) < th2[j]    # Figure 1
+
+            # Check if short or extra.
+            if eq5:
+                if eq7:
+                    extra_idcs.append(j)
+                else:
+                    short_idcs.append(j)
+            # Check if long or missing.
+            if np.any([eq3, eq4]):
+                if eq6:
+                    missed_idcs.append(j)
+                else:
+                    long_idcs.append(j)
 
     if enable_plot:
         # Visualize artifact type indices.
         fig0, (ax0, ax1, ax2) = plt.subplots(nrows=3, ncols=1, sharex=True)
         ax0.set_title("Artifact types", fontweight="bold")
         ax0.plot(rr, label="heart period")
-        ax0.scatter(longshort_idcs, rr[longshort_idcs], marker='x', c='m',
-                    s=100, zorder=3, label="long/short")
+        ax0.scatter(long_idcs, rr[long_idcs], marker='x', c='m',
+                    s=100, zorder=3, label="long")
+        ax0.scatter(short_idcs, rr[short_idcs], marker='x', c='o',
+                    s=100, zorder=3, label="short")
         ax0.scatter(ectopic_idcs, rr[ectopic_idcs], marker='x', c='g', s=100,
                     zorder=3, label="ectopic")
         ax0.scatter(extra_idcs, rr[extra_idcs], marker='x', c='y', s=100,
@@ -392,8 +397,8 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
         ax4.add_patch(poly3)
         ax4.legend(loc="upper right")
 
-    artifacts = {"extra": extra_idcs, "missed": missed_idcs,
-                 "longshort": longshort_idcs, "ectopic": ectopic_idcs}
+    artifacts = {"short": short_idcs, "extra": extra_idcs, "long": long_idcs,
+                 "missed": missed_idcs, "ectopic": ectopic_idcs}
 
     return artifacts
 
@@ -409,7 +414,8 @@ def _correct_artifacts(artifacts, peaks, sfreq):
     extra_idcs = artifacts["extra"]
     missed_idcs = artifacts["missed"]
     ectopic_idcs = artifacts["ectopic"]
-    longshort_idcs = artifacts["longshort"]
+    long_idcs = artifacts["long"]
+    short_idcs = artifacts["short"]
 
     # Delete extra peaks.
     if extra_idcs:
@@ -417,7 +423,8 @@ def _correct_artifacts(artifacts, peaks, sfreq):
         # Update remaining indices.
         missed_idcs = update_indices(extra_idcs, missed_idcs, -1)
         ectopic_idcs = update_indices(extra_idcs, ectopic_idcs, -1)
-        longshort_idcs = update_indices(extra_idcs, longshort_idcs, -1)
+        long_idcs = update_indices(extra_idcs, long_idcs, -1)
+        short_idcs = update_indices(extra_idcs, short_idcs, -1)
 
     # Add missing peaks.
     if missed_idcs:
@@ -434,11 +441,13 @@ def _correct_artifacts(artifacts, peaks, sfreq):
         peaks = np.insert(peaks, missed_idcs, added_peaks)
         # Update remaining indices.
         ectopic_idcs = update_indices(missed_idcs, ectopic_idcs, 1)
-        longshort_idcs = update_indices(missed_idcs, longshort_idcs, 1)
+        long_idcs = update_indices(missed_idcs, long_idcs, 1)
+        short_idcs = update_indices(missed_idcs, short_idcs, 1)
 
     # Interpolate ectopic as well as long or short peaks (important to do
     # this after peaks are deleted and/or added).
-    interp_idcs = np.concatenate((ectopic_idcs, longshort_idcs)).astype(int)
+    interp_idcs = np.concatenate((ectopic_idcs, long_idcs,
+                                  short_idcs)).astype(int)
     if interp_idcs.size > 0:
         interp_idcs.sort(kind='mergesort')
         # Make sure to not generate negative indices, or indices that exceed
