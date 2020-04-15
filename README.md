@@ -375,11 +375,15 @@ After extracting the PPG signals and peak annotations you can run the `benchmark
 
 # Changelog
 
+### Version 1.2.2 (April 15, 2020)
++ enhancement: faster auto-correction of ECG and PPG peaks with pandas rolling window.
++ bugfix: corrected error in calculation of subspace 22 during auto-correction of ECG and PPG peaks.
++ bugfix: during segmentation, extrema at segment boundaries are now excluded from segment.
+
 ### Version 1.2.1 (April 01, 2020)
 + enhancement: auto-correction of ECG and PPG peaks is now optional (instead
 of being applied by default during the calculation of the statistics).
 + enhancement: improved baseline removal for respiration signals.
-
 
 ### Version 1.2.0 (March 20, 2020)
 + enhancement: added peak detection for photoplethysmogram (PPG) (heart.ppg_peaks()), based on
@@ -463,4 +467,3 @@ Check out these free alternatives:
 + https://www.medisig.com/signalplant/
 + https://physiodatatoolbox.leidenuniv.nl/
 + http://www.artiifact.de/
-
