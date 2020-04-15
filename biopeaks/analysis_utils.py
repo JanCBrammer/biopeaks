@@ -1,25 +1,20 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from scipy.stats import iqr
+import pandas as pd
 from scipy.interpolate import interp1d
 
 
-def threshold_normalization(data, alpha, window_half):
-    wh = window_half
-    # compute threshold
-    th = np.zeros(data.size)
-    if data.size <= 2 * wh:
-        th[:] = alpha * (iqr(np.abs(data)) / 2)
-        # normalize data by threshold
-        data_th = np.divide(data, th)
-    else:
-        data_pad = np.pad(data, wh, 'reflect')
-        for i in np.arange(wh, wh + data.size):
-            th[i - wh] = alpha * (iqr(np.abs(data_pad[i - wh:i + wh])) / 2)
-        # normalize data by threshold (remove padding)
-        data_th = np.divide(data_pad[wh:wh + data.size], th)
-    return data_th, th
+def compute_threshold(signal, alpha, window_width):
+
+    df = pd.DataFrame({'signal': np.abs(signal)})
+    q1 = df.rolling(window_width, center=True,
+                    min_periods=1).quantile(.25).signal.to_numpy()
+    q3 = df.rolling(window_width, center=True,
+                    min_periods=1).quantile(.75).signal.to_numpy()
+    th = alpha * ((q3 - q1) / 2)
+
+    return th
 
 
 def update_indices(source_idcs, update_idcs, update):
