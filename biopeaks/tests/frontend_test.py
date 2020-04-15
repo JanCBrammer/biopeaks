@@ -526,7 +526,7 @@ def runner(assertion=True):
                 'OSmontage2J.txt', 'OSmontage3A.txt', 'OSmontage3J.txt']
     peaksums = [3808244, 3412308, 2645824, 3523449, 3611836, 3457936]
     stats = [(0.7950, 76.1123), (0.7288, 83.1468), (0.7894, 76.8911),
-             (0.7402, 81.7864), (0.7856, 76.9153), (0.7235, 83.6060)]
+              (0.7402, 81.7864), (0.7856, 76.9153), (0.7235, 83.6060)]
     testapp._tests.batch_file(assertion=assertion,
                               modality='ECG',
                               sigchan='A3',
@@ -541,9 +541,9 @@ def runner(assertion=True):
     # batch processing with OpenSignals ECG data with autocorrection of peaks
     sigfiles = ['OSmontage1A.txt', 'OSmontage1J.txt', 'OSmontage2A.txt',
                 'OSmontage2J.txt', 'OSmontage3A.txt', 'OSmontage3J.txt']
-    peaksums = [3808205, 3412337, 2643186, 3511241, 3611836, 3457932]
-    stats = [(0.7946, 76.0995), (0.7285, 83.1341), (0.7914, 76.5469),
-             (0.7418, 81.5011), (0.7856, 76.9153), (0.7236, 83.6030)]
+    peaksums = [3808204, 3394480, 2626445, 3511241, 3611829, 3457941]
+    stats = [(0.7944, 76.0998), (0.7308, 82.8572), (0.7934, 76.2335),
+             (0.7418, 81.5011), (0.7856, 76.9152), (0.7235, 83.5973)]
     testapp._tests.batch_file(assertion=assertion,
                               modality='ECG',
                               sigchan='A3',
