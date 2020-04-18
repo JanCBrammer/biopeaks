@@ -177,7 +177,7 @@ def correct_peaks(peaks, sfreq, iterative=True):
 
     # Get corrected peaks and normal-to-normal intervals.
     artifacts = _find_artifacts(peaks, sfreq)
-    peaks_clean = _correct_artifacts(artifacts, peaks, sfreq)
+    peaks_clean = _correct_artifacts(artifacts, peaks)
 
     if iterative:
 
@@ -194,7 +194,7 @@ def correct_peaks(peaks, sfreq, iterative=True):
             previous_diff = n_artifacts_previous - n_artifacts_current
 
             artifacts = _find_artifacts(peaks_clean, sfreq)
-            peaks_clean = _correct_artifacts(artifacts, peaks_clean, sfreq)
+            peaks_clean = _correct_artifacts(artifacts, peaks_clean)
 
             n_artifacts_previous = n_artifacts_current
             n_artifacts_current = sum([len(i) for i in artifacts.values()])
@@ -403,7 +403,7 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
     return artifacts
 
 
-def _correct_artifacts(artifacts, peaks, sfreq):
+def _correct_artifacts(artifacts, peaks):
 
     # Artifact correction
     #####################
