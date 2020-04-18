@@ -19,18 +19,17 @@ def compute_threshold(signal, alpha, window_width):
 
 def update_indices(source_idcs, update_idcs, update):
     """
-    for every element s in source_idcs, change every element u in update_idcs
-    accoridng to update, if u is larger than s
+    For every element s in source_idcs, change every element u in update_idcs
+    according to update, if u is larger than s.
     """
-    update_idcs_buffer = update_idcs
+    if not update_idcs:
+        return update_idcs
+
     for s in source_idcs:
-        # for each list, find the indices (of indices) that need to be updated
-        updates = [i for i, j in enumerate(update_idcs) if j > s]
-#        print('updates: {}'.format(updates))
-        for u in updates:
-            update_idcs_buffer[u] += update
-#        print('update_idcs: {}'.format(update_idcs_buffer))
-    return update_idcs_buffer
+        # For each list, find the indices (of indices) that need to be updated.
+        update_idcs = [u + update if u > s else u for u in update_idcs]
+
+    return update_idcs
 
 
 def interp_stats(peaks, stats, nsamp):
