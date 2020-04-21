@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
-                             QVBoxLayout, QHBoxLayout, QCheckBox,
-                             QLabel, QStatusBar, QGroupBox, QDockWidget,
-                             QLineEdit, QFormLayout, QPushButton, QProgressBar,
-                             QSplitter)
-from PyQt5.QtCore import (Qt, QSignalMapper, QRegExp)
-from PyQt5.QtGui import QIcon, QRegExpValidator
+from PySide2.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
+                               QVBoxLayout, QHBoxLayout, QCheckBox,
+                               QLabel, QStatusBar, QGroupBox, QDockWidget,
+                               QLineEdit, QFormLayout, QPushButton,
+                               QProgressBar, QSplitter)
+from PySide2.QtCore import Qt, QSignalMapper, QRegExp
+from PySide2.QtGui import QIcon, QRegExpValidator
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
                                                 FigureCanvas)
@@ -43,6 +43,10 @@ class View(QMainWindow):
         # figure0 for signal
         self.figure0 = Figure()
         self.canvas0 = FigureCanvas(self.figure0)
+        # Enforce minimum height, otherwise resizing with self.splitter causes
+        # mpl to throw an error because figure is resized to height 0. The
+        # widget can still be fully collapsed with self.splitter-
+        self.canvas0.setMinimumHeight(1)    # in pixels
         self.ax00 = self.figure0.add_subplot(1,1,1)
         self.ax00.set_frame_on(False)
         self.figure0.subplots_adjust(left=0.04, right=0.98, bottom=0.25)
@@ -54,6 +58,7 @@ class View(QMainWindow):
         # figure1 for marker
         self.figure1 = Figure()
         self.canvas1 = FigureCanvas(self.figure1)
+        self.canvas1.setMinimumHeight(1)
         self.ax10 = self.figure1.add_subplot(1,1,1, sharex=self.ax00)
         self.ax10.get_xaxis().set_visible(False)
         self.ax10.set_frame_on(False)
@@ -64,6 +69,7 @@ class View(QMainWindow):
         # figure2 for statistics
         self.figure2 = Figure()
         self.canvas2 = FigureCanvas(self.figure2)
+        self.canvas2.setMinimumHeight(1)
         self.ax20 = self.figure2.add_subplot(3,1,1, sharex=self.ax00)
         self.ax20.get_xaxis().set_visible(False)
         self.ax20.set_frame_on(False)
@@ -178,8 +184,8 @@ class View(QMainWindow):
                                     "select with mouse",
                                     self)
         segmentfromcursor.triggered.connect(self.enable_segmentedit)
-        self.startedit.addAction(segmentfromcursor, 1)
-        self.endedit.addAction(segmentfromcursor, 1)
+        self.startedit.addAction(segmentfromcursor, QLineEdit.TrailingPosition)
+        self.endedit.addAction(segmentfromcursor, QLineEdit.TrailingPosition)
 
         self.previewedit = QPushButton("preview segment")
         lambdafn = lambda: self._model.set_segment([self.startedit.text(),
@@ -292,6 +298,7 @@ class View(QMainWindow):
         self.splitter.addWidget(self.canvas0)
         self.splitter.addWidget(self.canvas1)
         self.splitter.addWidget(self.canvas2)
+        self.splitter.setChildrenCollapsible(False)
 
         # define GUI layout
         self.vlayout0 = QVBoxLayout(self.centwidget)

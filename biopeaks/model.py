@@ -2,24 +2,24 @@
 
 import numpy as np
 from os import path
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, pyqtProperty
+from PySide2.QtCore import QObject, Signal, Slot, Property
 
 
 class Model(QObject):
 
     # costum signals
-    signal_changed = pyqtSignal(object)
-    peaks_changed = pyqtSignal(object)
-    marker_changed = pyqtSignal(object)
-    segment_changed = pyqtSignal(object)
+    signal_changed = Signal(object)
+    peaks_changed = Signal(object)
+    marker_changed = Signal(object)
+    segment_changed = Signal(object)
     # makes sure that the emitted stats signal has the same length as self._sec
-    period_changed = pyqtSignal(object)
-    rate_changed = pyqtSignal(object)
-    tidalamp_changed = pyqtSignal(object)
-    path_changed = pyqtSignal(str)
-    status_changed = pyqtSignal(str)
-    progress_changed = pyqtSignal(int)
-    model_reset = pyqtSignal()
+    period_changed = Signal(object)
+    rate_changed = Signal(object)
+    tidalamp_changed = Signal(object)
+    path_changed = Signal(str)
+    status_changed = Signal(str)
+    progress_changed = Signal(int)
+    model_reset = Signal()
 
     # the following model attributes aren't slots, but are set by controller
     # methods
@@ -209,11 +209,11 @@ class Model(QObject):
     # the following model attributes are slots that are connected to signals
     # from the view or controller
 
-    @pyqtProperty(object)
+    @Property(object)
     def segment(self):
         return self._segment
 
-    @pyqtSlot(object)
+    @Slot(object)
     def set_segment(self, values):
 
         self._segment = None
@@ -248,72 +248,72 @@ class Model(QObject):
             self._segment = [begsamp, endsamp]
             self.segment_changed.emit(self._segment)
 
-    @pyqtProperty(str)
+    @Property(str)
     def batchmode(self):
         return self._batchmode
 
-    @pyqtSlot(str)
+    @Slot(str)
     def set_batchmode(self, value):
         self._batchmode = value
 
-    @pyqtProperty(str)
+    @Property(str)
     def markerchan(self):
         return self._markerchan
 
-    @pyqtSlot(str)
+    @Slot(str)
     def set_markerchan(self, value):
         self._markerchan = value
 
-    @pyqtProperty(str)
+    @Property(str)
     def signalchan(self):
         return self._signalchan
 
-    @pyqtSlot(str)
+    @Slot(str)
     def set_signalchan(self, value):
         self._signalchan = value
 
-    @pyqtProperty(str)
+    @Property(str)
     def modality(self):
         return self._modality
 
-    @pyqtSlot(str)
+    @Slot(str)
     def set_modality(self, value):
         self._modality = value
 
-    @pyqtProperty(int)
+    @Property(int)
     def peakseditable(self):
         return self._peakseditable
 
-    @pyqtSlot(int)
+    @Slot(int)
     def set_peakseditable(self, value):
         if value == 2:
             self._peakseditable = True
         elif value == 0:
             self._peakseditable = False
 
-    @pyqtProperty(int)
+    @Property(int)
     def savebatchpeaks(self):
         return self._savebatchpeaks
 
-    @pyqtSlot(int)
+    @Slot(int)
     def set_savebatchpeaks(self, value):
         if value == 2:
             self._savebatchpeaks = True
         elif value == 0:
             self._savebatchpeaks = False
 
-    @pyqtProperty(int)
+    @Property(int)
     def correctbatchpeaks(self):
         return self._correctbatchpeaks
 
-    @pyqtSlot(int)
+    @Slot(int)
     def set_correctbatchpeaks(self, value):
         if value == 2:
             self._correctbatchpeaks = True
         elif value == 0:
             self._correctbatchpeaks = False
 
-    @pyqtSlot(int)
+    @Slot(int)
     def progress(self, value):
         self._progress = value
         if value is not None:

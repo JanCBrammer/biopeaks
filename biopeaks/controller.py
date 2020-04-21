@@ -7,8 +7,8 @@ import os
 import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks as find_peaks_scipy
-from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
-from PyQt5.QtWidgets import QFileDialog
+from PySide2.QtCore import QObject, QRunnable, QThreadPool, Signal
+from PySide2.QtWidgets import QFileDialog
 getOpenFileName = QFileDialog.getOpenFileName
 getOpenFileNames = QFileDialog.getOpenFileNames
 getSaveFileName = QFileDialog.getSaveFileName
@@ -22,7 +22,7 @@ peakfuncs = {"ECG": ecg_peaks,
 # multithreading-pyqt-applications-qthreadpool/complete-example/
 class WorkerSignals(QObject):
 
-    progress = pyqtSignal(int)
+    progress = Signal(int)
 
 
 class Worker(QRunnable):
