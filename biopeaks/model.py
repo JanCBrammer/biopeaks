@@ -112,7 +112,7 @@ class Model(QObject):
         self._marker = value
         if value is not None and self.plotting:
             # In case the marker channel is sampled at a different rate than
-            # signak channel (possible for EDF format), generate the seconds
+            # signal channel (possible for EDF format), generate the seconds
             # vector for the markers on the spot.
             if len(value) != len(self._signal):
                 sec = np.linspace(0, len(value) / self.sfreqmarker,
