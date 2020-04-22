@@ -19,7 +19,8 @@ unfeasible and for a majority of workflows meaningless (e.g., saving peaks
 before finding peaks etc.).
 '''
 
-import os
+import pytest
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from biopeaks.model import Model
@@ -34,50 +35,91 @@ class MockKeyEvent(object):
         self.xdata = xdata
 
 
-this_dir = os.path.dirname(os.path.realpath(__file__))
-FIXTURE_DIR = os.path.join(this_dir, "testdata")
+datadir = Path(__file__).parent.resolve().joinpath("testdata")
 
 
-def test_single_ppg_os(qtbot):
+ppg_os = {"modality": "PPG",
+          "sigchan": "A1",
+          "markerchan": "None",
+          "mode": "single file",
+          "sigpathorig": Path(datadir).joinpath("OSmontagePPG.txt"),
+          "sigpathseg": Path(datadir).joinpath("testdatasegmented.txt"),
+          "peakpath": Path(datadir).joinpath("testdata_segmented_peaks.csv"),
+          "statspath": Path(datadir).joinpath("testdata_segmented_stats.csv"),
+          "sfreq": 125,
+          "siglen": 60001,
+          "siglenseg": 8750,
+          "markerlen": 1,
+          "markerlenseg": 1,
+          "peaksum": 461362,
+          "avgperiod": 0.6652,
+          "avgrate": 90.7158,
+          "segment": [20, 90]}
 
+ppg_edf = {"modality": "PPG",
+          "sigchan": "A5",
+          "markerchan": "A1",
+          "mode": "single file",
+          "sigpathorig": Path(datadir).joinpath("EDFmontage0.edf"),
+          "sigpathseg": Path(datadir).joinpath("testdatasegmented.edf"),
+          "peakpath": Path(datadir).joinpath("testdata_segmented_peaks.csv"),
+          "statspath": Path(datadir).joinpath("testdata_segmented_stats.csv"),
+          "sfreq": 50,
+          "siglen": 45000,
+          "siglenseg": 3500,
+          "markerlen": 180000,
+          "markerlenseg": 14000,
+          "peaksum": 123270,
+          "avgperiod": 1.0000,
+          "avgrate": 60.0000,
+          "segment": [11.51, 81.7]}
+
+# ecg_os
+# ecg_edf
+# rsp_os
+# rsp_edf
+
+cfgs = [ppg_os, ppg_edf]
+
+@pytest.mark.parametrize("cfg", cfgs)    # Decorator runs test for each configuration on cfgs
+def test_singlefile(qtbot, cfg):
+
+    # Set up application.
     model = Model()
     controller = Controller(model)
     view = View(model, controller)
-
     qtbot.addWidget(view)
     view.show()
 
-    qtbot.keyClicks(view.modmenu, "PPG")
-    qtbot.keyClicks(view.sigchanmenu, "A1")
-    qtbot.keyClicks(view.markerchanmenu, "none")
-    qtbot.keyClicks(view.batchmenu, "single file")
-
-    path = os.path.join(FIXTURE_DIR, "OSmontagePPG.txt")
+    # Configure options.
+    qtbot.keyClicks(view.modmenu, cfg["modality"])
+    qtbot.keyClicks(view.sigchanmenu, cfg["sigchan"])
+    qtbot.keyClicks(view.markerchanmenu, cfg["markerchan"])
+    qtbot.keyClicks(view.batchmenu, cfg["mode"])
 
     # 1. load signal #########################################################
     with qtbot.waitSignal(model.signal_changed, timeout=1000):
-        controller.read_signal(path=path)
-    assert np.size(model.signal) == 60001
-    assert np.size(model.sec) == 60001
-    assert model.sfreq == 125
+        controller.read_signal(path=cfg["sigpathorig"])
+    assert np.size(model.signal) == cfg["siglen"]
+    assert np.size(model.sec) == cfg["siglen"]
+    assert np.size(model.marker) == cfg["markerlen"]
+    assert model.sfreq == cfg["sfreq"]
     assert model.loaded
-    assert model.marker is None
 
     # 2. segment signal ######################################################
     with qtbot.waitSignal(model.segment_changed, timeout=1000):
-        model.set_segment(values=[20, 90])
-    assert model.segment == [20, 90]
+        model.set_segment(values=cfg["segment"])
+    assert model.segment == cfg["segment"]
     with qtbot.waitSignal(model.signal_changed, timeout=1000):
         controller.segment_signal()
-    seg = int(np.rint((90 - 20) * model.sfreq))
+    seg = int(np.rint((cfg["segment"][1] - cfg["segment"][0]) * model.sfreq))
     assert np.allclose(np.size(model.signal), seg, atol=1)
     assert np.allclose(np.size(model.sec), seg, atol=1)
 
     # 3. save segment ########################################################
-    path = os.path.join(FIXTURE_DIR, "testdatasegmented.txt")
-    model.wpathsignal = path
+    model.wpathsignal = cfg["sigpathseg"]
     def segment_saved():
-        assert os.path.isfile(path)
+        assert Path(cfg["sigpathseg"]).exists()
     controller.save_signal()
     qtbot.waitUntil(segment_saved, timeout=5000)
 
