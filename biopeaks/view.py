@@ -473,31 +473,32 @@ class View(QMainWindow):
 
 
     def toggle_segmenter(self, value):
-        if self._model.loaded:
-            # Open segmenter when called from signalmenu or clear segmenter
-            # upon selection of invalid segment.
-            if value == 1:
-                self.segmenter.setVisible(True)
-                self.confirmedit.setEnabled(False)
-                self.startedit.clear()
-                self.endedit.clear()
-                if self.ax00.patches:
-                    self.ax00.patches[0].remove()
-                    self.canvas0.draw()
-            # Close segmenter after segment has been confirmed.
-            elif value == 0:
-                self.segmenter.setVisible(False)
-                if self.ax00.patches:
-                    self.ax00.patches[0].remove()
-                    self.canvas0.draw()
-            # Close segmenter after segmentation has been aborted (reset
-            # segment).
-            elif value == 2:
-                self._model.set_segment([0, 0])    # This will reset the model to None
-                self.segmenter.setVisible(False)
-                if self.ax00.patches:
-                    self.ax00.patches[0].remove()
-                    self.canvas0.draw()
+        if not self._model.loaded:
+            return
+        # Open segmenter when called from signalmenu or clear segmenter
+        # upon selection of invalid segment.
+        if value == 1:
+            self.segmenter.setVisible(True)
+            self.confirmedit.setEnabled(False)
+            self.startedit.clear()
+            self.endedit.clear()
+            if self.ax00.patches:
+                self.ax00.patches[0].remove()
+                self.canvas0.draw()
+        # Close segmenter after segment has been confirmed.
+        elif value == 0:
+            self.segmenter.setVisible(False)
+            if self.ax00.patches:
+                self.ax00.patches[0].remove()
+                self.canvas0.draw()
+        # Close segmenter after segmentation has been aborted (reset
+        # segment).
+        elif value == 2:
+            self._model.set_segment([0, 0])    # This will reset the model to None
+            self.segmenter.setVisible(False)
+            if self.ax00.patches:
+                self.ax00.patches[0].remove()
+                self.canvas0.draw()
 
 
     def enable_segmentedit(self):
@@ -511,16 +512,17 @@ class View(QMainWindow):
 
     def get_xcursor(self, event):
         # event.button 1 corresponds to left mouse button
-        if event.button == 1:
-            # limit number of decimal places to two
-            if self.segmentcursor == "start":
-                self.startedit.selectAll()
-                self.startedit.insert("{:.2f}".format(event.xdata))
-            elif self.segmentcursor == "end":
-                self.endedit.selectAll()
-                self.endedit.insert("{:.2f}".format(event.xdata))
-            # disable segment cursor again after value has been set
-            self.segmentcursor = False
+        if event.button != 1:
+            return
+        # limit number of decimal places to two
+        if self.segmentcursor == "start":
+            self.startedit.selectAll()
+            self.startedit.insert("{:.2f}".format(event.xdata))
+        elif self.segmentcursor == "end":
+            self.endedit.selectAll()
+            self.endedit.insert("{:.2f}".format(event.xdata))
+        # disable segment cursor again after value has been set
+        self.segmentcursor = False
 
 
     def select_stats(self, event):
