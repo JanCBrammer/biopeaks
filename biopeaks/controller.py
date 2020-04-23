@@ -61,7 +61,7 @@ class Controller(QObject):
 
     def get_fpaths(self):
         self._model.fpaths = getOpenFileNames(None, 'Choose your data',
-                                              '\home')[0]
+                                              "\\home")[0]
         if not self._model.fpaths:
             return
         if (self._model.batchmode == 'multiple files' and
@@ -102,7 +102,7 @@ class Controller(QObject):
 
         self._model.rpathpeaks = getOpenFileName(None,
                                                  'Choose your peaks',
-                                                 '\home')[0]
+                                                 "\\home")[0]
         if self._model.rpathpeaks:
             self.read_peaks()
 
@@ -124,7 +124,7 @@ class Controller(QObject):
                                                          'Choose a directory '
                                                          'for saving the '
                                                          'peaks',
-                                                         '\home')
+                                                         "\\home")
 
 
     def get_wpathstats(self):
@@ -159,7 +159,7 @@ class Controller(QObject):
                                                          'Choose a directory '
                                                          'for saving the '
                                                          'statistics',
-                                                         '\home')
+                                                         "\\home")
 
 
     def batch_processor(self):
@@ -350,10 +350,8 @@ class Controller(QObject):
             sfreq = self._model.sfreqmarker
         elif self._model.filetype == "OpenSignals":
             sfreq = self._model.sfreq
-        begsamp = int(np.rint(self._model.segment[0] *
-                              sfreq))
-        endsamp = int(np.rint(self._model.segment[1] *
-                              sfreq))
+        begsamp = int(np.rint(self._model.segment[0] * sfreq))
+        endsamp = int(np.rint(self._model.segment[1] * sfreq))
         self._model.marker = self._model.marker[begsamp:endsamp]
         if endsamp - begsamp <= 1:
             self._model.status = "Error: There are not enough samples in the" \
@@ -368,10 +366,8 @@ class Controller(QObject):
             return
 
         if self._model.filetype == "OpenSignals":
-            begsamp = int(np.rint(self._model.segment[0] *
-                                  self._model.sfreq))
-            endsamp = int(np.rint(self._model.segment[1] *
-                                  self._model.sfreq))
+            begsamp = int(np.rint(self._model.segment[0] * self._model.sfreq))
+            endsamp = int(np.rint(self._model.segment[1] * self._model.sfreq))
             write_opensignals(self._model.rpathsignal,
                               self._model.wpathsignal,
                               segment=[begsamp, endsamp])
