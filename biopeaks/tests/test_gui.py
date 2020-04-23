@@ -23,6 +23,7 @@ import pytest
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from PySide2.QtCore import Qt
 from biopeaks.model import Model
 from biopeaks.view import View
 from biopeaks.controller import Controller
@@ -40,48 +41,128 @@ datadir = Path(__file__).parent.resolve().joinpath("testdata")
 
 ppg_os = {"modality": "PPG",
           "sigchan": "A1",
-          "markerchan": "None",
+          "markerchan": "I1",
           "mode": "single file",
           "sigpathorig": Path(datadir).joinpath("OSmontagePPG.txt"),
-          "sigpathseg": Path(datadir).joinpath("testdatasegmented.txt"),
+          "sigpathseg": Path(datadir).joinpath("testdata_segmented.txt"),
           "peakpath": Path(datadir).joinpath("testdata_segmented_peaks.csv"),
           "statspath": Path(datadir).joinpath("testdata_segmented_stats.csv"),
           "sfreq": 125,
           "siglen": 60001,
           "siglenseg": 8750,
-          "markerlen": 1,
-          "markerlenseg": 1,
+          "markerlen": 60001,
+          "markerlenseg": 8750,
           "peaksum": 461362,
           "avgperiod": 0.6652,
           "avgrate": 90.7158,
           "segment": [20, 90]}
 
 ppg_edf = {"modality": "PPG",
-          "sigchan": "A5",
-          "markerchan": "A1",
+           "sigchan": "A5",
+           "markerchan": "A1",
+           "mode": "single file",
+           "sigpathorig": Path(datadir).joinpath("EDFmontage0.edf"),
+           "sigpathseg": Path(datadir).joinpath("testdata_segmented.edf"),
+           "peakpath": Path(datadir).joinpath("testdata_segmented_peaks.csv"),
+           "statspath": Path(datadir).joinpath("testdata_segmented_stats.csv"),
+           "sfreq": 50,
+           "siglen": 45000,
+           "siglenseg": 3500,
+           "markerlen": 180000,
+           "markerlenseg": 14000,
+           "peaksum": 123270,
+           "avgperiod": 1.0000,
+           "avgrate": 60.0000,
+           "segment": [11.51, 81.7]}
+
+ecg_os = {"modality": "ECG",
+          "sigchan": "A3",
+          "markerchan": "I1",
           "mode": "single file",
-          "sigpathorig": Path(datadir).joinpath("EDFmontage0.edf"),
-          "sigpathseg": Path(datadir).joinpath("testdatasegmented.edf"),
+          "sigpathorig": Path(datadir).joinpath("OSmontage0J.txt"),
+          "sigpathseg": Path(datadir).joinpath("testdata_segmented.txt"),
           "peakpath": Path(datadir).joinpath("testdata_segmented_peaks.csv"),
           "statspath": Path(datadir).joinpath("testdata_segmented_stats.csv"),
-          "sfreq": 50,
-          "siglen": 45000,
-          "siglenseg": 3500,
-          "markerlen": 180000,
-          "markerlenseg": 14000,
-          "peaksum": 123270,
-          "avgperiod": 1.0000,
-          "avgrate": 60.0000,
-          "segment": [11.51, 81.7]}
+          "sfreq": 1000,
+          "siglen": 5100000,
+          "siglenseg": 100000,
+          "markerlen": 5100000,
+          "markerlenseg": 100000,
+          "peaksum": 4572190,
+          "avgperiod": 1.0921,
+          "avgrate": 55.1027,
+          "segment": [760, 860]}
 
-# ecg_os
-# ecg_edf
-# rsp_os
-# rsp_edf
+ecg_edf = {"modality": "ECG",
+           "sigchan": "A3",
+           "markerchan": "A1",
+           "mode": "single file",
+           "sigpathorig": Path(datadir).joinpath("EDFmontage0.edf"),
+           "sigpathseg": Path(datadir).joinpath("testdata_segmented.edf"),
+           "peakpath": Path(datadir).joinpath("testdata_segmented_peaks.csv"),
+           "statspath": Path(datadir).joinpath("testdata_segmented_stats.csv"),
+           "sfreq": 200,
+           "siglen": 180000,
+           "siglenseg": 14000,
+           "markerlen": 180000,
+           "markerlenseg": 14000,
+           "peaksum": 1228440,
+           "avgperiod": 0.4000,
+           "avgrate": 150.0000,
+           "segment": [11.51, 81.7]}
 
-cfgs = [ppg_os, ppg_edf]
+rsp_os = {"modality": "RESP",
+          "sigchan": "A2",
+          "markerchan": "I1",
+          "mode": "single file",
+          "sigpathorig": Path(datadir).joinpath("OSmontage0J.txt"),
+          "sigpathseg": Path(datadir).joinpath("testdata_segmented.txt"),
+          "peakpath": Path(datadir).joinpath("testdata_segmented_peaks.csv"),
+          "statspath": Path(datadir).joinpath("testdata_segmented_stats.csv"),
+          "sfreq": 1000,
+          "siglen": 5100000,
+          "siglenseg": 200000,
+          "markerlen": 5100000,
+          "markerlenseg": 200000,
+          "peaksum": 13355662,
+          "avgperiod": 3.2676,
+          "avgrate": 19.7336,
+          "avgtidalamp": 129.722,
+          "segment": [3200, 3400]}
 
-@pytest.mark.parametrize("cfg", cfgs)    # Decorator runs test for each configuration on cfgs
+rsp_edf = {"modality": "RESP",
+           "sigchan": "A5",
+           "markerchan": "A1",
+           "mode": "single file",
+           "sigpathorig": Path(datadir).joinpath("EDFmontage0.edf"),
+           "sigpathseg": Path(datadir).joinpath("testdata_segmented.edf"),
+           "peakpath": Path(datadir).joinpath("testdata_segmented_peaks.csv"),
+           "statspath": Path(datadir).joinpath("testdata_segmented_stats.csv"),
+           "sfreq": 50,
+           "siglen": 45000,
+           "siglenseg": 3800,
+           "markerlen": 180000,
+           "markerlenseg": 15200,
+           "peaksum": 276760,
+           "avgperiod": 1.0000,
+           "avgrate": 60.0003,
+           "avgtidalamp": 16350.0000,
+           "segment": [602.6, 679.26]}
+
+cfgs = [ppg_os, ppg_edf, ecg_os, ecg_edf, rsp_os, rsp_edf]
+
+
+def idcfg(cfg):
+    """Generate a test ID."""
+    modality = cfg["modality"]
+    fileformat = cfg["sigpathorig"].suffix
+    if fileformat == ".txt":
+        fileformat = ".os"
+
+    return f"{modality}_{fileformat}"
+
+
+@pytest.mark.parametrize("cfg", cfgs, ids=idcfg)    # decorator runs test for each configuration in cfgs
 def test_singlefile(qtbot, cfg):
 
     # Set up application.
@@ -98,7 +179,8 @@ def test_singlefile(qtbot, cfg):
     qtbot.keyClicks(view.batchmenu, cfg["mode"])
 
     # 1. load signal #########################################################
-    with qtbot.waitSignal(model.signal_changed, timeout=1000):
+    with qtbot.waitSignals([model.signal_changed, model.marker_changed],
+                           timeout=10000):
         controller.read_signal(path=cfg["sigpathorig"])
     assert np.size(model.signal) == cfg["siglen"]
     assert np.size(model.sec) == cfg["siglen"]
@@ -107,10 +189,10 @@ def test_singlefile(qtbot, cfg):
     assert model.loaded
 
     # 2. segment signal ######################################################
-    with qtbot.waitSignal(model.segment_changed, timeout=1000):
+    with qtbot.waitSignal(model.segment_changed, timeout=5000):
         model.set_segment(values=cfg["segment"])
     assert model.segment == cfg["segment"]
-    with qtbot.waitSignal(model.signal_changed, timeout=1000):
+    with qtbot.waitSignal(model.signal_changed, timeout=5000):
         controller.segment_signal()
     seg = int(np.rint((cfg["segment"][1] - cfg["segment"][0]) * model.sfreq))
     assert np.allclose(np.size(model.signal), seg, atol=1)
@@ -123,45 +205,30 @@ def test_singlefile(qtbot, cfg):
     controller.save_signal()
     qtbot.waitUntil(segment_saved, timeout=5000)
 
+    # 4. find extrema #########################################################
+    with qtbot.waitSignal(model.peaks_changed, timeout=5000):
+        controller.find_peaks()
+    assert sum(model.peaks) == cfg["peaksum"]
 
-
-# def test_findpeaks(self, peaksum, assertion=True):
-
-# self._controller.find_peaks()
-
-# if assertion:
-#     assert sum(self._model.peaks) == peaksum, 'failed to find peaks'
-#     print('found peaks successfully')
-# else:
-#     print(f"sum of peaks is {sum(self._model.peaks)}")
-
-
-# def test_editpeaks(self, assertion=True):
-
-# # enable editing
-# self._view.editcheckbox.setCheckState(Qt.Checked)
-# # engage editing (click on canvas to give it the focus)
-# QTest.mouseClick(self._view.canvas0, Qt.LeftButton)
-# # since it is very tedious to map from matplotlib figure canvas
-# # coordinates to qt coordinates, the controllers edit_peaks
-# # method is called with a mocked KeyEvent; to demonstrate edit_peaks
-# # delete the first peak and then add it again
-# demopeak = self._model.peaks[0] / self._model.sfreq
-# mock_key_event = MockKeyEvent(key='d', xdata=demopeak)
-# self._controller.edit_peaks(mock_key_event)
-# assert self._model.peaks[0] / self._model.sfreq > demopeak, \
-#     'failed to delete first peak'
-# print('deleted first peak successfully')
-# mock_key_event = MockKeyEvent(key='a', xdata=demopeak)
-# self._controller.edit_peaks(mock_key_event)
-# # note that edit_peaks places the peak in the middle of the plateau in
-# # case of a flat peak, hence discrepancies of a few msecs can arise;
-# # set tolerance for deviation of re-inserted peak to 25 msec
-# assert abs(self._model.peaks[0] /
-#            self._model.sfreq - demopeak) <= 0.025, 'failed to re-insert first peak'
-# print('re-inserted first peaks successfully')
-# # disable editing
-# self._view.editcheckbox.setCheckState(Qt.Unchecked)
+    # 5. edit extrema #########################################################
+    view.editcheckbox.setCheckState(Qt.Checked)
+    # Engage editing (click on canvas to give it the focus).
+    qtbot.mouseClick(view.canvas0, Qt.LeftButton)
+    # Since it is very tedious to map from matplotlib figure canvas
+    # coordinates to qt coordinates, the controllers edit_peaks method is
+    # called with a mocked KeyEvent. To test edit_peaks delete the first peak
+    # and then add it again.
+    demopeak = model.peaks[0] / model.sfreq
+    mock_key_event = MockKeyEvent(key='d', xdata=demopeak)
+    controller.edit_peaks(mock_key_event)
+    assert model.peaks[0] / model.sfreq > demopeak
+    mock_key_event = MockKeyEvent(key='a', xdata=demopeak)
+    controller.edit_peaks(mock_key_event)
+    # Note that edit_peaks places the peak in the middle of the plateau in
+    # case of a flat peak, hence discrepancies of a few msecs can arise. Set
+    # tolerance for deviation of re-inserted peak to 25 msec.
+    assert abs(model.peaks[0] / model.sfreq - demopeak) <= .025
+    view.editcheckbox.setCheckState(Qt.Unchecked)
 
 
 # def test_savepeaks(self, peakfname, assertion=True):
@@ -354,122 +421,6 @@ def test_singlefile(qtbot, cfg):
 
 
 
-
-# # single file with OpenSignals PPG data,
-# testapp._tests.single_file(assertion=assertion,
-#                             modality='PPG',
-#                             sigchan='A1',
-#                             markerchan='None',
-#                             mode='single file',
-#                             sigfnameorig='OSmontagePPG.txt',
-#                             sigfnameseg='testdatasegmented.txt',
-#                             peakfname='testdata_segmented_peaks.csv',
-#                             statsfname='testdata_segmented_stats.csv',
-#                             siglen=60001,
-#                             siglenseg=8750,
-#                             markerlen=1,
-#                             markerlenseg=1,
-#                             peaksum=461362,
-#                             avgperiod=0.6652,
-#                             avgrate=90.7158,
-#                             segment=[20, 90])
-
-# # single file with artificial EDF PPG data,
-# testapp._tests.single_file(assertion=assertion,
-#                             modality='PPG',
-#                             sigchan='A5',
-#                             markerchan='A1',
-#                             mode='single file',
-#                             sigfnameorig='EDFmontage0.edf',
-#                             sigfnameseg='testdatasegmented.edf',
-#                             peakfname='testdata_segmented_peaks.csv',
-#                             statsfname='testdata_segmented_stats.csv',
-#                             siglen=45000,
-#                             siglenseg=3500,
-#                             markerlen=180000,
-#                             markerlenseg=14000,
-#                             peaksum=123270,
-#                             avgperiod=1.0000,
-#                             avgrate=60.0000,
-#                             segment=[11.51, 81.7])
-
-# # single file with OpenSignals ECG data,
-# testapp._tests.single_file(assertion=assertion,
-#                             modality='ECG',
-#                             sigchan='A3',
-#                             markerchan='I1',
-#                             mode='single file',
-#                             sigfnameorig='OSmontage0J.txt',
-#                             sigfnameseg='testdatasegmented.txt',
-#                             peakfname='testdata_segmented_peaks.csv',
-#                             statsfname='testdata_segmented_stats.csv',
-#                             siglen=5100000,
-#                             siglenseg=100000,
-#                             markerlen=5100000,
-#                             markerlenseg=100000,
-#                             peaksum=4572190,
-#                             avgperiod=1.0921,
-#                             avgrate=55.1027,
-#                             segment=[760, 860])
-
-# # single file with artificial EDF ECG data,
-# testapp._tests.single_file(assertion=assertion,
-#                             modality='ECG',
-#                             sigchan='A3',
-#                             markerchan='A1',
-#                             mode='single file',
-#                             sigfnameorig='EDFmontage0.edf',
-#                             sigfnameseg='testdatasegmented.edf',
-#                             peakfname='testdata_segmented_peaks.csv',
-#                             statsfname='testdata_segmented_stats.csv',
-#                             siglen=180000,
-#                             siglenseg=14000,
-#                             markerlen=180000,
-#                             markerlenseg=14000,
-#                             peaksum=1228440,
-#                             avgperiod=0.4000,
-#                             avgrate=150.0000,
-#                             segment=[11.51, 81.7])
-
-# # single file with OpenSignals breathing data
-# testapp._tests.single_file(assertion=assertion,
-#                             modality='RESP',
-#                             sigchan='A2',
-#                             markerchan='I1',
-#                             mode='single file',
-#                             sigfnameorig='OSmontage0J.txt',
-#                             sigfnameseg='testdata_segmented.txt',
-#                             peakfname='testdata_segmented_peaks.csv',
-#                             statsfname='testdata_segmented_stats.csv',
-#                             siglen=5100000,
-#                             siglenseg=200000,
-#                             markerlen=5100000,
-#                             markerlenseg=200000,
-#                             peaksum=13355662,
-#                             avgperiod=3.2676,
-#                             avgrate=19.7336,
-#                             avgtidalamp=129.722,
-#                             segment=[3200, 3400])
-
-# # single file with artificial EDF breathing data
-# testapp._tests.single_file(assertion=assertion,
-#                             modality='RESP',
-#                             sigchan='A5',
-#                             markerchan='A1',
-#                             mode='single file',
-#                             sigfnameorig='EDFmontage0.edf',
-#                             sigfnameseg='testdata_segmented.edf',
-#                             peakfname='testdata_segmented_peaks.csv',
-#                             statsfname='testdata_segmented_stats.csv',
-#                             siglen=45000,
-#                             siglenseg=3800,
-#                             markerlen=180000,
-#                             markerlenseg=15200,
-#                             peaksum=276760,
-#                             avgperiod=1.0000,
-#                             avgrate=60.0003,
-#                             avgtidalamp=16350.0000,
-#                             segment=[602.6, 679.26])
 
 # # batch processing with OpenSignals ECG data
 # sigfiles = ['OSmontage1A.txt', 'OSmontage1J.txt', 'OSmontage2A.txt',
