@@ -38,15 +38,14 @@ class MockKeyEvent(object):
 
 datadir = Path(__file__).parent.resolve().joinpath("testdata")
 
-
 ppg_os = {"modality": "PPG",
           "sigchan": "A1",
           "markerchan": "I1",
           "mode": "single file",
           "sigpathorig": Path(datadir).joinpath("OSmontagePPG.txt"),
-          "sigpathseg": Path(datadir).joinpath("testdata_segmented.txt"),
-          "peakpath": Path(datadir).joinpath("testdata_segmented_peaks.csv"),
-          "statspath": Path(datadir).joinpath("testdata_segmented_stats.csv"),
+          "sigfnameseg": "testdata_segmented.txt",
+          "peakfname": "testdata_segmented_peaks.csv",
+          "statsfname": "testdata_segmented_stats.csv",
           "sfreq": 125,
           "siglen": 60001,
           "siglenseg": 8750,
@@ -62,9 +61,9 @@ ppg_edf = {"modality": "PPG",
            "markerchan": "A1",
            "mode": "single file",
            "sigpathorig": Path(datadir).joinpath("EDFmontage0.edf"),
-           "sigpathseg": Path(datadir).joinpath("testdata_segmented.edf"),
-           "peakpath": Path(datadir).joinpath("testdata_segmented_peaks.csv"),
-           "statspath": Path(datadir).joinpath("testdata_segmented_stats.csv"),
+           "sigfnameseg": "testdata_segmented.edf",
+           "peakfname": "testdata_segmented_peaks.csv",
+           "statsfname": "testdata_segmented_stats.csv",
            "sfreq": 50,
            "siglen": 45000,
            "siglenseg": 3500,
@@ -80,9 +79,9 @@ ecg_os = {"modality": "ECG",
           "markerchan": "I1",
           "mode": "single file",
           "sigpathorig": Path(datadir).joinpath("OSmontage0J.txt"),
-          "sigpathseg": Path(datadir).joinpath("testdata_segmented.txt"),
-          "peakpath": Path(datadir).joinpath("testdata_segmented_peaks.csv"),
-          "statspath": Path(datadir).joinpath("testdata_segmented_stats.csv"),
+          "sigfnameseg": "testdata_segmented.txt",
+          "peakfname": "testdata_segmented_peaks.csv",
+          "statsfname": "testdata_segmented_stats.csv",
           "sfreq": 1000,
           "siglen": 5100000,
           "siglenseg": 100000,
@@ -98,9 +97,9 @@ ecg_edf = {"modality": "ECG",
            "markerchan": "A1",
            "mode": "single file",
            "sigpathorig": Path(datadir).joinpath("EDFmontage0.edf"),
-           "sigpathseg": Path(datadir).joinpath("testdata_segmented.edf"),
-           "peakpath": Path(datadir).joinpath("testdata_segmented_peaks.csv"),
-           "statspath": Path(datadir).joinpath("testdata_segmented_stats.csv"),
+           "sigfnameseg": "testdata_segmented.edf",
+           "peakfname": "testdata_segmented_peaks.csv",
+           "statsfname": "testdata_segmented_stats.csv",
            "sfreq": 200,
            "siglen": 180000,
            "siglenseg": 14000,
@@ -116,9 +115,9 @@ rsp_os = {"modality": "RESP",
           "markerchan": "I1",
           "mode": "single file",
           "sigpathorig": Path(datadir).joinpath("OSmontage0J.txt"),
-          "sigpathseg": Path(datadir).joinpath("testdata_segmented.txt"),
-          "peakpath": Path(datadir).joinpath("testdata_segmented_peaks.csv"),
-          "statspath": Path(datadir).joinpath("testdata_segmented_stats.csv"),
+          "sigfnameseg": "testdata_segmented.txt",
+          "peakfname": "testdata_segmented_peaks.csv",
+          "statsfname": "testdata_segmented_stats.csv",
           "sfreq": 1000,
           "siglen": 5100000,
           "siglenseg": 200000,
@@ -135,9 +134,9 @@ rsp_edf = {"modality": "RESP",
            "markerchan": "A1",
            "mode": "single file",
            "sigpathorig": Path(datadir).joinpath("EDFmontage0.edf"),
-           "sigpathseg": Path(datadir).joinpath("testdata_segmented.edf"),
-           "peakpath": Path(datadir).joinpath("testdata_segmented_peaks.csv"),
-           "statspath": Path(datadir).joinpath("testdata_segmented_stats.csv"),
+           "sigfnameseg": "testdata_segmented.edf",
+           "peakfname": "testdata_segmented_peaks.csv",
+           "statsfname": "testdata_segmented_stats.csv",
            "sfreq": 50,
            "siglen": 45000,
            "siglenseg": 3800,
@@ -163,7 +162,7 @@ def idcfg(cfg):
 
 
 @pytest.mark.parametrize("cfg", cfgs, ids=idcfg)    # decorator runs test for each configuration in cfgs
-def test_singlefile(qtbot, cfg):
+def test_singlefile(qtbot, tmpdir, cfg):
 
     # Set up application.
     model = Model()
@@ -199,11 +198,9 @@ def test_singlefile(qtbot, cfg):
     assert np.allclose(np.size(model.sec), seg, atol=1)
 
     # 3. save segment ########################################################
-    model.wpathsignal = cfg["sigpathseg"]
-    def segment_saved():
-        assert Path(cfg["sigpathseg"]).exists()
-    controller.save_signal()
-    qtbot.waitUntil(segment_saved, timeout=5000)
+    model.wpathsignal = tmpdir.join(cfg["sigfnameseg"])
+    with qtbot.waitSignals([model.progress_changed] * 2, timeout=10000):
+        controller.save_signal()
 
     # 4. find extrema #########################################################
     with qtbot.waitSignal(model.peaks_changed, timeout=5000):
@@ -230,96 +227,45 @@ def test_singlefile(qtbot, cfg):
     assert abs(model.peaks[0] / model.sfreq - demopeak) <= .025
     view.editcheckbox.setCheckState(Qt.Unchecked)
 
+    # 6. save peaks ###########################################################
+    model.wpathpeaks = tmpdir.join(cfg["peakfname"])
+    with qtbot.waitSignals([model.progress_changed] * 2, timeout=10000):
+        controller.save_peaks()
 
-# def test_savepeaks(self, peakfname, assertion=True):
+    # 7. load peaks ###########################################################
+    model.rpathpeaks = tmpdir.join(cfg["peakfname"])
+    with qtbot.waitSignal(model.peaks_changed, timeout=5000):
+        controller.read_peaks()
+    # For the breathing, after peak editing, the re-inserted peak can
+    # be shifted by a few samples. This is not a bug, but inherent in the
+    # way extrema are added and deleted in controller.edit_peaks().
+    assert np.allclose(sum(model.peaks), cfg["peaksum"], atol=10)
 
-# # set path for saving peaks
-# self._model.wpathpeaks = peakfname
-# self._controller.save_peaks()
+    # 8. calculate stats ######################################################
+    signals = ([model.period_changed, model.rate_changed,
+                model.tidalamp_changed] if model.modality == "RESP"
+               else [model.period_changed, model.rate_changed])
+    with qtbot.waitSignals(signals, timeout=5000):
+        controller.calculate_stats()
+    assert np.around(np.mean(model.periodintp), 4) == cfg["avgperiod"]
+    assert np.around(np.mean(model.rateintp), 4) == cfg["avgrate"]
+    if model.modality == "RESP":
+        assert np.around(np.mean(model.tidalampintp), 4) == cfg["avgtidalamp"]
 
-# assert os.path.isfile(peakfname), 'failed to save peaks'
-# print('saved peaks successfully')
-# # remove all files that have been saved during the test
-# os.remove(peakfname)
-
-
-# def test_loadpeaks(self, peakfname, peaksum, assertion=True):
-
-# self._model.rpathpeaks = peakfname
-# self._controller.read_peaks()
-# # For the breathing, after peak editing, the re-inserted peak can
-# # be shifted by a few samples. This is not a bug, but inherent in the
-# # way extrema are added and deleted in controller.edit_peaks().
-# if assertion:
-#     assert np.allclose(sum(self._model.peaks), peaksum, atol=10), \
-#         'failed to re-load peaks'
-#     print('re-loaded peaks successfully')
-# else:
-#     print(f"re-loaded peaks have sum {sum(self._model.peaks)}")
-
-
-# def test_calculatestats(self, avgperiod, avgrate, avgtidalamp,
-#                     assertion=True):
-
-# self._controller.calculate_stats()
-
-# if assertion:
-#     assert np.around(np.mean(self._model.periodintp), 4) == avgperiod, \
-#             'failed to calculate period'
-
-#     print('calculated period successfully')
-#     assert np.around(np.mean(self._model.rateintp), 4) == avgrate, \
-#             'failed to calculate rate'
-#     print('calculated rate successfully')
-# else:
-#     print(f"mean period is {np.around(np.mean(self._model.periodintp), 4)}"
-#           f" mean rate is {np.around(np.mean(self._model.rateintp), 4)}")
-# if self._model.modality == "RESP":
-#     if assertion:
-#         assert np.around(np.mean(self._model.tidalampintp), 4) == avgtidalamp, \
-#                 'failed to calculate tidal amplitude'
-#         print('calculated tidal amplitude successfully')
-#     else:
-#         print(f" mean amplitude is {np.around(np.mean(self._model.tidalampintp), 4)}")
-
-
-# def test_savestats(self, statsfname, avgperiod, avgrate, avgtidalamp,
-#                assertion=True):
-
-# self._view.periodcheckbox.setCheckState(Qt.Checked)
-# self._view.ratecheckbox.setCheckState(Qt.Checked)
-# if self._model.modality == "RESP":
-#     self._view.tidalampcheckbox.setCheckState(Qt.Checked)
-# self._model.wpathstats = statsfname
-# self._controller.save_stats()
-
-# # load and check content
-# stats = pd.read_csv(statsfname)
-# if assertion:
-#     assert np.around(stats["period"].mean(), 4) == avgperiod, \
-#             "failed to save period"
-#     assert np.around(stats["rate"].mean(), 4) == avgrate, \
-#             "failed to save rate"
-#     print('saved statistics successfully')
-# else:
-#     print(f"mean re-loaded period is {np.around(stats['period'].mean(), 4)}"
-#           f" mean re-loaded rate is {np.around(stats['rate'].mean(), 4)}")
-# if self._model.modality == "RESP":
-#     if assertion:
-#         assert np.around(stats["tidalamp"].mean(), 4) == avgtidalamp, \
-#             "failed to save tidalamplitude}"
-#     else:
-#         print(f"mean re-loaded amplitude is {np.around(stats['tidalamp'].mean(), 4)}")
-
-# # remove all files that have been saved during the test
-# os.remove(statsfname)
-
-# # unselect stats
-# self._view.periodcheckbox.setCheckState(Qt.Unchecked)
-# self._view.ratecheckbox.setCheckState(Qt.Unchecked)
-# if self._model.modality == "RESP":
-#     self._view.tidalampcheckbox.setCheckState(Qt.Unchecked)
-
+    # 9. save stats ###########################################################
+    view.periodcheckbox.setCheckState(Qt.Checked)
+    view.ratecheckbox.setCheckState(Qt.Checked)
+    if model.modality == "RESP":
+        view.tidalampcheckbox.setCheckState(Qt.Checked)
+    model.wpathstats = tmpdir.join(cfg["statsfname"])
+    with qtbot.waitSignals([model.progress_changed] * 2, timeout=10000):
+        controller.save_stats()
+    # load and check content
+    stats = pd.read_csv(tmpdir.join(cfg["statsfname"]))
+    assert np.around(stats["period"].mean(), 4) == cfg["avgperiod"]
+    assert np.around(stats["rate"].mean(), 4) == cfg["avgrate"]
+    if model.modality == "RESP":
+        assert np.around(stats["tidalamp"].mean(), 4) == cfg["avgtidalamp"]
 
 
 # def batch_file(self, assertion, modality, sigchan, mode, sigfnames,
@@ -420,8 +366,6 @@ def test_singlefile(qtbot, cfg):
 #     self._view.tidalampcheckbox.setCheckState(Qt.Unchecked)
 
 
-
-
 # # batch processing with OpenSignals ECG data
 # sigfiles = ['OSmontage1A.txt', 'OSmontage1J.txt', 'OSmontage2A.txt',
 #             'OSmontage2J.txt', 'OSmontage3A.txt', 'OSmontage3J.txt']
@@ -455,6 +399,3 @@ def test_singlefile(qtbot, cfg):
 #                           peaksums=peaksums,
 #                           stats=stats,
 #                           correctpeaks=True)
-
-# print("tests ran without errors, closing application")
-# testapp.closeAllWindows()    # QApplication quits once window is closed
