@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from os import path
+from pathlib import Path
 from PySide2.QtCore import QObject, Signal, Slot, Property
 
 
@@ -129,7 +129,7 @@ class Model(QObject):
     def rpathsignal(self, value):
         self._rpathsignal = value
         if value is not None:
-            _, displaypath = path.split(value)
+            displaypath = Path(value).name
             self.path_changed.emit(displaypath)
 
     @property

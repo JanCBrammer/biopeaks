@@ -3,7 +3,7 @@
 from .heart import ecg_peaks, ppg_peaks, correct_peaks, heart_period
 from .resp import resp_extrema, resp_stats
 from .io_utils import read_opensignals, write_opensignals, read_edf, write_edf
-import os
+from pathlib import Path
 import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks as find_peaks_scipy
@@ -16,7 +16,6 @@ getExistingDirectory = QFileDialog.getExistingDirectory
 peakfuncs = {"ECG": ecg_peaks,
              "PPG": ppg_peaks,
              "RESP": resp_extrema}
-
 
 # threading is implemented according to https://pythonguis.com/courses/
 # multithreading-pyqt-applications-qthreadpool/complete-example/
@@ -217,6 +216,7 @@ class Controller(QObject):
             self._model.wdirstats = None
             return
         fpath = self._model.fpaths[self.filenb]
+        fname = Path(fpath).stem
         if self.methodnb == 0:
             self.methodnb += 1
             self._model.reset()
@@ -233,10 +233,8 @@ class Controller(QObject):
         elif self.methodnb == 4:
             self.methodnb += 1
             if self._model.wdirpeaks:
-                _, fname = os.path.split(fpath)
-                fpartname, _ = os.path.splitext(fname)
-                self._model.wpathpeaks = os.path.join(self._model.wdirpeaks,
-                                                      f"{fpartname}_peaks.csv")
+                p = Path(self._model.wdirpeaks).joinpath(f"{fname}_peaks.csv")
+                self._model.wpathpeaks = p
                 self.save_peaks()
             else:
                 self.dispatcher(1)
@@ -246,10 +244,8 @@ class Controller(QObject):
             self.methodnb = 0
             self.filenb += 1
             if self._model.wdirstats:
-                _, fname = os.path.split(fpath)
-                fpartname, _ = os.path.splitext(fname)
-                self._model.wpathstats = os.path.join(self._model.wdirstats,
-                                                      f"{fpartname}_stats.csv")
+                p = Path(self._model.wdirstats).joinpath(f"{fname}_stats.csv")
+                self._model.wpathstats = p
                 self.save_stats()
             else:
                 self.dispatcher(1)
@@ -258,7 +254,7 @@ class Controller(QObject):
     @threaded
     def read_signal(self, path):
         self._model.status = "Loading file."
-        _, file_extension = os.path.splitext(path)
+        file_extension = Path(path).suffix
 
         if file_extension not in [".txt", ".edf"]:
             self._model.status = "Error: Please select an OpenSignals or EDF file."
