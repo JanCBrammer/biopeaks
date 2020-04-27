@@ -13,10 +13,10 @@ os:
 dist: xenial
 
 before_install:
-   - python --version
-   - pip install -U pip
-   - pip install -U pytest
-   - pip install -U pytest-qt
+    - python --version
+    - pip install -U pip
+    - pip install -U pytest
+    - pip install -U pytest-qt
 
 install:
     - pip install PySide2==5.13.2
