@@ -10,6 +10,14 @@ python:
 os:
     - linux
 
+dist: xenial
+
+before_install:
+   - python --version
+   - pip install -U pip
+   - pip install -U pytest
+   - pip install -U pytest-qt
+
 install:
     - pip install PySide2==5.13.2
     - pip install numpy==1.18.1
@@ -18,6 +26,5 @@ install:
     - pip install matplotlib==3.2.1
 
 script:
-    - python pip -e .
+    - pip install -e .
     - pytest
-
