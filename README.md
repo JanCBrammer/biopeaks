@@ -52,7 +52,12 @@ or greater).
 Follow these [instructions](https://docs.anaconda.com/anaconda/install/)
 in case you're unsure about the installation. Once you've installed Anaconda, open an
 [Anaconda Prompt](https://docs.anaconda.com/anaconda/user-guide/getting-started/)
-and type
+and type (hit enter once you've typed each of the two lines below)
+
+```
+conda install -c conda-forge pyside2
+```
+
 
 ```
 pip install biopeaks
@@ -71,11 +76,11 @@ in the Anaconda Prompt.
 Make sure that the following requirements are met for your Python installation:
 
 python >= 3.7\
-numpy >= 1.17.3\
-scipy >= 1.3.1\
+pyside2 >= 5.13.2\
+numpy >= 1.18.1\
+scipy >= 1.4.1\
 pandas >= 0.25.3\
-pyqt >= 5.12.3\
-matplotlib >= 3.1.3
+matplotlib >= 3.2.1
 
 Once you have all the dependencies, install `biopeaks` with
 
@@ -347,13 +352,14 @@ hardware: BITalino (r)evolution (firmware 1281)
 
 The EDF test data have been downloaded from https://www.teuniz.net/edf_bdf_testfiles/
 
-The tests can be run from a Python console:
+Please make sure to have [pytest](https://docs.pytest.org/en/latest/) as well as
+[pytest-qt](https://pypi.org/project/pytest-qt/) installed before running the frontend tests.
+
+The tests can be run using [pytest](https://docs.pytest.org/en/latest/):
 ```
-from biopeaks.test import frontend_test
-frontend_test.runner()
+pytest -v
 ```
-This will open an application, run a few tests on it and print the results to
-the Python console.
+
 
 ## Backend
 In order to validate the performance of the ECG peak detector `heart.ecg_peaks()`,
@@ -374,6 +380,10 @@ please download the [Capnobase IEEE TBME benchmark dataset](http://www.capnobase
 After extracting the PPG signals and peak annotations you can run the `benchmark_PPG` script in the test folder.
 
 # Changelog
+
+### Version 1.3.0 (April 27, 2020)
++ enhancement: using the official Qt Python bindings (PySide2) instead of PyQt5.
++ bugfix: enforcing minimal figure height to comply with requirements of Matplotlib > 3.2.0.
 
 ### Version 1.2.2 (April 15, 2020)
 + enhancement: faster auto-correction of ECG and PPG peaks with pandas rolling window.
