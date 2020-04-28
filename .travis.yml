@@ -12,14 +12,18 @@ os:
 
 dist: xenial
 
-before_install:
-    - python --version
+services: xvfb
+
+addons:
+    apt:
+        packages:
+            - x11-utils
+            - libxkbcommon-x11-0
+
+install:
     - pip install -U pip
     - pip install -U pytest
     - pip install -U pytest-qt
-    - sudo apt-get install -y libdbus-1-3 libxkbcommon-x11-0
-
-install:
     - pip install PySide2==5.13.2
     - pip install numpy==1.18.1
     - pip install scipy==1.4.1
