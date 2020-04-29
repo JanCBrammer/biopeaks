@@ -269,16 +269,18 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
 
     # Artifact classification #################################################
     ###########################################################################
+
     # Artifact classes.
     extra_idcs = []
     missed_idcs = []
     ectopic_idcs = []
-    short_idcs = []
-    long_idcs = []
+    longshort_idcs = []
 
-    for i in range(rr.size - 2):    # The flow control is implemented based on Figure 1
+    i = 0
+    while i < rr.size - 2:    # The flow control is implemented based on Figure 1
 
         if np.abs(drrs[i]) <= 1:    # Figure 1
+            i += 1
             continue
         eq1 = np.logical_and(drrs[i] > 1, s12[i] < (-c1 * drrs[i] - c2))    # Figure 2a
         eq2 = np.logical_and(drrs[i] < -1, s12[i] > (-c1 * drrs[i] + c2))    # Figure 2a
@@ -286,56 +288,62 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
         if np.any([eq1, eq2]):
             # If any of the two equations is true.
             ectopic_idcs.append(i)
+            i += 1
             continue
         # If none of the two equations is true.
         if ~np.any([np.abs(drrs[i]) > 1, np.abs(mrrs[i]) > 3]):    # Figure 1
+            i += 1
             continue
-
-        # Long beat.
-        eq3 = np.logical_and(drrs[i] > 1, s22[i] < -1)    # Figure 2b
-        eq4 = np.abs(mrrs[i]) > 3    # Figure 1
-        # Short beat.
-        eq5 = np.logical_and(drrs[i] < -1, s22[i] > 1)    # Figure 2b
-
-        if ~np.any([eq3, eq4, eq5]):
-            # If none of the three equations is true: normal beat.
-            continue
-        # If any of the three equations is true: check for missing or extra
-        # peaks.
-
-        longshort_idcs = [i]
-        # Check if the following beat is also classified as long or short.
+        longshort_candidates = [i]
+        # Check if the following beat also needs to be evaluated.
         if np.abs(drrs[i + 1]) < np.abs(drrs[i + 2]):
-            longshort_idcs.append(i + 1)
+            longshort_candidates.append(i + 1)
 
-        for j in longshort_idcs:
+        for j in longshort_candidates:
+            # Long beat.
+            eq3 = np.logical_and(drrs[j] > 1, s22[j] < -1)    # Figure 2b
+            # Long or short.
+            eq4 = np.abs(mrrs[j]) > 3    # Figure 1
+            # Short beat.
+            eq5 = np.logical_and(drrs[j] < -1, s22[j] > 1)    # Figure 2b
+
+            if ~np.any([eq3, eq4, eq5]):
+                # If none of the three equations is true: normal beat.
+                i += 1
+                continue
+            # If any of the three equations is true: check for missing or extra
+            # peaks.
+
             # Missing.
             eq6 = np.abs(rr[j] / 2 - medrr[j]) < th2[j]    # Figure 1
             # Extra.
             eq7 = np.abs(rr[j] + rr[j + 1] - medrr[j]) < th2[j]    # Figure 1
 
-            # Check if short or extra.
-            if eq5:
-                if eq7:
-                    extra_idcs.append(j)
-                else:
-                    short_idcs.append(j)
-            # Check if long or missing.
-            if np.any([eq3, eq4]):
-                if eq6:
-                    missed_idcs.append(j)
-                else:
-                    long_idcs.append(j)
+            # Check if extra.
+            if np.all([eq5, eq7]):
+                extra_idcs.append(j)
+                i += 1
+                continue
+            # Check if missing.
+            if np.all([eq3, eq6]):
+                missed_idcs.append(j)
+                i += 1
+                continue
+            # If neither classified as extra or missing, classify as "long or
+            # short".
+            longshort_idcs.append(j)
+            i += 1
+
+    artifacts = {"ectopic": ectopic_idcs, "missed": missed_idcs,
+                "extra": extra_idcs, "longshort": longshort_idcs}
 
     if enable_plot:
         # Visualize artifact type indices.
         fig0, (ax0, ax1, ax2) = plt.subplots(nrows=3, ncols=1, sharex=True)
         ax0.set_title("Artifact types", fontweight="bold")
         ax0.plot(rr, label="heart period")
-        ax0.scatter(long_idcs, rr[long_idcs], marker='x', c='m',
-                    s=100, zorder=3, label="long")
-        ax0.scatter(short_idcs, rr[short_idcs], marker='x', c='o',
-                    s=100, zorder=3, label="short")
+        ax0.scatter(longshort_idcs, rr[longshort_idcs], marker='x', c='m',
+                    s=100, zorder=3, label="longshort")
         ax0.scatter(ectopic_idcs, rr[ectopic_idcs], marker='x', c='g', s=100,
                     zorder=3, label="ectopic")
         ax0.scatter(extra_idcs, rr[extra_idcs], marker='x', c='y', s=100,
@@ -397,9 +405,6 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
         ax4.add_patch(poly3)
         ax4.legend(loc="upper right")
 
-    artifacts = {"short": short_idcs, "extra": extra_idcs, "long": long_idcs,
-                 "missed": missed_idcs, "ectopic": ectopic_idcs}
-
     return artifacts
 
 
@@ -414,8 +419,7 @@ def _correct_artifacts(artifacts, peaks):
     extra_idcs = artifacts["extra"]
     missed_idcs = artifacts["missed"]
     ectopic_idcs = artifacts["ectopic"]
-    long_idcs = artifacts["long"]
-    short_idcs = artifacts["short"]
+    longshort_idcs = artifacts["longshort"]
 
     # Delete extra peaks.
     if extra_idcs:
@@ -423,8 +427,7 @@ def _correct_artifacts(artifacts, peaks):
         # Update remaining indices.
         missed_idcs = update_indices(extra_idcs, missed_idcs, -1)
         ectopic_idcs = update_indices(extra_idcs, ectopic_idcs, -1)
-        long_idcs = update_indices(extra_idcs, long_idcs, -1)
-        short_idcs = update_indices(extra_idcs, short_idcs, -1)
+        longshort_idcs = update_indices(extra_idcs, longshort_idcs, -1)
 
     # Add missing peaks.
     if missed_idcs:
@@ -441,13 +444,11 @@ def _correct_artifacts(artifacts, peaks):
         peaks = np.insert(peaks, missed_idcs, added_peaks)
         # Update remaining indices.
         ectopic_idcs = update_indices(missed_idcs, ectopic_idcs, 1)
-        long_idcs = update_indices(missed_idcs, long_idcs, 1)
-        short_idcs = update_indices(missed_idcs, short_idcs, 1)
+        long_idcs = update_indices(missed_idcs, longshort_idcs, 1)
 
     # Interpolate ectopic as well as long or short peaks (important to do
     # this after peaks are deleted and/or added).
-    interp_idcs = np.concatenate((ectopic_idcs, long_idcs,
-                                  short_idcs)).astype(int)
+    interp_idcs = np.concatenate((ectopic_idcs, longshort_idcs)).astype(int)
     if interp_idcs.size > 0:
         interp_idcs.sort(kind='mergesort')
         # Make sure to not generate negative indices, or indices that exceed
