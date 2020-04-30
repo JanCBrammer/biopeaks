@@ -335,7 +335,7 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
             i += 1
 
     artifacts = {"ectopic": ectopic_idcs, "missed": missed_idcs,
-                "extra": extra_idcs, "longshort": longshort_idcs}
+                 "extra": extra_idcs, "longshort": longshort_idcs}
 
     if enable_plot:
         # Visualize artifact type indices.
@@ -444,7 +444,7 @@ def _correct_artifacts(artifacts, peaks):
         peaks = np.insert(peaks, missed_idcs, added_peaks)
         # Update remaining indices.
         ectopic_idcs = update_indices(missed_idcs, ectopic_idcs, 1)
-        long_idcs = update_indices(missed_idcs, longshort_idcs, 1)
+        longshort_idcs = update_indices(missed_idcs, longshort_idcs, 1)
 
     # Interpolate ectopic as well as long or short peaks (important to do
     # this after peaks are deleted and/or added).
