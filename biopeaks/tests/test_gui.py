@@ -148,21 +148,24 @@ rsp_edf = {"modality": "RESP",
            "avgtidalamp": 16350.0000,
            "segment": [602.6, 679.26]}
 
-cfgs = [ppg_os, ppg_edf, ecg_os, ecg_edf, rsp_os, rsp_edf]
 
-
-def idcfg(cfg):
+def idcfg_single(cfg):
     """Generate a test ID."""
     modality = cfg["modality"]
     fileformat = cfg["sigpathorig"].suffix
     if fileformat == ".txt":
         fileformat = ".os"
 
-    return f"{modality}_{fileformat}"
+    return f"{modality}{fileformat}"
 
 
-@pytest.mark.parametrize("cfg", cfgs, ids=idcfg)    # decorator runs test for each configuration in cfgs
-def test_singlefile(qtbot, tmpdir, cfg):
+@pytest.fixture(params=[ppg_os, ppg_edf, ecg_os, ecg_edf, rsp_os, rsp_edf],
+                ids=idcfg_single)    # automatically runs the test(s) using this fixture with all values of params
+def cfg_single(request):
+    return request.param
+
+
+def test_singlefile(qtbot, tmpdir, cfg_single):
 
     # Set up application.
     model = Model()
@@ -172,40 +175,41 @@ def test_singlefile(qtbot, tmpdir, cfg):
     view.show()
 
     # Configure options.
-    qtbot.keyClicks(view.modmenu, cfg["modality"])
-    qtbot.keyClicks(view.sigchanmenu, cfg["sigchan"])
-    qtbot.keyClicks(view.markerchanmenu, cfg["markerchan"])
-    qtbot.keyClicks(view.batchmenu, cfg["mode"])
+    qtbot.keyClicks(view.modmenu, cfg_single["modality"])
+    qtbot.keyClicks(view.sigchanmenu, cfg_single["sigchan"])
+    qtbot.keyClicks(view.markerchanmenu, cfg_single["markerchan"])
+    qtbot.keyClicks(view.batchmenu, cfg_single["mode"])
 
     # 1. load signal #########################################################
     with qtbot.waitSignals([model.signal_changed, model.marker_changed],
                            timeout=10000):
-        controller.read_signal(path=cfg["sigpathorig"])
-    assert np.size(model.signal) == cfg["siglen"]
-    assert np.size(model.sec) == cfg["siglen"]
-    assert np.size(model.marker) == cfg["markerlen"]
-    assert model.sfreq == cfg["sfreq"]
+        controller.read_signal(path=cfg_single["sigpathorig"])
+    assert np.size(model.signal) == cfg_single["siglen"]
+    assert np.size(model.sec) == cfg_single["siglen"]
+    assert np.size(model.marker) == cfg_single["markerlen"]
+    assert model.sfreq == cfg_single["sfreq"]
     assert model.loaded
 
     # 2. segment signal ######################################################
     with qtbot.waitSignal(model.segment_changed, timeout=5000):
-        model.set_segment(values=cfg["segment"])
-    assert model.segment == cfg["segment"]
+        model.set_segment(values=cfg_single["segment"])
+    assert model.segment == cfg_single["segment"]
     with qtbot.waitSignal(model.signal_changed, timeout=5000):
         controller.segment_signal()
-    seg = int(np.rint((cfg["segment"][1] - cfg["segment"][0]) * model.sfreq))
+    seg = int(np.rint((cfg_single["segment"][1] - cfg_single["segment"][0]) *
+                      model.sfreq))
     assert np.allclose(np.size(model.signal), seg, atol=1)
     assert np.allclose(np.size(model.sec), seg, atol=1)
 
     # 3. save segment ########################################################
-    model.wpathsignal = tmpdir.join(cfg["sigfnameseg"])
+    model.wpathsignal = tmpdir.join(cfg_single["sigfnameseg"])
     with qtbot.waitSignals([model.progress_changed] * 2, timeout=10000):
         controller.save_signal()
 
     # 4. find extrema #########################################################
     with qtbot.waitSignal(model.peaks_changed, timeout=5000):
         controller.find_peaks()
-    assert sum(model.peaks) == cfg["peaksum"]
+    assert sum(model.peaks) == cfg_single["peaksum"]
 
     # 5. edit extrema #########################################################
     view.editcheckbox.setCheckState(Qt.Checked)
@@ -228,18 +232,18 @@ def test_singlefile(qtbot, tmpdir, cfg):
     view.editcheckbox.setCheckState(Qt.Unchecked)
 
     # 6. save peaks ###########################################################
-    model.wpathpeaks = tmpdir.join(cfg["peakfname"])
+    model.wpathpeaks = tmpdir.join(cfg_single["peakfname"])
     with qtbot.waitSignals([model.progress_changed] * 2, timeout=10000):
         controller.save_peaks()
 
     # 7. load peaks ###########################################################
-    model.rpathpeaks = tmpdir.join(cfg["peakfname"])
+    model.rpathpeaks = tmpdir.join(cfg_single["peakfname"])
     with qtbot.waitSignal(model.peaks_changed, timeout=5000):
         controller.read_peaks()
     # For the breathing, after peak editing, the re-inserted peak can
     # be shifted by a few samples. This is not a bug, but inherent in the
     # way extrema are added and deleted in controller.edit_peaks().
-    assert np.allclose(sum(model.peaks), cfg["peaksum"], atol=10)
+    assert np.allclose(sum(model.peaks), cfg_single["peaksum"], atol=10)
 
     # 8. calculate stats ######################################################
     signals = ([model.period_changed, model.rate_changed,
@@ -247,25 +251,27 @@ def test_singlefile(qtbot, tmpdir, cfg):
                else [model.period_changed, model.rate_changed])
     with qtbot.waitSignals(signals, timeout=5000):
         controller.calculate_stats()
-    assert np.around(np.mean(model.periodintp), 4) == cfg["avgperiod"]
-    assert np.around(np.mean(model.rateintp), 4) == cfg["avgrate"]
+    assert np.around(np.mean(model.periodintp), 4) == cfg_single["avgperiod"]
+    assert np.around(np.mean(model.rateintp), 4) == cfg_single["avgrate"]
     if model.modality == "RESP":
-        assert np.around(np.mean(model.tidalampintp), 4) == cfg["avgtidalamp"]
+        assert np.around(np.mean(model.tidalampintp),
+                         4) == cfg_single["avgtidalamp"]
 
     # 9. save stats ###########################################################
     view.periodcheckbox.setCheckState(Qt.Checked)
     view.ratecheckbox.setCheckState(Qt.Checked)
     if model.modality == "RESP":
         view.tidalampcheckbox.setCheckState(Qt.Checked)
-    model.wpathstats = tmpdir.join(cfg["statsfname"])
+    model.wpathstats = tmpdir.join(cfg_single["statsfname"])
     with qtbot.waitSignals([model.progress_changed] * 2, timeout=10000):
         controller.save_stats()
     # load and check content
-    stats = pd.read_csv(tmpdir.join(cfg["statsfname"]))
-    assert np.around(stats["period"].mean(), 4) == cfg["avgperiod"]
-    assert np.around(stats["rate"].mean(), 4) == cfg["avgrate"]
+    stats = pd.read_csv(tmpdir.join(cfg_single["statsfname"]))
+    assert np.around(stats["period"].mean(), 4) == cfg_single["avgperiod"]
+    assert np.around(stats["rate"].mean(), 4) == cfg_single["avgrate"]
     if model.modality == "RESP":
-        assert np.around(stats["tidalamp"].mean(), 4) == cfg["avgtidalamp"]
+        assert np.around(stats["tidalamp"].mean(),
+                         4) == cfg_single["avgtidalamp"]
 
 
 ecg_batch = {"modality": "ECG",
@@ -294,10 +300,8 @@ ecg_batch_autocorrect = {"modality": "ECG",
                                    (0.7856, 76.9152), (0.7235, 83.5973)],
                          "correctpeaks": True}
 
-cfgs = [ecg_batch, ecg_batch_autocorrect]
 
-
-def idcfg(cfg):
+def idcfg_batch(cfg):
     """Generate a test ID."""
     modality = cfg["modality"]
     if cfg["correctpeaks"]:
@@ -307,8 +311,12 @@ def idcfg(cfg):
     return f"{modality}_{correction}"
 
 
-@pytest.mark.parametrize("cfg", cfgs, ids=idcfg)
-def test_batchfile(qtbot, tmpdir, cfg):
+@pytest.fixture(params=[ecg_batch, ecg_batch_autocorrect], ids=idcfg_batch)
+def cfg_batch(request):
+    return request.param
+
+
+def test_batchfile(qtbot, tmpdir, cfg_batch):
 
     # Set up application.
     model = Model()
@@ -318,15 +326,15 @@ def test_batchfile(qtbot, tmpdir, cfg):
     view.show()
 
     # Configure options.
-    qtbot.keyClicks(view.modmenu, cfg["modality"])
-    qtbot.keyClicks(view.sigchanmenu, cfg["sigchan"])
-    qtbot.keyClicks(view.batchmenu, cfg["mode"])
+    qtbot.keyClicks(view.modmenu, cfg_batch["modality"])
+    qtbot.keyClicks(view.sigchanmenu, cfg_batch["sigchan"])
+    qtbot.keyClicks(view.batchmenu, cfg_batch["mode"])
     view.savecheckbox.setCheckState(Qt.Checked)
-    if cfg["correctpeaks"]:
+    if cfg_batch["correctpeaks"]:
         view.correctcheckbox.setCheckState(Qt.Checked)
     view.periodcheckbox.setCheckState(Qt.Checked)
     view.ratecheckbox.setCheckState(Qt.Checked)
-    model.fpaths = [datadir.joinpath(p) for p in cfg["sigfnames"]]
+    model.fpaths = [datadir.joinpath(p) for p in cfg_batch["sigfnames"]]
 
     # Mock the controller's batch_processor in order to avoid
     # calls to the controller's get_wpathpeaks and get_wpathstats methods.
@@ -351,7 +359,8 @@ def test_batchfile(qtbot, tmpdir, cfg):
 
     # Load each peak file saved during batch processing and assess if
     # peaks have been identified correctly.
-    for sigfname, peaksum in zip(cfg["sigfnames"], cfg["peaksums"]):
+    for sigfname, peaksum in zip(cfg_batch["sigfnames"],
+                                 cfg_batch["peaksums"]):
         with qtbot.waitSignal(model.signal_changed, timeout=5000):
             controller.read_signal(path=datadir.joinpath(sigfname))
         fname = Path(sigfname).stem
@@ -363,7 +372,7 @@ def test_batchfile(qtbot, tmpdir, cfg):
 
     # Load each stats file saved during batch processing and assess if
     # stats have been caclualted correctly.
-    for sigfname, stat in zip(cfg["sigfnames"], cfg["stats"]):
+    for sigfname, stat in zip(cfg_batch["sigfnames"], cfg_batch["stats"]):
         fname = Path(sigfname).stem
         statsfname = tmpdir.join(f"{fname}_stats.csv")
         stats = pd.read_csv(statsfname)
