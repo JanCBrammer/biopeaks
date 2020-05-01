@@ -26,13 +26,13 @@ def generate_peaks(n_peaks=1000, kind="missing", random_state=42):
 def distort_peaks(peaks, kind="missing", displacement_factor=None):
 
     n_peaks = peaks.size
-    assert n_peaks >= 1000, "Too few peaks to generate artifacts."
+    assert n_peaks > 100, "Too few peaks to generate artifacts."
 
     idcs = np.arange(100, n_peaks, 100)
     if kind == "missing":
         peaks = np.delete(peaks, idcs)
     elif kind == "extra":
-        extra_peaks = (peaks[idcs + 1] - peaks[idcs]) / 2 + peaks[idcs]
+        extra_peaks = (peaks[idcs + 1] - peaks[idcs]) / 15 + peaks[idcs]
         peaks = np.insert(peaks, idcs, extra_peaks)
     elif kind == "misaligned":
         rr = np.ediff1d(peaks, to_begin=0)
@@ -44,7 +44,7 @@ def distort_peaks(peaks, kind="missing", displacement_factor=None):
     return peaks
 
 
-# @pytest.fixture(params=[2, 4, 8])
+# @pytest.fixture(params=[2, 4, 8])    # automatically runs the test(s) using this fixture with all values of params
 # def peaks_misaligned(request):
 #     peaks = generate_peaks(1000)
 #     peaks_misaligned = distort_peaks(peaks, kind="misaligned",
@@ -66,6 +66,8 @@ def show_artifact_correction(peaks_uncorrected, peaks_corrected, artifacts):
         c = colors[color]
         ax0.scatter(item[1], rr_uncorrected[item[1]],
                     label=item[0], color=c, zorder=3)
+    ax0.vlines(np.arange(0, rr_uncorrected.size), ymin=rr_uncorrected.min(),
+               ymax=rr_uncorrected.max(), alpha=.1, label="peaks")
     ax0.legend(loc="upper right")
     ax1.plot(rr_corrected)
 
@@ -74,14 +76,16 @@ peaks = generate_peaks(1000)
 
 peaks_missing = distort_peaks(peaks, kind="missing")
 artifacts_missing = _find_artifacts(peaks_missing, sfreq=1)
-peaks_missing_corrected = correct_peaks(peaks_missing, sfreq=1)#_correct_artifacts(artifacts_missing, peaks_missing)
+# peaks_missing_corrected = correct_peaks(peaks_missing, sfreq=1)
+peaks_missing_corrected = _correct_artifacts(artifacts_missing, peaks_missing)
 
 show_artifact_correction(peaks_missing, peaks_missing_corrected,
                          artifacts_missing)
 
 peaks_extra = distort_peaks(peaks, kind="extra")
 artifacts_extra = _find_artifacts(peaks_extra, sfreq=1)
-peaks_extra_corrected = correct_peaks(peaks_extra, sfreq=1)#_correct_artifacts(artifacts_extra, peaks_extra)
+# peaks_extra_corrected = correct_peaks(peaks_extra, sfreq=1)
+peaks_extra_corrected = _correct_artifacts(artifacts_extra, peaks_extra)
 
 show_artifact_correction(peaks_extra, peaks_extra_corrected,
                          artifacts_extra)
@@ -89,7 +93,9 @@ show_artifact_correction(peaks_extra, peaks_extra_corrected,
 peaks_misaligned = distort_peaks(peaks, kind="misaligned",
                                  displacement_factor=2)
 artifacts_misaligned = _find_artifacts(peaks_misaligned, sfreq=1)
-peaks_misaligned_corrected = correct_peaks(peaks_misaligned, sfreq=1)#_correct_artifacts(artifacts_misaligned, peaks_misaligned)
+# peaks_misaligned_corrected = correct_peaks(peaks_misaligned, sfreq=1)
+peaks_misaligned_corrected = _correct_artifacts(artifacts_misaligned,
+                                                peaks_misaligned)
 
 show_artifact_correction(peaks_misaligned, peaks_misaligned_corrected,
                          artifacts_misaligned)
