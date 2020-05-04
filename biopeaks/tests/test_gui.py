@@ -17,6 +17,9 @@ The tests will be restricted to a few typical, meaningful workflows (i.e.,
 sequences of function calls), since testing all possible workflows is
 unfeasible and for a majority of workflows meaningless (e.g., saving peaks
 before finding peaks etc.).
+
+Note that the timeouts used in qtbot.waitSignal(s) might cause flaky tests
+depending on which machine runs the tests.
 '''
 
 import pytest
