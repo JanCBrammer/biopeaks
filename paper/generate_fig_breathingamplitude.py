@@ -38,11 +38,11 @@ ax0.set_axis_off()
 ax1.set_frame_on(False)
 
 ax0.plot(signal, linewidth=2.5, label="breathing signal")
-ax0.scatter(peaks, signal[peaks], c="deeppink", marker="^", zorder=3, s=200,
+ax0.scatter(peaks, signal[peaks], c="deeppink", marker="^", zorder=3, s=125,
             label="inhalation peaks")
 ax0.scatter(troughs, signal[troughs], c="deeppink", marker="v", zorder=3,
-            s=200, label="exhalation troughs")
-ax0.legend(fontsize="small", markerscale=.6, bbox_to_anchor=(0.15, 1.1))
+            s=125, label="exhalation troughs")
+ax0.legend(fontsize="small", markerscale=.75, bbox_to_anchor=(0.15, 1.1))
 
 ax1.plot(amp, linewidth=2.5, c="mediumvioletred")
 ax1.vlines(peaks, ymin=min(amp), ymax=max(amp), colors="deeppink", linewidth=3,
@@ -51,6 +51,10 @@ ax1.grid(True, axis="y", alpha=.2)
 ax1.set_xlabel("Time (sec)", fontsize="large", fontweight="bold")
 ax1.set_ylabel("Inhalation amplitude (a.u.)", fontsize="large",
                fontweight="bold")
+
+ax0.set_xlim(right=40000)
+ax1.set_xlim(right=40000)
+
 sec = np.rint((ax1.get_xticks() / sfreq)).astype(int)
 ax1.set_xticklabels(sec)
 ax1.tick_params(axis="both", which="major", labelsize="medium")

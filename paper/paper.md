@@ -48,13 +48,16 @@ For example, Fig. 1 through 3 illustrate the extraction of instantaneous heart p
 (inhalation) amplitude respectively.
 
 ![figure1](fig_heartperiod.svg)
+
 *Figure 1*: Extraction of heart period based on R-peaks in an ECG. Note that this is conceptually identical to the extraction
 of heart period based on systolic peaks in PPG.
 
 ![figure2](fig_breathingperiod.svg)
+
 *Figure 2*: Extraction of breathing period based on inhalation peaks in a breathing signal.
 
 ![figure3](fig_breathingamplitude.svg)
+
 *Figure 3*: Extraction of inhalation amplitude based on breathing extrema in a breathing signal.
 
 In summary, `biopeaks` is designed to make biosignal inspection, extrema detection and editing, as well as feature
