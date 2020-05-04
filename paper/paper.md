@@ -38,7 +38,7 @@ Local extrema include R-peaks in electrocardiogram (ECG) and systolic peaks in p
 the contraction of the ventricular heart muscle and subsequent ejection of blood. In breathing biosignals,
 the relevant local extrema are inhalation peaks and exhalation troughs.
 `biopeaks` detects these extrema automatically with sensible algorithmic defaults. Algorithmically identified
-extrema can be misplaced (false positives) or extrema might be missed (false negative). These
+extrema can be misplaced (false positives) or extrema might be missed (false negatives). These
 errors can happen if there are small noisy segments in an otherwise clean biosignal. If left uncorrected, these
 errors significantly distort the subsequent analysis steps [@].`biopeaks` offers intuitive manual extrema editing
 (i.e., removing and adding extrema) to ensure the correct placement of extrema. Additionally, for cardiac biosignals,
@@ -47,14 +47,14 @@ can extract features from the biosignal. The features are based on temporal or a
 For example, Fig. 1 through 3 illustrate the extraction of instantaneous heart period, breathing period, and breathing
 (inhalation) amplitude respectively.
 
-![figure1](Figure_1.png)
+![figure1](fig_heartperiod.svg)
 *Figure 1*: Extraction of heart period based on R-peaks in an ECG. Note that this is conceptually identical to the extraction
 of heart period based on systolic peaks in PPG.
 
-![figure2](Figure_2.png)
+![figure2](fig_breathingperiod.svg)
 *Figure 2*: Extraction of breathing period based on inhalation peaks in a breathing signal.
 
-![figure3](Figure_3.png)
+![figure3](fig_breathingamplitude.svg)
 *Figure 3*: Extraction of inhalation amplitude based on breathing extrema in a breathing signal.
 
 In summary, `biopeaks` is designed to make biosignal inspection, extrema detection and editing, as well as feature
@@ -79,7 +79,7 @@ There are free alternatives to `biopeaks` that do not require a (Matlab) license
 However, these come with the following drawbacks:
 
 + require file conversion to toolbox-specific format [@artiifact; @physiodatatoolbox]
-+ not open-source [artiifact; signalplant]
++ not open-source [@artiifact; @signalplant]
 + require some knowledge of (biomedical) digital signal processing [@artiifact; @physiodatatoolbox; @signalplant]
 + many steps from raw data to feature extraction [@artiifact; @physiodatatoolbox; @signalplant]
 + no possibility to export instantaneous features [@physiodatatoolbox; @signalplant]
