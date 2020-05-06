@@ -381,6 +381,10 @@ After extracting the PPG signals and peak annotations you can run the `benchmark
 
 # Changelog
 
+### Version 1.3.1 (May 06, 2020)
++ bugfix: corrected control-flow of artifact classification during auto-correction of ECG and PPG peaks.
++ bugfix: using PySide2 resources instead of PyQt5 resources
+
 ### Version 1.3.0 (April 27, 2020)
 + enhancement: using the official Qt Python bindings (PySide2) instead of PyQt5.
 + bugfix: enforcing minimal figure height to comply with requirements of Matplotlib > 3.2.0.
