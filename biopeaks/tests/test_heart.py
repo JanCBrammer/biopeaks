@@ -2,7 +2,7 @@
 
 import pytest
 import numpy as np
-from biopeaks.heart import _find_artifacts, correct_peaks
+from biopeaks.heart import _find_artifacts, _correct_artifacts, correct_peaks
 
 
 def compute_rmssd(peaks):
@@ -60,12 +60,12 @@ def peaks_misaligned(request, peaks_correct, artifact_idcs):
 
 
 @pytest.fixture
-def peaks_missing(peaks_correct, artifact_idcs):
+def peaks_missed(peaks_correct, artifact_idcs):
 
-    peaks_missing = peaks_correct.copy()
-    peaks_missing = np.delete(peaks_missing, artifact_idcs)
+    peaks_missed = peaks_correct.copy()
+    peaks_missed = np.delete(peaks_missed, artifact_idcs)
 
-    return peaks_missing
+    return peaks_missed
 
 
 @pytest.fixture
@@ -81,26 +81,73 @@ def peaks_extra(peaks_correct, artifact_idcs):
     return peaks_extra
 
 
+@pytest.fixture
+def artifacts_misaligned(artifact_idcs):
+    artifacts = {"ectopic": list(artifact_idcs + 1), "missed": [], "extra": [],
+                 "longshort": list(artifact_idcs)}
+    return artifacts
+
+
+@pytest.fixture
+def artifacts_missed(artifact_idcs):
+    missed_idcs = [j - i for i, j in enumerate(artifact_idcs)]    # account for the fact that peak indices are shifted to the left after deletion of peaks
+    artifacts = {"ectopic": [], "missed": missed_idcs, "extra": [],
+                 "longshort": []}
+    return artifacts
+
+
+@pytest.fixture
+def artifacts_extra(artifact_idcs):
+    extra_idcs = [j + (i + 1) for i, j in enumerate(artifact_idcs)]    # account for the fact that peak indices are shifted to the right after insertion of peaks
+    artifacts = {"ectopic": [], "missed": [], "extra": extra_idcs,
+                 "longshort": []}
+    return artifacts
+
+
 @pytest.mark.parametrize("peaks_misaligned", [2, 4, 8],
                          indirect=["peaks_misaligned"])
-def test_misaligned_detection(peaks_misaligned, artifact_idcs):
+def test_misaligned_detection(peaks_misaligned, artifacts_misaligned):
 
     artifacts = _find_artifacts(peaks_misaligned, sfreq=1)
-    assert artifacts["longshort"] == list(artifact_idcs)
+    assert artifacts == artifacts_misaligned    # check for identical key-value pairs
 
 
-def test_missed_detection(peaks_missing, artifact_idcs):
+def test_missed_detection(peaks_missed, artifacts_missed):
 
-    artifacts = _find_artifacts(peaks_missing, sfreq=1)
-    missing_idcs = [j - i for i, j in enumerate(artifact_idcs)]    # account for the fact that peak indices are shifted to the left after deletion of peaks
-    assert artifacts["missed"] == missing_idcs
+    artifacts = _find_artifacts(peaks_missed, sfreq=1)
+    assert artifacts == artifacts_missed
 
 
-def test_extra_detection(peaks_extra, artifact_idcs):
+def test_extra_detection(peaks_extra, artifacts_extra):
 
     artifacts = _find_artifacts(peaks_extra, sfreq=1)
-    extra_idcs = [j + (i + 1) for i, j in enumerate(artifact_idcs)]    # account for the fact that peak indices are shifted to the right after insertion of peaks
-    assert artifacts["extra"] == extra_idcs
+    assert artifacts == artifacts_extra
+
+
+@pytest.mark.parametrize("peaks_misaligned", [2, 4, 8],
+                         indirect=["peaks_misaligned"])
+def test_misaligned_correction(peaks_misaligned, artifacts_misaligned):
+
+    peaks_corrected = _correct_artifacts(artifacts_misaligned,
+                                         peaks_misaligned)
+
+    assert np.unique(peaks_corrected).size == peaks_misaligned.size    # make sure that no peak duplication occurs and that number of peaks doesn't change
+
+
+def test_missed_correction(peaks_missed, artifacts_missed):
+
+    peaks_corrected = _correct_artifacts(artifacts_missed, peaks_missed)
+
+    assert np.unique(peaks_corrected).size == (peaks_missed.size +
+                                               len(artifacts_missed["missed"]))
+
+
+def test_extra_correction(peaks_extra, artifacts_extra):
+
+    peaks_corrected = _correct_artifacts(artifacts_extra, peaks_extra)
+
+    assert np.unique(peaks_corrected).size == (peaks_extra.size
+                                               - len(artifacts_extra["extra"]))
 
 
 def idfn(val):
@@ -109,12 +156,12 @@ def idfn(val):
 
 
 @pytest.mark.parametrize("peaks_misaligned, iterative, rmssd_diff",
-                         [(2, True, 33), (2, False, 26),
-                          (4, True, 133), (4, False, 126),
-                          (8, True, 467), (8, False, 460)],
+                         [(2, True, 34), (2, False, 27),
+                          (4, True, 133), (4, False, 113),
+                          (8, True, 466), (8, False, 444)],
                          indirect=["peaks_misaligned"], ids=idfn)
-def test_misaligned_correction(peaks_correct, peaks_misaligned, iterative,
-                               rmssd_diff):
+def test_misaligned_correction_wrapper(peaks_correct, peaks_misaligned,
+                                       iterative, rmssd_diff):
 
     peaks_corrected = correct_peaks(peaks_misaligned, sfreq=1,
                                     iterative=iterative)
@@ -138,7 +185,8 @@ def test_misaligned_correction(peaks_correct, peaks_misaligned, iterative,
 
 @pytest.mark.parametrize("iterative, rmssd_diff", [(True, 3), (False, 3)],
                          ids=idfn)
-def test_extra_correction(peaks_correct, peaks_extra, iterative, rmssd_diff):
+def test_extra_correction_wrapper(peaks_correct, peaks_extra, iterative,
+                                  rmssd_diff):
 
     peaks_corrected = correct_peaks(peaks_extra, sfreq=1,
                                     iterative=iterative)
@@ -163,15 +211,15 @@ def test_extra_correction(peaks_correct, peaks_extra, iterative, rmssd_diff):
 
 @pytest.mark.parametrize("iterative, rmssd_diff", [(True, 13), (False, 13)],
                          ids=idfn)
-def test_missing_correction(peaks_correct, peaks_missing, iterative,
-                            rmssd_diff):
+def test_missed_correction_wrapper(peaks_correct, peaks_missed, iterative,
+                                   rmssd_diff):
 
-    peaks_corrected = correct_peaks(peaks_missing, sfreq=1,
+    peaks_corrected = correct_peaks(peaks_missed, sfreq=1,
                                     iterative=iterative)
 
     rmssd_correct = compute_rmssd(peaks_correct)
     rmssd_corrected = compute_rmssd(peaks_corrected)
-    rmssd_uncorrected = compute_rmssd(peaks_missing)
+    rmssd_uncorrected = compute_rmssd(peaks_missed)
 
     # Assert that correction does not produce peaks that exceed the temporal
     # bounds of the original peaks.
@@ -216,13 +264,13 @@ def test_missing_correction(peaks_correct, peaks_missing, iterative,
 
 # peaks = generate_peaks(n_peaks=1000)
 
-# peaks_missing = distort_peaks(peaks, kind="missing")
-# artifacts_missing = _find_artifacts(peaks_missing, sfreq=1)
-# # peaks_missing_corrected = correct_peaks(peaks_missing, sfreq=1)
-# peaks_missing_corrected = _correct_artifacts(artifacts_missing, peaks_missing)
+# peaks_missed = distort_peaks(peaks, kind="missed")
+# artifacts_missed = _find_artifacts(peaks_missed, sfreq=1)
+# # peaks_missed_corrected = correct_peaks(peaks_missed, sfreq=1)
+# peaks_missed_corrected = _correct_artifacts(artifacts_missed, peaks_missed)
 
-# show_artifact_correction(peaks, peaks_missing, peaks_missing_corrected,
-#                           artifacts_missing)
+# show_artifact_correction(peaks, peaks_missed, peaks_missed_corrected,
+#                           artifacts_missed)
 
 # peaks_extra = distort_peaks(peaks, kind="extra")
 # artifacts_extra = _find_artifacts(peaks_extra, sfreq=1)
