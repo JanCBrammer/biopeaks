@@ -37,10 +37,9 @@ If the analyst deems the biosignal's quality sufficient they proceed to identify
 Local extrema include R-peaks in electrocardiogram (ECG) and systolic peaks in photoplethysmogram (PPG), representing
 the contraction of the ventricular heart muscle and subsequent ejection of blood. In breathing biosignals,
 the relevant local extrema are inhalation peaks and exhalation troughs.
-`biopeaks` detects these extrema automatically with sensible algorithmic defaults. Algorithmically identified
-extrema can be misplaced (false positives) or extrema might be missed (false negatives). These
-errors can happen if there are small noisy segments in an otherwise clean biosignal. If left uncorrected, these
-errors significantly distort the subsequent analysis steps [@].`biopeaks` offers intuitive manual extrema editing
+`biopeaks` detects these extrema automatically with sensible algorithmic defaults. If there are noisy segments in the biosignal,
+algorithmically identified extrema can be misplaced (false positives) or extrema might be missed (false negatives).
+If left uncorrected, these errors significantly distort the subsequent analysis steps [@].`biopeaks` offers intuitive manual extrema editing
 (i.e., removing and adding extrema) to ensure the correct placement of extrema. Additionally, for cardiac biosignals,
 `biopeaks` offers state-of-the-art automatic extrema correction [@lipponen]. Finally, based on the extrema, the analyst
 can extract features from the biosignal. The features are based on temporal or amplitude differences between the extrema.
@@ -49,16 +48,16 @@ For example, Fig. 1 through 3 illustrate the extraction of instantaneous heart p
 
 ![figure1](fig_heartperiod.svg)
 
-*Figure 1*: Extraction of heart period based on R-peaks in an ECG. Note that this is conceptually identical to the extraction
+*Figure 1*: Extraction of heart period (panel b) based on R-peaks in an ECG (panel a). Note that this is conceptually identical to the extraction
 of heart period based on systolic peaks in PPG.
 
 ![figure2](fig_breathingperiod.svg)
 
-*Figure 2*: Extraction of breathing period based on inhalation peaks in a breathing signal.
+*Figure 2*: Extraction of breathing period (panel b) based on inhalation peaks in a breathing signal (panel a).
 
 ![figure3](fig_breathingamplitude.svg)
 
-*Figure 3*: Extraction of inhalation amplitude based on breathing extrema in a breathing signal.
+*Figure 3*: Extraction of inhalation amplitude (panel b) based on breathing extrema in a breathing signal (panel a).
 
 In summary, `biopeaks` is designed to make biosignal inspection, extrema detection and editing, as well as feature
 extraction as fast and intuitive as possible. It is a pure Python implementation using the cross-platform

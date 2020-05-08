@@ -39,7 +39,7 @@ ax1.set_frame_on(False)
 ax0.plot(signal, linewidth=2.5, label="breathing signal")
 ax0.vlines(peaks, ymin=minsignal, ymax=maxsignal, colors="deeppink",
            label="inhalation peaks", linewidth=3)
-ax0.legend(fontsize="small", bbox_to_anchor=(0.1, 1.1))
+ax0.legend(fontsize="small", bbox_to_anchor=(0.1, 1.1), handlelength=.6)
 
 ax1.plot(period, linewidth=2.5, c="mediumvioletred")
 ax1.vlines(peaks, ymin=min(period), ymax=max(period), colors="deeppink",
@@ -51,6 +51,11 @@ ax1.set_ylabel("Breathing period (sec)", fontsize="large",
 sec = np.rint((ax1.get_xticks() / sfreq)).astype(int)
 ax1.set_xticklabels(sec)
 ax1.tick_params(axis="both", which="major", labelsize="medium")
+
+ax0.text(ax0.get_xbound()[-1], ax0.get_ybound()[-1], "a", fontsize="large",
+         fontweight="medium")
+ax1.text(ax1.get_xbound()[-1], ax1.get_ybound()[-1], "b", fontsize="large",
+         fontweight="medium")
 
 fig.canvas.draw()
 

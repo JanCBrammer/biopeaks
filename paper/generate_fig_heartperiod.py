@@ -49,6 +49,10 @@ sec = np.rint((ax1.get_xticks() / sfreq)).astype(int)
 ax1.set_xticklabels(sec)
 ax1.tick_params(axis="both", which="major", labelsize="medium")
 
+ax0.text(ax0.get_xbound()[-1], ax0.get_ybound()[-1], "a", fontsize="large",
+         fontweight="medium")
+ax1.text(ax1.get_xbound()[-1], ax1.get_ybound()[-1], "b", fontsize="large",
+         fontweight="medium")
 
 fig.canvas.draw()    # important to synchronize transData of axes
 

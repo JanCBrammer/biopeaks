@@ -42,7 +42,8 @@ ax0.scatter(peaks, signal[peaks], c="deeppink", marker="^", zorder=3, s=125,
             label="inhalation peaks")
 ax0.scatter(troughs, signal[troughs], c="deeppink", marker="v", zorder=3,
             s=125, label="exhalation troughs")
-ax0.legend(fontsize="small", markerscale=.75, bbox_to_anchor=(0.15, 1.1))
+ax0.legend(fontsize="small", markerscale=.75, bbox_to_anchor=(0.15, 1.1),
+           handlelength=.6)
 
 ax1.plot(amp, linewidth=2.5, c="mediumvioletred")
 ax1.vlines(peaks, ymin=min(amp), ymax=max(amp), colors="deeppink", linewidth=3,
@@ -58,6 +59,11 @@ ax1.set_xlim(right=40000)
 sec = np.rint((ax1.get_xticks() / sfreq)).astype(int)
 ax1.set_xticklabels(sec)
 ax1.tick_params(axis="both", which="major", labelsize="medium")
+
+ax0.text(ax0.get_xbound()[-1], ax0.get_ybound()[-1], "a", fontsize="large",
+         fontweight="medium")
+ax1.text(ax1.get_xbound()[-1], ax1.get_ybound()[-1], "b", fontsize="large",
+         fontweight="medium")
 
 fig.canvas.draw()
 
