@@ -423,7 +423,7 @@ def _correct_artifacts(artifacts, peaks):
 
     # Delete extra peaks.
     if extra_idcs:
-        peaks = np.delete(peaks, extra_idcs)
+        peaks = _correct_extra(extra_idcs, peaks)
         # Update remaining indices.
         missed_idcs = update_indices(extra_idcs, missed_idcs, -1)
         ectopic_idcs = update_indices(extra_idcs, ectopic_idcs, -1)
@@ -431,38 +431,67 @@ def _correct_artifacts(artifacts, peaks):
 
     # Add missing peaks.
     if missed_idcs:
-        # Calculate the position(s) of new beat(s). Make sure to not generate
-        # negative indices. prev_peaks and next_peaks must have the same
-        # number of elements.
-        missed_idcs = np.array(missed_idcs)
-        valid_idcs = np.logical_and(missed_idcs > 1, missed_idcs < len(peaks))
-        missed_idcs = missed_idcs[valid_idcs]
-        prev_peaks = peaks[[i - 1 for i in missed_idcs]]
-        next_peaks = peaks[missed_idcs]
-        added_peaks = prev_peaks + (next_peaks - prev_peaks) / 2
-        # Add the new peaks before the missed indices (see numpy docs).
-        peaks = np.insert(peaks, missed_idcs, added_peaks)
+        peaks = _correct_missed(missed_idcs, peaks)
         # Update remaining indices.
         ectopic_idcs = update_indices(missed_idcs, ectopic_idcs, 1)
         longshort_idcs = update_indices(missed_idcs, longshort_idcs, 1)
 
-    # Interpolate ectopic as well as long or short peaks (important to do
-    # this after peaks are deleted and/or added).
-    interp_idcs = np.concatenate((ectopic_idcs, longshort_idcs)).astype(int)
-    if interp_idcs.size > 0:
-        interp_idcs.sort(kind='mergesort')
-        # Make sure to not generate negative indices, or indices that exceed
-        # the total number of peaks. prev_peaks and next_peaks must have the
-        # same number of elements.
-        valid_idcs = np.logical_and(interp_idcs > 1, interp_idcs < len(peaks))
-        interp_idcs = interp_idcs[valid_idcs]
-        prev_peaks = peaks[[i - 1 for i in interp_idcs]]
-        next_peaks = peaks[[i + 1 for i in interp_idcs]]
-        peaks_interp = prev_peaks + (next_peaks - prev_peaks) / 2
-        # Shift the R-peaks from the old to the new position.
-        peaks = np.delete(peaks, interp_idcs)
-        peaks = np.concatenate((peaks, peaks_interp)).astype(int)
-        peaks.sort(kind="mergesort")
-        peaks = np.unique(peaks)
+    if ectopic_idcs:
+        peaks = _correct_misaligned(ectopic_idcs, peaks)
+
+    if longshort_idcs:
+        peaks = _correct_misaligned(longshort_idcs, peaks)
 
     return peaks
+
+
+def _correct_extra(extra_idcs, peaks):
+
+    corrected_peaks = peaks.copy()
+    corrected_peaks = np.delete(corrected_peaks, extra_idcs)
+
+    return corrected_peaks
+
+
+def _correct_missed(missed_idcs, peaks):
+
+    corrected_peaks = peaks.copy()
+    missed_idcs = np.array(missed_idcs)
+    # Calculate the position(s) of new beat(s). Make sure to not generate
+    # negative indices. prev_peaks and next_peaks must have the same
+    # number of elements.
+    valid_idcs = np.logical_and(missed_idcs > 1,
+                                missed_idcs < len(corrected_peaks))
+    missed_idcs = missed_idcs[valid_idcs]
+    prev_peaks = corrected_peaks[[i - 1 for i in missed_idcs]]
+    next_peaks = corrected_peaks[missed_idcs]
+    added_peaks = prev_peaks + (next_peaks - prev_peaks) / 2
+    # Add the new peaks before the missed indices (see numpy docs).
+    corrected_peaks = np.insert(corrected_peaks, missed_idcs, added_peaks)
+
+    return corrected_peaks
+
+
+def _correct_misaligned(misaligned_idcs, peaks):
+
+    corrected_peaks = peaks.copy()
+    misaligned_idcs = np.array(misaligned_idcs)
+    # Make sure to not generate negative indices, or indices that exceed
+    # the total number of peaks. prev_peaks and next_peaks must have the
+    # same number of elements.
+    valid_idcs = np.logical_and(misaligned_idcs > 1,
+                                misaligned_idcs < len(corrected_peaks))
+    misaligned_idcs = misaligned_idcs[valid_idcs]
+    prev_peaks = corrected_peaks[[i - 1 for i in misaligned_idcs]]
+    next_peaks = corrected_peaks[[i + 1 for i in misaligned_idcs]]
+    half_ibi = (next_peaks - prev_peaks) / 2
+    peaks_interp = prev_peaks + half_ibi
+    # Shift the R-peaks from the old to the new position.
+    corrected_peaks = np.delete(corrected_peaks, misaligned_idcs)
+    corrected_peaks = np.concatenate((corrected_peaks,
+                                      peaks_interp)).astype(int)
+    corrected_peaks.sort(kind="mergesort")
+
+    assert np.unique(corrected_peaks).size == peaks.size
+
+    return corrected_peaks
