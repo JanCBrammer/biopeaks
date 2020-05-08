@@ -492,6 +492,4 @@ def _correct_misaligned(misaligned_idcs, peaks):
                                       peaks_interp)).astype(int)
     corrected_peaks.sort(kind="mergesort")
 
-    assert np.unique(corrected_peaks).size == peaks.size
-
     return corrected_peaks
