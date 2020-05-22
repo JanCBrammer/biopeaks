@@ -8,7 +8,7 @@ setup(
     description="A graphical user interface for feature extraction from heart- and breathing biosignals.",
     url="https://github.com/JanCBrammer/biopeaks",
     author="Jan C. Brammer",
-    author_email="j.brammer@psych.ru.nl",
+    author_email="jan.c.brammer@gmail.com",
     keywords="ECG PPG Breathing Biosignals Bitalino OpenSignals EDF GUI",
     packages=find_namespace_packages(exclude=["misc", "paper"]),
     python_requires=">=3.7",
