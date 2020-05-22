@@ -460,8 +460,7 @@ def _correct_missed(missed_idcs, peaks):
     # Calculate the position(s) of new beat(s). Make sure to not generate
     # negative indices. prev_peaks and next_peaks must have the same
     # number of elements.
-    valid_idcs = np.logical_and(missed_idcs > 1,
-                                missed_idcs < len(corrected_peaks))
+    valid_idcs = missed_idcs > 1
     missed_idcs = missed_idcs[valid_idcs]
     prev_peaks = corrected_peaks[[i - 1 for i in missed_idcs]]
     next_peaks = corrected_peaks[missed_idcs]
@@ -480,7 +479,7 @@ def _correct_misaligned(misaligned_idcs, peaks):
     # the total number of peaks. prev_peaks and next_peaks must have the
     # same number of elements.
     valid_idcs = np.logical_and(misaligned_idcs > 1,
-                                misaligned_idcs < len(corrected_peaks))
+                                misaligned_idcs < (len(corrected_peaks) - 1))
     misaligned_idcs = misaligned_idcs[valid_idcs]
     prev_peaks = corrected_peaks[[i - 1 for i in misaligned_idcs]]
     next_peaks = corrected_peaks[[i + 1 for i in misaligned_idcs]]
