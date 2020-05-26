@@ -23,6 +23,7 @@ jobs:
         auto-update-conda: true
         channels: conda-forge
         channel-priority: strict
+        activate-environment: anaconda-client-env
         environment-file: environment.yml
         python-version: ${{ matrix.python-version }}
         auto-activate-base: false
