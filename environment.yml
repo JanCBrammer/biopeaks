@@ -1,4 +1,4 @@
-name: biopeaks-test
+name: biopeaks-build
 channels:
   - conda-forge
   - defaults
