@@ -27,6 +27,11 @@ jobs:
         environment-file: environment.yml
         python-version: ${{ matrix.python-version }}
         auto-activate-base: false
+    - name: Set-up additional dependencies Ubuntu
+      if: matrix.os == ubuntu-latest
+      shell: bash -l {0}
+      run: |
+        sudo apt-get install -y xvfb x11-utils libxkbcommon-x11-0
     - name: Lint with flake8
       shell: bash -l {0}
       run: |
