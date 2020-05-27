@@ -39,9 +39,6 @@ Click on the badge below to cite `biopeaks` in a format of your choice.
 # User Guide
 
 ## Installation
-Note that currently, `biopeaks` has been built and tested on Windows. It should
-run on Linux and macOS as well.
-
 
 ### Instructions for users without a Python installation
 If you don't have experience with installing Python packages and/or if you
