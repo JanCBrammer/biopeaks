@@ -308,7 +308,6 @@ class View(QMainWindow):
         self.vlayoutC = QVBoxLayout()
         self.vlayoutD = QVBoxLayout()
         self.hlayout0 = QHBoxLayout()
-        self.hlayout1 = QHBoxLayout()
 
         self.optionsgroupA = QGroupBox("processing options")
         self.vlayoutA.addRow(self.modmenulabel, self.modmenu)
@@ -320,7 +319,7 @@ class View(QMainWindow):
         self.vlayoutB.addRow(self.markerchanmenulabel, self.markerchanmenu)
         self.optionsgroupB.setLayout(self.vlayoutB)
 
-        self.optionsgroupC = QGroupBox("peak options")
+        self.optionsgroupC = QGroupBox("peaks")
         self.vlayoutC.addWidget(self.editcheckbox)
         self.vlayoutC.addWidget(self.savecheckbox)
         self.vlayoutC.addWidget(self.correctcheckbox)
@@ -336,14 +335,21 @@ class View(QMainWindow):
         self.vlayout1.addWidget(self.optionsgroupB)
         self.vlayout1.addWidget(self.optionsgroupC)
         self.vlayout1.addWidget(self.optionsgroupD)
-        self.hlayout0.addLayout(self.vlayout1)
-        self.hlayout0.addWidget(self.splitter)
-        self.hlayout0.setStretch(0, 1)
-        self.hlayout0.setStretch(1, 15)
-        self.vlayout0.addLayout(self.hlayout0)
+        self.optionsgroupwidget = QWidget()
+        self.optionsgroupwidget.setLayout(self.vlayout1)
+        self.optionsgroup = QDockWidget("configurations", self)
+        self.optionsgroup.setAllowedAreas(Qt.LeftDockWidgetArea)
+        self.toggleoptionsgroup = self.optionsgroup.toggleViewAction()
+        self.toggleoptionsgroup.setText("show configurations")
+        menubar.addAction(self.toggleoptionsgroup)
+        self.optionsgroup.setWidget(self.optionsgroupwidget)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.optionsgroup)
 
-        self.hlayout1.addWidget(self.navitools)
-        self.vlayout0.addLayout(self.hlayout1)
+        
+        self.vlayout0.addWidget(self.splitter)
+
+        self.hlayout0.addWidget(self.navitools)
+        self.vlayout0.addLayout(self.hlayout0)
 
         ##############################################
         # connect output widgets to external signals #
