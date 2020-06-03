@@ -509,7 +509,7 @@ class View(QMainWindow):
 
     def enable_segmentedit(self):
         # disable peak editing to avoid interference
-        self.editcheckbox.setCheckState(0)
+        self.editcheckbox.setChecked(False)
         if self.startedit.hasFocus():
             self.segmentcursor = "start"
         elif self.endedit.hasFocus():
