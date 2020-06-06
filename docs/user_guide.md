@@ -191,11 +191,10 @@ slightly misplaced. Also, the auto-correction does not guarantee that
 all errors in peak placement will be caught. It is always good to check for errors manually!
  
 ### batch processing
-> :warning: There is no substitute for manually checking the biosignal's
+> There is no substitute for manually checking the biosignal's
 > quality as well as the placement of the peaks. Manually checking and editing
 > peak placement is the only way to guarantee sensible statistics. Only use
 > batch processing if you are sure that the biosignal's quality is sufficient!
-> :warning:
 
 You can configure your batch processing in the **configurations**.
 To enable batch processing, select 

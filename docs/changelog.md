@@ -1,8 +1,8 @@
 # Changelog
 
-### Version 1.3.2 (June 06, 2020)
+### Version 1.3.2 (June 07, 2020)
 + enhancement: visibility of configuration panel can now be toggled (more screen space for signals).
-+ bugfix: fixed index out of range error in `heart._correct_misaligned()`.
++ bugfix: fixed index-out-of-range error in `heart._correct_misaligned()`.
 
 ### Version 1.3.1 (May 06, 2020)
 + bugfix: corrected control-flow of artifact classification during auto-correction of ECG and PPG peaks.

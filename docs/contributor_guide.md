@@ -1,5 +1,6 @@
 # Contributor Guide
-Please report any bug or question by [opening an issue](https://help.github.com/en/github/managing-your-work-on-github/creating-an-issue).
+Please report any bug or question by [opening an issue](https://help.github.com/en/github/managing-your-work-on-github/creating-an-issue)
+in the [GitHub repository](https://github.com/JanCBrammer/biopeaks).
 Pull requests for new features, improvements, and bug fixes are very welcome!
 
 The application is structured according to a variant of the
