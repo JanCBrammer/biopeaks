@@ -340,7 +340,7 @@ class View(QMainWindow):
         self.optionsgroup = QDockWidget("configurations", self)
         self.optionsgroup.setAllowedAreas(Qt.LeftDockWidgetArea)
         self.toggleoptionsgroup = self.optionsgroup.toggleViewAction()
-        self.toggleoptionsgroup.setText("show configurations")
+        self.toggleoptionsgroup.setText("show/hide configurations")
         menubar.addAction(self.toggleoptionsgroup)
         self.optionsgroup.setWidget(self.optionsgroupwidget)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.optionsgroup)
