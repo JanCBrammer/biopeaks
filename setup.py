@@ -4,14 +4,14 @@ from setuptools import setup, find_namespace_packages
 
 setup(
     name="biopeaks",
-    version="1.3.1",
+    version="1.3.2",
     description="A graphical user interface for feature extraction from heart- and breathing biosignals.",
     url="https://github.com/JanCBrammer/biopeaks",
     author="Jan C. Brammer",
     author_email="jan.c.brammer@gmail.com",
     keywords="ECG PPG Breathing Biosignals Bitalino OpenSignals EDF GUI",
     packages=find_namespace_packages(exclude=["misc", "paper"]),
-    python_requires=">=3.7",
+    python_requires=">=3.6",
     license="GPL-3.0",
     include_package_data=True,
     entry_points={
