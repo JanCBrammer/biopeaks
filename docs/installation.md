@@ -35,12 +35,12 @@ biopeaks
 #### dependencies
 Make sure that the following requirements are met for your Python environment:
 
-python >= 3.7\
-pyside2 >= 5.13.2\
-qt >= 5.12.5\
-numpy >= 1.18.1\
-scipy >= 1.4.1\
-pandas >= 0.25.3\
+python >= 3.7<br/>
+pyside2 >= 5.13.2<br/>
+qt >= 5.12.5<br/>
+numpy >= 1.18.1<br/>
+scipy >= 1.4.1<br/>
+pandas >= 0.25.3<br/>
 matplotlib >= 3.2.1
 
 Once you have all the dependencies, install `biopeaks` with

@@ -1,8 +1,8 @@
 # Tests
 
 ## GUI
-The OpenSignals test data have been recorded with\
-software: opensignals v2.0.0, 20190805\
+The OpenSignals test data have been recorded with<br/>
+software: opensignals v2.0.0, 20190805<br/>
 hardware: BITalino (r)evolution (firmware 1281)
 
 The EDF test data have been downloaded from https://www.teuniz.net/edf_bdf_testfiles/
