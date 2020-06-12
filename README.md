@@ -14,7 +14,7 @@ Click on the badge below to cite `biopeaks` in a format of your choice.
 It processes these biosignals semi-automatically with sensible defaults and offers the following functionality:
 
 * processes files in the open biosignal formats [EDF](https://en.wikipedia.org/wiki/European_Data_Format)
-as well as [OpenSignals](https://bitalino.com/en/software)
+as well as [OpenSignals (Bitalino)](https://bitalino.com/en/software)
 * interactive biosignal visualization
 * biosignal segmentation
 * benchmarked, automatic extrema detection (R-peaks in ECG, systolic peaks in PPG, exhalation troughs and inhalation
