@@ -108,14 +108,21 @@ class BenchmarkDetectorGUDB:
         """
         print(f"fetching {url}")
         async with self.session.get(url + "/ECG.tsv") as response:
-            physio = await response.read()
-            physio = np.loadtxt(StringIO(physio.decode("utf-8")))
-            physio = np.ravel(physio[:, 1])    # select the first lead
+            if response.status == 200:
+                physio = await response.text()
+                physio = np.loadtxt(StringIO(physio))
+                physio = np.ravel(physio[:, 1])    # select the first lead
+            else:
+                physio = None
+                print(f"Couldn't find physio file at {url}")
         async with self.session.get(url + "/annotation_cables.tsv") as response:
-            annotation = await response.read()
-            annotation = np.loadtxt(StringIO(annotation.decode("utf-8")))
-            annotation = np.ravel(annotation)
-
+            if response.status == 200:
+                annotation = await response.text()
+                annotation = np.loadtxt(StringIO(annotation))
+                annotation = np.ravel(annotation)
+            else:
+                annotation = None
+                print(f"Couldn't find annotation file at {url}")
         await self.queue.put((physio, annotation, url))
 
 
@@ -132,6 +139,14 @@ class BenchmarkDetectorGUDB:
         while n < n_records:
             # Wait for a record to be added to the queue.
             physio, annotation, url = await self.queue.get()
+
+            skip_record = physio is None
+            skip_record = annotation is None
+
+            if skip_record:
+                print(f"Skipping benchmarking of {url}.")
+                n += 1
+                continue
 
             # Process the record.
             print(f"processing {url}")
