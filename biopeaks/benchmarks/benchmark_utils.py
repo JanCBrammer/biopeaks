@@ -9,6 +9,8 @@ from wfdb.processing import compare_annotations
 class BenchmarkDetectorGUDB:
     """Evaluate an ECG R-peak detector on datasets from the GUDB database.
     """
+    channels = {"cs_V2_V1": 0, "einthoven_II": 1, "einthoven_III": 2}
+    base_url = "https://berndporr.github.io/ECG-GUDB/experiment_data/subject_"
 
     def __init__(self, detector, tolerance, sfreq=250, n_runs=100):
         """
@@ -34,6 +36,9 @@ class BenchmarkDetectorGUDB:
         self.n_runs = n_runs
         self.session = None
         self.queue = None
+        self.channel = None
+        self.annotation = None
+        self.urls = None
 
 
     async def score_record(self, record, annotation):
@@ -111,11 +116,11 @@ class BenchmarkDetectorGUDB:
             if response.status == 200:
                 physio = await response.text()
                 physio = np.loadtxt(StringIO(physio))
-                physio = np.ravel(physio[:, 1])    # select the first lead
+                physio = np.ravel(physio[:, self.channel])
             else:
                 physio = None
                 # print(f"Couldn't find physio file at {url}")
-        async with self.session.get(url + "/annotation_cables.tsv") as response:
+        async with self.session.get(url + f"/{self.annotation}.tsv") as response:
             if response.status == 200:
                 annotation = await response.text()
                 annotation = np.loadtxt(StringIO(annotation))
@@ -126,16 +131,10 @@ class BenchmarkDetectorGUDB:
         await self.queue.put((physio, annotation, url))
 
 
-    async def benchmark_record(self, n_records):
-        """Evaluate the performance of the detector on a single record.
-
-        Parameters
-        ----------
-        n_records : int
-            Overall number of records to be evaluated. Necessary to know when
-            to stop waiting for incoming records.
-        """
+    async def benchmark_record(self):
+        """Evaluate the performance of the detector on a single record."""
         n = 0
+        n_records = len(self.urls)
         sensitivities = []
         precisions = []
         avg_times = []
@@ -184,25 +183,44 @@ class BenchmarkDetectorGUDB:
         print(f"precision: mean = {mean_precision}, std = {std_precision}")
 
 
-    async def _benchmark_records(self, experiment_urls):
-        """Evaluate the performance of the detector on a set of records.
-
-        Parameters
-        ----------
-        experiment_urls : list
-            List of strings containing the URLs to GUDB records. The URL must
-            end with the experiment ID. E.g., "URL/maths". The experiment ID can
-            be one of {"maths", "hand_bike", "jogging", "walking", "sitting"}.
-        """
+    async def _benchmark_records(self):
+        """Evaluate the performance of the detector on a set of records."""
         self.session = aiohttp.ClientSession()
         self.queue = asyncio.Queue()
-        fetch_coro = [self.fetch_record(url) for url in experiment_urls]
-        benchmark_coro = self.benchmark_record(len(experiment_urls))
+        fetch_coro = [self.fetch_record(url) for url in self.urls]
+        benchmark_coro = self.benchmark_record()
 
         await asyncio.gather(*fetch_coro, benchmark_coro)
         await self.session.close()
 
 
-    def benchmark_records(self, experiment_urls):
-        """Wrapper starting the event loop."""
-        asyncio.run(self._benchmark_records(experiment_urls))
+    def benchmark_records(self, experiment, channel="einthoven_II",
+                          annotation="annotation_cables"):
+        """Wrapper starting the event loop.
+
+        Benchmark a detector on all available records from all 25 subjects for a
+        given combination of experiment, channel, and annotation.
+
+        Parameters
+        ----------
+        experiment : str
+            The name of the experiment to be benchmarked. Can be one of
+            {"sitting", "maths", "walking", "hand_bike", "jogging"}.
+        channel : str, optional
+            The ECG channel to be benchmarked. Can be one of {"cs_V2_V1",
+            "einthoven_II", "einthoven_III"}, by default "einthoven_II".
+        annotation : str, optional
+            The annotation file used for benchmarking. Can be one of
+            {"annotation_cs", "annotation_cables"}, by default
+            "annotation_cables".
+        """
+        if experiment not in ["sitting", "maths", "walking", "hand_bike", "jogging"]:
+            raise ValueError(f"{experiment} is not a valid experiment.")
+        if channel not in self.channels.keys():
+            raise ValueError(f"{channel} is not a valid channel")
+        if annotation not in ["annotation_cs", "annotation_cables"]:
+            raise ValueError(f"{annotation} is not a valid annotation")
+        self.channel = self.channels[channel]
+        self.annotation = annotation
+        self.urls = [f"{self.base_url}{str(i).zfill(2)}/{experiment}/" for i in range(25)]
+        asyncio.run(self._benchmark_records())
