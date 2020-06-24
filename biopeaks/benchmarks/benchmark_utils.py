@@ -114,7 +114,7 @@ class BenchmarkDetectorGUDB:
                 physio = np.ravel(physio[:, 1])    # select the first lead
             else:
                 physio = None
-                print(f"Couldn't find physio file at {url}")
+                # print(f"Couldn't find physio file at {url}")
         async with self.session.get(url + "/annotation_cables.tsv") as response:
             if response.status == 200:
                 annotation = await response.text()
@@ -122,7 +122,7 @@ class BenchmarkDetectorGUDB:
                 annotation = np.ravel(annotation)
             else:
                 annotation = None
-                print(f"Couldn't find annotation file at {url}")
+                # print(f"Couldn't find annotation file at {url}")
         await self.queue.put((physio, annotation, url))
 
 
@@ -136,6 +136,10 @@ class BenchmarkDetectorGUDB:
             to stop waiting for incoming records.
         """
         n = 0
+        sensitivities = []
+        precisions = []
+        avg_times = []
+
         while n < n_records:
             # Wait for a record to be added to the queue.
             physio, annotation, url = await self.queue.get()
@@ -144,17 +148,40 @@ class BenchmarkDetectorGUDB:
             skip_record = annotation is None
 
             if skip_record:
-                print(f"Skipping benchmarking of {url}.")
+                print(f"\nSkipping benchmarking of {url}: missing files.")
                 n += 1
                 continue
 
             # Process the record.
-            print(f"processing {url}")
             precision, sensitivity = await self.score_record(physio, annotation)
             avg_time = await self.time_record(physio)
-            print(precision, sensitivity, avg_time)
+
+            precisions.append(precision)
+            sensitivities.append(sensitivity)
+            avg_times.append(avg_time)
 
             n += 1
+
+            print(f"\nResults {url}")
+            print("-" * len(url))
+            print(f"sensitivity = {sensitivity}")
+            print(f"precision = {precision}")
+            print(f"average run time over {self.n_runs} runs = {avg_time}")
+
+        print(f"\nAverage results over {len(precisions)} records")
+        print("-" * 31)
+
+        mean_avg_time = np.mean(avg_times)
+        std_avg_time = np.std(avg_times)
+        print(f"average run time over {self.n_runs} runs: mean = {mean_avg_time}, std = {std_avg_time}")
+
+        mean_sensitivity = np.mean(sensitivities)
+        std_sensitivity = np.std(sensitivities)
+        print(f"sensitivity: mean = {mean_sensitivity}, std = {std_sensitivity}")
+
+        mean_precision = np.mean(precisions)
+        std_precision = np.std(precisions)
+        print(f"precision: mean = {mean_precision}, std = {std_precision}")
 
 
     async def _benchmark_records(self, experiment_urls):
