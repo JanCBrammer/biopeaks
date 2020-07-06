@@ -75,10 +75,8 @@ def write_opensignals(rpath, wpath, segment):
     Start and end of segments in samples.
     """
     # Get the header.
-    header = []
     with open(rpath, "rt") as oldfile:
-        for line in islice(oldfile, 3):
-            header.append(line)
+        header = [line for line in islice(oldfile, 3)]
     # Get the data.
     data = pd.read_csv(rpath, delimiter='\t', header=None, comment='#')
     # Apply segmentation to all channels.
@@ -280,10 +278,9 @@ def _read_edfchannel(signal, n_samples, chanidx):
     channel_offset = np.cumsum(n_samples)[chanidx - 1] - n_chansamples
     # Get the number of samples to skip from epoch to epoch.
     channel_stride = sum(n_samples)
-    chansignal = []
     # Skip from epoch to epoch and read the signal belonging to the channel.
-    for i in np.arange(channel_offset, signal.size, channel_stride):
-        chansignal.append(signal[i:i + n_chansamples])
+    epochstarts = np.arange(channel_offset, signal.size, channel_stride)
+    chansignal = [signal[i:i + n_chansamples] for i in epochstarts]
 
     return np.ravel(chansignal)
 

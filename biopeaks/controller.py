@@ -534,10 +534,7 @@ class Controller(QObject):
 
     @threaded
     def save_stats(self):
-        savekeys = []
-        for key, value in self._model.savestats.items():
-            if value:
-                savekeys.append(key)
+        savekeys = [key for key, value in self._model.savestats.items() if value]
         savearray = np.zeros((self._model.signal.size, len(savekeys)))
         for i, key in enumerate(savekeys):
             if key == 'period':
