@@ -57,7 +57,8 @@ ppg_os = {"modality": "PPG",
           "peaksum": 461362,
           "avgperiod": 0.6652,
           "avgrate": 90.7158,
-          "segment": [20, 90]}
+          "segment": [20, 90],
+          "filetype": "OpenSignals"}
 
 ppg_edf = {"modality": "PPG",
            "sigchan": "A5",
@@ -75,7 +76,8 @@ ppg_edf = {"modality": "PPG",
            "peaksum": 123270,
            "avgperiod": 1.0000,
            "avgrate": 60.0000,
-           "segment": [11.51, 81.7]}
+           "segment": [11.51, 81.7],
+          "filetype": "EDF"}
 
 ecg_os = {"modality": "ECG",
           "sigchan": "A3",
@@ -93,7 +95,8 @@ ecg_os = {"modality": "ECG",
           "peaksum": 4572190,
           "avgperiod": 1.0921,
           "avgrate": 55.1027,
-          "segment": [760, 860]}
+          "segment": [760, 860],
+          "filetype": "OpenSignals"}
 
 ecg_edf = {"modality": "ECG",
            "sigchan": "A3",
@@ -111,7 +114,8 @@ ecg_edf = {"modality": "ECG",
            "peaksum": 1228440,
            "avgperiod": 0.4000,
            "avgrate": 150.0000,
-           "segment": [11.51, 81.7]}
+           "segment": [11.51, 81.7],
+           "filetype": "EDF"}
 
 rsp_os = {"modality": "RESP",
           "sigchan": "A2",
@@ -130,7 +134,8 @@ rsp_os = {"modality": "RESP",
           "avgperiod": 3.2676,
           "avgrate": 19.7336,
           "avgtidalamp": 129.722,
-          "segment": [3200, 3400]}
+          "segment": [3200, 3400],
+          "filetype": "OpenSignals"}
 
 rsp_edf = {"modality": "RESP",
            "sigchan": "A5",
@@ -149,7 +154,8 @@ rsp_edf = {"modality": "RESP",
            "avgperiod": 1.0000,
            "avgrate": 60.0003,
            "avgtidalamp": 16350.0000,
-           "segment": [602.6, 679.26]}
+           "segment": [602.6, 679.26],
+           "filetype": "EDF"}
 
 
 def idcfg_single(cfg):
@@ -182,6 +188,7 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     qtbot.keyClicks(view.sigchanmenu, cfg_single["sigchan"])
     qtbot.keyClicks(view.markerchanmenu, cfg_single["markerchan"])
     qtbot.keyClicks(view.batchmenu, cfg_single["mode"])
+    model.set_filetype(cfg_single["filetype"])
 
     # 1. load signal #########################################################
     with qtbot.waitSignals([model.signal_changed, model.marker_changed],
@@ -280,6 +287,7 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
 ecg_batch = {"modality": "ECG",
              "sigchan": "A3",
              "mode": "multiple files",
+             "filetype": "OpenSignals",
              "sigfnames": ["OSmontage1A.txt", "OSmontage1J.txt",
                            "OSmontage2A.txt", "OSmontage2J.txt",
                            "OSmontage3A.txt", "OSmontage3J.txt"],
@@ -293,6 +301,7 @@ ecg_batch = {"modality": "ECG",
 ecg_batch_autocorrect = {"modality": "ECG",
                          "sigchan": 'A3',
                          "mode": "multiple files",
+                         "filetype": "OpenSignals",
                          "sigfnames": ["OSmontage1A.txt", "OSmontage1J.txt",
                                        "OSmontage2A.txt", "OSmontage2J.txt",
                                        "OSmontage3A.txt", "OSmontage3J.txt"],
@@ -338,6 +347,7 @@ def test_batchfile(qtbot, tmpdir, cfg_batch):
     view.periodcheckbox.setCheckState(Qt.Checked)
     view.ratecheckbox.setCheckState(Qt.Checked)
     model.fpaths = [datadir.joinpath(p) for p in cfg_batch["sigfnames"]]
+    model.set_filetype(cfg_batch["filetype"])
 
     # Mock the controller's batch_processor in order to avoid
     # calls to the controller's get_wpathpeaks and get_wpathstats methods.

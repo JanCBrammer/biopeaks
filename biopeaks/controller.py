@@ -2,7 +2,7 @@
 
 from .heart import ecg_peaks, ppg_peaks, correct_peaks, heart_period
 from .resp import resp_extrema, resp_stats
-from .io_utils import read_opensignals, write_opensignals, read_edf, write_edf
+from .io_utils import read_custom, read_opensignals, read_edf, write_opensignals, write_edf
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -59,9 +59,13 @@ class Controller(QObject):
 
 
     def get_fpaths(self):
+
         self._model.fpaths = getOpenFileNames(None, 'Choose your data',
                                               "\\home")[0]
         if not self._model.fpaths:
+            if self._model.filetype == "Custom":
+                self._model.customheader = dict.fromkeys(self._model.customheader, None)    # for custom files also reset header
+            self._model.set_filetype(None)    # reset file type
             return
         if (self._model.batchmode == 'multiple files' and
             len(self._model.fpaths) >= 1):
@@ -254,40 +258,29 @@ class Controller(QObject):
     @threaded
     def read_signal(self, path):
         self._model.status = "Loading file."
-        file_extension = Path(path).suffix
+        file_type = self._model.filetype
 
-        if file_extension not in [".txt", ".edf"]:
-            self._model.status = "Error: Please select an OpenSignals or EDF file."
-            return
-
-        if file_extension == ".txt":
-
-            # Read signal and associated metadata.
+        if file_type == "OpenSignals":
             output = read_opensignals(path, self._model.signalchan,
                                       channeltype="signal")
-            # If the io utility returns an error, print the error and return.
-            if output["status"]:
-                self._model.status = output["status"]
-                return
-
-            self._model.filetype = "OpenSignals"
-
-        elif file_extension == ".edf":
-
-            # Read signal and associated metadata.
+        elif file_type == "EDF":
             output = read_edf(path, self._model.signalchan,
                               channeltype="signal")
-            # If the io utility returns an error, print the error and return.
-            if output["status"]:
-                self._model.status = output["status"]
-                return
+        elif file_type == "Custom":
+            output = read_custom(path, self._model.customheader,
+                                 channeltype="signal")
 
-            self._model.filetype = "EDF"
+        if output["error"]:
+            self._model.status = output["error"]
+            if self._model.filetype == "Custom":
+                self._model.customheader = dict.fromkeys(self._model.customheader, None)    # for custom files also reset header
+            self._model.set_filetype(None)    # reset file type
+            return
 
         # Important to set seconds PRIOR TO signal, otherwise plotting
         # behaves unexpectadly (since plotting is triggered as soon as
         # signal changes).
-        self._model.sfreq = output["sfreq"]
+        self._model.sfreq = output["sfreq"]    # in case of custom file, sfreq is now taken over from customheader
         self._model.sec = output["sec"]
         self._model.signal = output["signal"]
         self._model.loaded = True
@@ -305,10 +298,14 @@ class Controller(QObject):
         elif self._model.filetype == "EDF":
             output = read_edf(path, self._model.markerchan,
                               channeltype="marker")
-        # If the io utility returns an error, print the error and return.
-        if output["status"]:
-            self._model.status = output["status"]
+        elif self._model.filetype == "Custom":
+            output = read_custom(path, self._model.customheader,
+                                 channeltype="marker")
+
+        if output["error"]:
+            self._model.status = output["error"]
             return
+
         self._model.sfreqmarker = output["sfreq"]
         self._model.marker = output["signal"]
 

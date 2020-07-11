@@ -5,12 +5,53 @@ import pandas as pd
 import numpy as np
 from itertools import islice
 from struct import pack
+from pathlib import Path
+
+
+def read_custom(rpath, customheader, channeltype):
+
+    # Prepare output.
+    output = {"error": False,
+              "sec": None,
+              "signal": None,
+              "sfreq": None}
+
+    if channeltype == "signal":
+        chanidx = customheader["signalidx"]
+    elif channeltype == "narker":
+        chanidx = customheader["markeridx"]
+
+    sfreq = customheader["sfreq"]
+
+    try:
+        # If sep is None, the Python parsing engine can automatically detect the
+        # separator usinf the  builtin sniffer tool, csv.Sniffer.
+        signal = pd.read_csv(rpath, sep=None, usecols=[chanidx], header=None,
+                             skiprows=customheader["skiprows"], engine="python")
+    except Exception as error:
+        output["error"] = error
+        return output
+
+    signallen = signal.size
+    sec = np.linspace(0, signallen / sfreq, signallen)
+
+    if channeltype == "signal":
+        output["sec"] = sec
+        output["sfreq"] = sfreq
+
+    output["signal"] = np.ravel(signal)
+
+    return output
+
+
+def write_custom(rpath, wpath, segment, customheader):
+    pass
 
 
 def read_opensignals(rpath, channel, channeltype):
 
     # Prepare output.
-    output = {"status": False,
+    output = {"error": False,
               "sec": None,
               "signal": None,
               "sfreq": None}
@@ -21,7 +62,7 @@ def read_opensignals(rpath, channel, channeltype):
         # file. Note that the file is closed automatically once the "with"
         # block is exited.
         if "OpenSignals" not in f.readline():
-            output["status"] = "Error: Text file is not in OpenSignals format."
+            output["error"] = "Error: Text file is not in OpenSignals format."
             return output
 
         # Read second line and convert json header to dict (only select first
@@ -38,7 +79,7 @@ def read_opensignals(rpath, channel, channeltype):
         chanidx = [i for i, s in enumerate(channels) if int(channel[1]) == s]
 
         if not chanidx:
-            output["status"] = f"Error: {channeltype.capitalize()} channel not found."
+            output["error"] = f"Error: {channeltype.capitalize()} channel not found."
             return output
 
         # Select only first sensor of the selected modality (it is possible
@@ -59,12 +100,9 @@ def read_opensignals(rpath, channel, channeltype):
 
     if channeltype == "signal":
         output["sec"] = sec
-        output["signal"] = np.ravel(signal)
         output["sfreq"] = sfreq
 
-    elif channeltype == "marker":
-        output["signal"] = np.ravel(signal)
-        output["sfreq"] = sfreq
+    output["signal"] = np.ravel(signal)
 
     return output
 
@@ -97,10 +135,15 @@ def read_edf(rpath, channel, channeltype):
         https://www.teuniz.net/edf_bdf_testfiles/
     """
     # Prepare output.
-    output = {"status": False,
+    output = {"error": False,
               "sec": None,
               "signal": None,
               "sfreq": None}
+
+    file_extension = Path(rpath).suffix
+    if file_extension != ".edf":
+        output["error"] = "Error: File is not in EDF format."
+        return output
 
     chanidx = int(channel[1])
 
@@ -109,7 +152,7 @@ def read_edf(rpath, channel, channeltype):
         signal = _read_edfsignal(f, info["end_header"])
 
     if info["n_channels"] < chanidx:    # both indices are one-based
-        output["status"] = f"Error: {channeltype.capitalize()} channel not found."
+        output["error"] = f"Error: {channeltype.capitalize()} channel not found."
         return output
 
     # Take care of improperly specified number of epochs.
@@ -124,12 +167,9 @@ def read_edf(rpath, channel, channeltype):
 
     if channeltype == "signal":
         output["sec"] = sec
-        output["signal"] = chansignal
-        output["sfreq"] = chansfreq
 
-    elif channeltype == "marker":
-        output["signal"] = chansignal
-        output["sfreq"] = chansfreq
+    output["signal"] = chansignal
+    output["sfreq"] = chansfreq    # important to send for both marker and signal, since they can differ in sfreq
 
     return output
 
@@ -139,7 +179,7 @@ def write_edf(rpath, wpath, segment):
     segment : list
     Start and end of segments in seconds.
     """
-    status = False
+    error = False
 
     with open(rpath, "rb") as f:
         info, header = _read_edfheader(f)
@@ -149,11 +189,11 @@ def write_edf(rpath, wpath, segment):
     # writing process.
     duration_segment = segment[1] - segment[0]
     if duration_segment < info["duration_epoch"]:
-        status = f"Error: The segment is shorter than the epoch duration of " \
-                 f"{info['duration_epoch']} seconds in the original EDF file. " \
-                 f"Choose a segment longer than {info['duration_epoch']}."
+        error = f"Error: The segment is shorter than the epoch duration of " \
+                f"{info['duration_epoch']} seconds in the original EDF file. " \
+                f"Choose a segment longer than {info['duration_epoch']}."
         print(duration_segment, info["duration_epoch"])
-        return status
+        return error
 
     # Store the signal belonging to each channel as entry in a list.
     chansignals = [_read_edfchannel(signal, info["n_samples"], i)

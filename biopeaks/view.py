@@ -4,7 +4,7 @@ from PySide2.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                                QVBoxLayout, QHBoxLayout, QCheckBox,
                                QLabel, QStatusBar, QGroupBox, QDockWidget,
                                QLineEdit, QFormLayout, QPushButton,
-                               QProgressBar, QSplitter)
+                               QProgressBar, QSplitter, QMenu)
 from PySide2.QtCore import Qt, QSignalMapper, QRegExp
 from PySide2.QtGui import QIcon, QRegExpValidator
 from matplotlib.figure import Figure
@@ -222,9 +222,20 @@ class View(QMainWindow):
         # signal menu
         signalmenu = menubar.addMenu("biosignal")
 
-        openSignal = QAction("load", self)
-        openSignal.triggered.connect(self._controller.get_fpaths)
-        signalmenu.addAction(openSignal)
+        openSignal = signalmenu.addMenu("load")
+        openEDF = QAction("EDF", self)
+        openEDF.triggered.connect(lambda: self._model.set_filetype("EDF"))
+        openEDF.triggered.connect(self._controller.get_fpaths)
+        openSignal.addAction(openEDF)
+        openOpenSignals = QAction("OpenSignals", self)
+        openOpenSignals.triggered.connect(lambda: self._model.set_filetype("OpenSignals"))
+        openOpenSignals.triggered.connect(self._controller.get_fpaths)
+        openSignal.addAction(openOpenSignals)
+        openCustom = QAction("Custom", self)
+        openCustom.triggered.connect(lambda: self._model.set_filetype("Custom"))
+        openCustom.triggered.connect(self.set_customheader)
+        # openCustom.triggered.connect(self._controller.get_fpaths)
+        openSignal.addAction(openCustom)
 
         segmentSignal = QAction("select segment", self)
         segmentSignal.triggered.connect(self.segmentermap.map)
@@ -345,7 +356,7 @@ class View(QMainWindow):
         self.optionsgroup.setWidget(self.optionsgroupwidget)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.optionsgroup)
 
-        
+
         self.vlayout0.addWidget(self.splitter)
 
         self.hlayout0.addWidget(self.navitools)
@@ -514,6 +525,16 @@ class View(QMainWindow):
             self.segmentcursor = "start"
         elif self.endedit.hasFocus():
             self.segmentcursor = "end"
+
+
+    def set_customheader(self):
+        # For now, mock the customheader. Eventually, the customheader will be
+        # collected in a pop-up dialog.
+        self._model.customheader["signalidx"] = 0
+        self._model.customheader["markeridx"] = 0
+        self._model.customheader["skiprows"] = 3
+        self._model.customheader["sfreq"] = 250
+        self._controller.get_fpaths()
 
 
     def get_xcursor(self, event):
