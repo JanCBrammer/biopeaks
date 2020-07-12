@@ -18,7 +18,7 @@ def read_custom(rpath, customheader, channeltype):
 
     if channeltype == "signal":
         chanidx = customheader["signalidx"]
-    elif channeltype == "narker":
+    elif channeltype == "marker":
         chanidx = customheader["markeridx"]
 
     sfreq = customheader["sfreq"]
@@ -26,10 +26,11 @@ def read_custom(rpath, customheader, channeltype):
     try:
         # If sep is None, the Python parsing engine can automatically detect the
         # separator usinf the  builtin sniffer tool, csv.Sniffer.
-        signal = pd.read_csv(rpath, sep=None, usecols=[chanidx], header=None,
-                             skiprows=customheader["skiprows"], engine="python")
+        signal = pd.read_csv(rpath, sep=customheader["separator"],
+                             usecols=[chanidx], header=None,
+                             skiprows=customheader["skiprows"])
     except Exception as error:
-        output["error"] = error
+        output["error"] = str(error)
         return output
 
     signallen = signal.size

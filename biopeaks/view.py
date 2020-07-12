@@ -4,7 +4,7 @@ from PySide2.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                                QVBoxLayout, QHBoxLayout, QCheckBox,
                                QLabel, QStatusBar, QGroupBox, QDockWidget,
                                QLineEdit, QFormLayout, QPushButton,
-                               QProgressBar, QSplitter, QMenu)
+                               QProgressBar, QSplitter, QMenu, QDialog)
 from PySide2.QtCore import Qt, QSignalMapper, QRegExp
 from PySide2.QtGui import QIcon, QRegExpValidator
 from matplotlib.figure import Figure
@@ -216,6 +216,54 @@ class View(QMainWindow):
         self.segmenter.setAllowedAreas(Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.RightDockWidgetArea, self.segmenter)
 
+
+        # Set up dialog to gather user input for custom files.
+
+        regex = QRegExp("[0-9]{2}")
+        validator = QRegExpValidator(regex)
+
+        self.signallabel = QLabel("biosignal column")
+        self.signaledit = QLineEdit()
+        self.signaledit.setValidator(validator)
+
+        self.markerlabel = QLabel("marker column")
+        self.markeredit = QLineEdit()
+        self.markeredit.setValidator(validator)
+
+        regex = QRegExp("[0-9]{2}")
+        validator = QRegExpValidator(regex)
+
+        self.headerrowslabel = QLabel("number of header rows")
+        self.headerrowsedit = QLineEdit()
+        self.headerrowsedit.setValidator(validator)
+
+        regex = QRegExp("[0-9]{5}")
+        validator = QRegExpValidator(regex)
+
+        self.sfreqlabel = QLabel("sampling rate")
+        self.sfreqedit = QLineEdit()
+        self.sfreqedit.setValidator(validator)
+
+        self.separatorlabel = QLabel("column separator")
+        self.separatormenu = QComboBox(self)
+        self.separatormenu.addItem("comma")
+        self.separatormenu.addItem("tab")
+        self.separatormenu.addItem("colon")
+        self.separatormenu.addItem("space")
+
+        self.continuecustomfile = QPushButton("continue loading file")
+        self.continuecustomfile.clicked.connect(self.set_customheader)
+
+        self.customfiledialog = QDialog()
+        self.customfilelayout = QFormLayout()
+        self.customfilelayout.addRow(self.signallabel, self.signaledit)
+        self.customfilelayout.addRow(self.markerlabel, self.markeredit)
+        self.customfilelayout.addRow(self.separatorlabel, self.separatormenu)
+        self.customfilelayout.addRow(self.headerrowslabel, self.headerrowsedit)
+        self.customfilelayout.addRow(self.sfreqlabel, self.sfreqedit)
+        self.customfilelayout.addRow(self.continuecustomfile)
+        self.customfiledialog.setLayout(self.customfilelayout)
+
         # set up menubar
         menubar = self.menuBar()
 
@@ -233,8 +281,7 @@ class View(QMainWindow):
         openSignal.addAction(openOpenSignals)
         openCustom = QAction("Custom", self)
         openCustom.triggered.connect(lambda: self._model.set_filetype("Custom"))
-        openCustom.triggered.connect(self.set_customheader)
-        # openCustom.triggered.connect(self._controller.get_fpaths)
+        openCustom.triggered.connect(lambda: self.customfiledialog.exec_())
         openSignal.addAction(openCustom)
 
         segmentSignal = QAction("select segment", self)
@@ -528,12 +575,22 @@ class View(QMainWindow):
 
 
     def set_customheader(self):
-        # For now, mock the customheader. Eventually, the customheader will be
-        # collected in a pop-up dialog.
-        self._model.customheader["signalidx"] = 0
-        self._model.customheader["markeridx"] = 0
-        self._model.customheader["skiprows"] = 3
-        self._model.customheader["sfreq"] = 250
+        """Populate the customheader with inputs from the customfiledialog"""
+        seps = {"comma": ",", "tab": "\t", "colon": ":", "space": " "}
+
+        self._model.customheader = dict.fromkeys(self._model.customheader, None)    # reset header here since it cannot be reset in controller.get_fpaths()
+
+        if self.signaledit.text():
+            self._model.customheader["signalidx"] = int(self.signaledit.text())
+        if self.markeredit.text():
+            self._model.customheader["markeridx"] = int(self.markeredit.text())
+        if self.headerrowsedit.text():
+            self._model.customheader["skiprows"] = int(self.headerrowsedit.text())
+        if self.sfreqedit.text():
+            self._model.customheader["sfreq"] = int(self.sfreqedit.text())
+        self._model.customheader["separator"] = seps[self.separatormenu.currentText()]
+
+        self.customfiledialog.done(QDialog.Accepted)    # close the dialog window
         self._controller.get_fpaths()
 
 
