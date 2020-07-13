@@ -21,8 +21,6 @@ def read_custom(rpath, customheader, channeltype):
     elif channeltype == "marker":
         chanidx = customheader["markeridx"]
 
-    sfreq = customheader["sfreq"]
-
     try:
         # If sep is None, the Python parsing engine can automatically detect the
         # separator usinf the  builtin sniffer tool, csv.Sniffer.
@@ -33,10 +31,10 @@ def read_custom(rpath, customheader, channeltype):
         output["error"] = str(error)
         return output
 
-    signallen = signal.size
-    sec = np.linspace(0, signallen / sfreq, signallen)
-
     if channeltype == "signal":
+        sfreq = customheader["sfreq"]
+        signallen = signal.size
+        sec = np.linspace(0, signallen / sfreq, signallen)
         output["sec"] = sec
         output["sfreq"] = sfreq
 
@@ -96,10 +94,10 @@ def read_opensignals(rpath, channel, channeltype):
     # Load data with pandas for performance.
     signal = pd.read_csv(rpath, delimiter='\t', usecols=[chanidx], header=None,
                          comment='#')
-    signallen = signal.size
-    sec = np.linspace(0, signallen / sfreq, signallen)
 
     if channeltype == "signal":
+        signallen = signal.size
+        sec = np.linspace(0, signallen / sfreq, signallen)
         output["sec"] = sec
         output["sfreq"] = sfreq
 
@@ -160,13 +158,12 @@ def read_edf(rpath, channel, channeltype):
     if info["n_epochs"] == -1:
         info["n_epochs"] = int(np.rint(signal.size / sum(info["n_samples"])))
 
-    chansignallen = info["n_epochs"] * info["n_samples"][chanidx - 1]
     chansfreq = info["sfreqs"][chanidx - 1]
-    sec = np.linspace(0, chansignallen / chansfreq, chansignallen)
-
     chansignal = _read_edfchannel(signal, info["n_samples"], chanidx)
 
     if channeltype == "signal":
+        chansignallen = info["n_epochs"] * info["n_samples"][chanidx - 1]
+        sec = np.linspace(0, chansignallen / chansfreq, chansignallen)
         output["sec"] = sec
 
     output["signal"] = chansignal

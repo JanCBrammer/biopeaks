@@ -287,7 +287,7 @@ class Controller(QObject):
         self._model.rpathsignal = path
 
         # If requested, read marker channel.
-        if self._model.markerchan != "none":
+        if self._model.markerchan != "none" or self._model.customheader["markeridx"]:
             self.read_marker(path)
 
 
@@ -306,7 +306,7 @@ class Controller(QObject):
             self._model.status = output["error"]
             return
 
-        self._model.sfreqmarker = output["sfreq"]
+        self._model.sfreqmarker = output["sfreq"]    # only not set to None in case of EDF
         self._model.marker = output["signal"]
 
 
