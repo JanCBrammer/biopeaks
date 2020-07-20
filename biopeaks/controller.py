@@ -287,7 +287,7 @@ class Controller(QObject):
         self._model.rpathsignal = path
 
         # If requested, read marker channel.
-        if self._model.markerchan != "none" or self._model.customheader["markeridx"]:
+        if self._model.customheader["markeridx"] != None or self._model.markerchan != "none":
             self.read_marker(path)
 
 
@@ -341,7 +341,7 @@ class Controller(QObject):
             return
         if self._model.filetype == "EDF":
             sfreq = self._model.sfreqmarker
-        elif self._model.filetype == "OpenSignals":
+        else:
             sfreq = self._model.sfreq
         begsamp = int(np.rint(self._model.segment[0] * sfreq))
         endsamp = int(np.rint(self._model.segment[1] * sfreq))

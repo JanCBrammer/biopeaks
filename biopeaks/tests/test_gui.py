@@ -60,6 +60,24 @@ ppg_os = {"modality": "PPG",
           "segment": [20, 90],
           "filetype": "OpenSignals"}
 
+ppg_custom = {"modality": "PPG",
+              "header": {"signalidx": 6, "markeridx": 1, "skiprows": 3,
+                         "sfreq": 125, "separator": "\t"},
+              "mode": "single file",
+              "sigpathorig": datadir.joinpath("OSmontagePPG.txt"),
+              "sigfnameseg": "testdata_segmented.txt",
+              "peakfname": "testdata_segmented_peaks.csv",
+              "statsfname": "testdata_segmented_stats.csv",
+              "siglen": 60001,
+              "siglenseg": 8750,
+              "markerlen": 60001,
+              "markerlenseg": 8750,
+              "peaksum": 461362,
+              "avgperiod": 0.6652,
+              "avgrate": 90.7158,
+              "segment": [20, 90],
+              "filetype": "Custom"}
+
 ppg_edf = {"modality": "PPG",
            "sigchan": "A5",
            "markerchan": "A1",
@@ -77,7 +95,7 @@ ppg_edf = {"modality": "PPG",
            "avgperiod": 1.0000,
            "avgrate": 60.0000,
            "segment": [11.51, 81.7],
-          "filetype": "EDF"}
+           "filetype": "EDF"}
 
 ecg_os = {"modality": "ECG",
           "sigchan": "A3",
@@ -97,6 +115,24 @@ ecg_os = {"modality": "ECG",
           "avgrate": 55.1027,
           "segment": [760, 860],
           "filetype": "OpenSignals"}
+
+ecg_custom = {"modality": "ECG",
+              "header": {"signalidx": 7, "markeridx": 1, "skiprows": 3,
+                         "sfreq": 1000, "separator": "\t"},
+              "mode": "single file",
+              "sigpathorig": Path(datadir).joinpath("OSmontage0J.txt"),
+              "sigfnameseg": "testdata_segmented.txt",
+              "peakfname": "testdata_segmented_peaks.csv",
+              "statsfname": "testdata_segmented_stats.csv",
+              "siglen": 5100000,
+              "siglenseg": 100000,
+              "markerlen": 5100000,
+              "markerlenseg": 100000,
+              "peaksum": 4572190,
+              "avgperiod": 1.0921,
+              "avgrate": 55.1027,
+              "segment": [760, 860],
+              "filetype": "Custom"}
 
 ecg_edf = {"modality": "ECG",
            "sigchan": "A3",
@@ -137,6 +173,25 @@ rsp_os = {"modality": "RESP",
           "segment": [3200, 3400],
           "filetype": "OpenSignals"}
 
+rsp_custom = {"modality": "RESP",
+              "header" : {"signalidx": 6, "markeridx": 1, "skiprows": 3,
+                          "sfreq": 1000, "separator": "\t"},
+              "mode": "single file",
+              "sigpathorig": datadir.joinpath("OSmontage0J.txt"),
+              "sigfnameseg": "testdata_segmented.txt",
+              "peakfname": "testdata_segmented_peaks.csv",
+              "statsfname": "testdata_segmented_stats.csv",
+              "siglen": 5100000,
+              "siglenseg": 200000,
+              "markerlen": 5100000,
+              "markerlenseg": 200000,
+              "peaksum": 13355662,
+              "avgperiod": 3.2676,
+              "avgrate": 19.7336,
+              "avgtidalamp": 129.722,
+              "segment": [3200, 3400],
+              "filetype": "Custom"}
+
 rsp_edf = {"modality": "RESP",
            "sigchan": "A5",
            "markerchan": "A1",
@@ -161,14 +216,14 @@ rsp_edf = {"modality": "RESP",
 def idcfg_single(cfg):
     """Generate a test ID."""
     modality = cfg["modality"]
-    fileformat = cfg["sigpathorig"].suffix
-    if fileformat == ".txt":
-        fileformat = ".os"
+    filetype = cfg["filetype"]
 
-    return f"{modality}{fileformat}"
+    return f"{modality}:{filetype}"
 
 
-@pytest.fixture(params=[ppg_os, ppg_edf, ecg_os, ecg_edf, rsp_os, rsp_edf],
+@pytest.fixture(params=[ppg_os, ppg_custom, ppg_edf,
+                        ecg_os, ecg_custom, ecg_edf,
+                        rsp_os, rsp_custom, rsp_edf],
                 ids=idcfg_single)    # automatically runs the test(s) using this fixture with all values of params
 def cfg_single(request):
     return request.param
@@ -184,9 +239,12 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     view.show()
 
     # Configure options.
+    if cfg_single["filetype"] == "Custom":
+        model.customheader = cfg_single["header"]
+    else:
+        qtbot.keyClicks(view.sigchanmenu, cfg_single["sigchan"])
+        qtbot.keyClicks(view.markerchanmenu, cfg_single["markerchan"])
     qtbot.keyClicks(view.modmenu, cfg_single["modality"])
-    qtbot.keyClicks(view.sigchanmenu, cfg_single["sigchan"])
-    qtbot.keyClicks(view.markerchanmenu, cfg_single["markerchan"])
     qtbot.keyClicks(view.batchmenu, cfg_single["mode"])
     model.set_filetype(cfg_single["filetype"])
 
@@ -197,7 +255,8 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     assert np.size(model.signal) == cfg_single["siglen"]
     assert np.size(model.sec) == cfg_single["siglen"]
     assert np.size(model.marker) == cfg_single["markerlen"]
-    assert model.sfreq == cfg_single["sfreq"]
+    sfreq = cfg_single["header"]["sfreq"] if cfg_single["filetype"] == "Custom" else cfg_single["sfreq"]
+    assert model.sfreq == sfreq
     assert model.loaded
 
     # 2. segment signal ######################################################

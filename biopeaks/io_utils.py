@@ -25,7 +25,7 @@ def read_custom(rpath, customheader, channeltype):
         # If sep is None, the Python parsing engine can automatically detect the
         # separator usinf the  builtin sniffer tool, csv.Sniffer.
         signal = pd.read_csv(rpath, sep=customheader["separator"],
-                             usecols=[chanidx], header=None,
+                             usecols=[chanidx - 1], header=None,    # convert chanidx from one-based to zero-based
                              skiprows=customheader["skiprows"])
     except Exception as error:
         output["error"] = str(error)

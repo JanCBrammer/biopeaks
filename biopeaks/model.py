@@ -363,7 +363,7 @@ class Model(QObject):
         self._savestats = {"period":False, "rate":False, "tidalamp":False}
         self._filetype = None
         self._customheader = {"signalidx": None, "markeridx": None,
-                             "skiprows": None, "sfreq": None, "separator": None}
+                              "skiprows": None, "sfreq": None, "separator": None}
 
     def reset(self):
         """
