@@ -219,7 +219,7 @@ class View(QMainWindow):
 
         # Set up dialog to gather user input for custom files.
 
-        regex = QRegExp("[0-9]{2}")
+        regex = QRegExp("[1-9][0-9]")
         validator = QRegExpValidator(regex)
 
         self.signallabel = QLabel("biosignal column")
