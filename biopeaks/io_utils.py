@@ -31,6 +31,11 @@ def read_custom(rpath, customheader, channeltype):
         output["error"] = str(error)
         return output
 
+    if signal.empty:
+        output["error"] = (f"{channeltype.capitalize()}-column {chanidx} didn't"
+                           " contain any data.")
+        return output
+
     if channeltype == "signal":
         sfreq = customheader["sfreq"]
         signallen = signal.size
