@@ -251,7 +251,7 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     # 1. load signal #########################################################
     with qtbot.waitSignals([model.signal_changed, model.marker_changed],
                            timeout=10000):
-        controller.read_signal(path=cfg_single["sigpathorig"])
+        controller.read_channels(path=cfg_single["sigpathorig"])
     assert np.size(model.signal) == cfg_single["siglen"]
     assert np.size(model.sec) == cfg_single["siglen"]
     assert np.size(model.marker) == cfg_single["markerlen"]
@@ -305,7 +305,21 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     with qtbot.waitSignals([model.progress_changed] * 2, timeout=10000):
         controller.save_peaks()
 
-    # 7. load peaks ###########################################################
+    # 7. re-load signal #######################################################
+    with qtbot.waitSignals([model.signal_changed, model.marker_changed],
+                        timeout=10000):
+        controller.read_channels(path=tmpdir.join(cfg_single["sigfnameseg"]))
+    sfreq = cfg_single["header"]["sfreq"] if cfg_single["filetype"] == "Custom" else cfg_single["sfreq"]
+    assert model.sfreq == sfreq
+    assert model.loaded
+    # Increase tolerance to 38, since for EDF files data needs to be saved as
+    # epochs of fixed size which can lead to deviations from original segment
+    # length.
+    assert np.allclose(np.size(model.signal), seg, atol=38)
+    assert np.allclose(np.size(model.sec), seg, atol=38)
+    assert np.size(model.signal) == np.size(model.sec)
+
+    # 8. load peaks ###########################################################
     model.rpathpeaks = tmpdir.join(cfg_single["peakfname"])
     with qtbot.waitSignal(model.peaks_changed, timeout=5000):
         controller.read_peaks()
@@ -314,7 +328,7 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     # way extrema are added and deleted in controller.edit_peaks().
     assert np.allclose(sum(model.peaks), cfg_single["peaksum"], atol=10)
 
-    # 8. calculate stats ######################################################
+    # 9. calculate stats ######################################################
     signals = ([model.period_changed, model.rate_changed,
                 model.tidalamp_changed] if model.modality == "RESP"
                else [model.period_changed, model.rate_changed])
@@ -326,7 +340,7 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
         assert np.around(np.mean(model.tidalampintp),
                          4) == cfg_single["avgtidalamp"]
 
-    # 9. save stats ###########################################################
+    # 10. save stats ##########################################################
     view.periodcheckbox.setCheckState(Qt.Checked)
     view.ratecheckbox.setCheckState(Qt.Checked)
     if model.modality == "RESP":
@@ -434,7 +448,7 @@ def test_batchfile(qtbot, tmpdir, cfg_batch):
     for sigfname, peaksum in zip(cfg_batch["sigfnames"],
                                  cfg_batch["peaksums"]):
         with qtbot.waitSignal(model.signal_changed, timeout=5000):
-            controller.read_signal(path=datadir.joinpath(sigfname))
+            controller.read_channels(path=datadir.joinpath(sigfname))
         fname = Path(sigfname).stem
         model.rpathpeaks = tmpdir.join(f"{fname}_peaks.csv")
         with qtbot.waitSignal(model.peaks_changed, timeout=5000):
