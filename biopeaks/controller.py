@@ -2,7 +2,8 @@
 
 from .heart import ecg_peaks, ppg_peaks, correct_peaks, heart_period
 from .resp import resp_extrema, resp_stats
-from .io_utils import read_custom, read_opensignals, read_edf, write_opensignals, write_edf
+from .io_utils import (read_custom, read_opensignals, read_edf,
+                       write_custom, write_opensignals, write_edf)
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -13,9 +14,14 @@ getOpenFileName = QFileDialog.getOpenFileName
 getOpenFileNames = QFileDialog.getOpenFileNames
 getSaveFileName = QFileDialog.getSaveFileName
 getExistingDirectory = QFileDialog.getExistingDirectory
+
 peakfuncs = {"ECG": ecg_peaks,
              "PPG": ppg_peaks,
              "RESP": resp_extrema}
+
+readfuncs = {"Custom": read_custom,
+             "OpenSignals": read_opensignals,
+             "EDF": read_edf}
 
 # threading is implemented according to https://pythonguis.com/courses/
 # multithreading-pyqt-applications-qthreadpool/complete-example/
@@ -63,8 +69,7 @@ class Controller(QObject):
         self._model.fpaths = getOpenFileNames(None, 'Choose your data',
                                               "\\home")[0]
         if not self._model.fpaths:
-            if self._model.filetype == "Custom":
-                self._model.customheader = dict.fromkeys(self._model.customheader, None)    # for custom files also reset header
+            self._model.customheader = dict.fromkeys(self._model.customheader, None)    # for custom files also reset header
             self._model.set_filetype(None)    # reset file type
             return
         if (self._model.batchmode == 'multiple files' and
@@ -73,7 +78,7 @@ class Controller(QObject):
         elif (self._model.batchmode == 'single file' and
               len(self._model.fpaths) == 1):
             self._model.reset()
-            self.read_signal(path=self._model.fpaths[0])
+            self.read_channels(path=self._model.fpaths[0])
 
 
     def get_wpathsignal(self):
@@ -224,7 +229,7 @@ class Controller(QObject):
         if self.methodnb == 0:
             self.methodnb += 1
             self._model.reset()
-            self.read_signal(path=fpath)
+            self.read_channels(path=fpath)
         elif self.methodnb == 1:
             self.methodnb += 1
             self.find_peaks()
@@ -256,58 +261,45 @@ class Controller(QObject):
 
 
     @threaded
-    def read_signal(self, path):
+    def read_channels(self, path):
         self._model.status = "Loading file."
-        file_type = self._model.filetype
 
-        if file_type == "OpenSignals":
-            output = read_opensignals(path, self._model.signalchan,
-                                      channeltype="signal")
-        elif file_type == "EDF":
-            output = read_edf(path, self._model.signalchan,
-                              channeltype="signal")
-        elif file_type == "Custom":
-            output = read_custom(path, self._model.customheader,
-                                 channeltype="signal")
+        filetype = self._model.filetype
+        readfunc = readfuncs[filetype]
 
-        if output["error"]:
-            self._model.status = output["error"]
-            if self._model.filetype == "Custom":
-                self._model.customheader = dict.fromkeys(self._model.customheader, None)    # for custom files also reset header
+        biosignalinfo = (self._model.customheader if filetype == "Custom"
+                         else self._model.signalchan)
+        biosignal = readfunc(path, biosignalinfo, channeltype="signal")
+
+        if biosignal["error"]:
+            self._model.status = biosignal["error"]
+            self._model.customheader = dict.fromkeys(self._model.customheader, None)    # for custom files also reset header
             self._model.set_filetype(None)    # reset file type
             return
 
         # Important to set seconds PRIOR TO signal, otherwise plotting
         # behaves unexpectadly (since plotting is triggered as soon as
         # signal changes).
-        self._model.sfreq = output["sfreq"]    # in case of custom file, sfreq is now taken over from customheader
-        self._model.sec = output["sec"]
-        self._model.signal = output["signal"]
+        self._model.sfreq = biosignal["sfreq"]    # in case of custom file, sfreq is now taken over from customheader
+        self._model.sec = biosignal["sec"]
+        self._model.signal = biosignal["signal"]
         self._model.loaded = True
         self._model.rpathsignal = path
 
-        # If requested, read marker channel.
-        if self._model.customheader["markeridx"] != None or self._model.markerchan != "none":
-            self.read_marker(path)
+        markerinfo = (self._model.customheader if filetype == "Custom"
+                      else self._model.markerchan)
+        if filetype == "Custom" and markerinfo["markeridx"] is None:
+            return
+        if markerinfo == "none":
+            return
+        marker = readfunc(path, markerinfo, channeltype="marker")
 
-
-    def read_marker(self, path):
-        if self._model.filetype == "OpenSignals":
-            output = read_opensignals(path, self._model.markerchan,
-                                      channeltype="marker")
-        elif self._model.filetype == "EDF":
-            output = read_edf(path, self._model.markerchan,
-                              channeltype="marker")
-        elif self._model.filetype == "Custom":
-            output = read_custom(path, self._model.customheader,
-                                 channeltype="marker")
-
-        if output["error"]:
-            self._model.status = output["error"]
+        if marker["error"]:
+            self._model.status = marker["error"]
             return
 
-        self._model.sfreqmarker = output["sfreq"]    # only not set to None in case of EDF
-        self._model.marker = output["signal"]
+        self._model.sfreqmarker = marker["sfreq"]    # only not set to None in case of EDF
+        self._model.marker = marker["signal"]
 
 
     @threaded
@@ -361,9 +353,15 @@ class Controller(QObject):
         if self._model.filetype == "OpenSignals":
             begsamp = int(np.rint(self._model.segment[0] * self._model.sfreq))
             endsamp = int(np.rint(self._model.segment[1] * self._model.sfreq))
-            write_opensignals(self._model.rpathsignal,
-                              self._model.wpathsignal,
+            write_opensignals(self._model.rpathsignal, self._model.wpathsignal,
                               segment=[begsamp, endsamp])
+
+        elif self._model.filetype == "Custom":
+            begsamp = int(np.rint(self._model.segment[0] * self._model.sfreq))
+            endsamp = int(np.rint(self._model.segment[1] * self._model.sfreq))
+            write_custom(self._model.rpathsignal, self._model.wpathsignal,
+                              segment=[begsamp, endsamp],
+                              customheader=self._model.customheader)
 
         elif self._model.filetype == "EDF":
             status = write_edf(self._model.rpathsignal,
