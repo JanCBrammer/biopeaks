@@ -576,22 +576,28 @@ class View(QMainWindow):
 
     def set_customheader(self):
         """Populate the customheader with inputs from the customfiledialog"""
-        seps = {"comma": ",", "tab": "\t", "colon": ":", "space": " "}
 
+        # Check if one of the mandatory fields is missing.
+        mandatoryfields = self.signaledit.text() and self.headerrowsedit.text() and self.sfreqedit.text()
+
+        if not mandatoryfields:
+            self._model.status = ("Please provide values for 'biosignal column'"
+                                  ", 'number of header rows' and 'sampling"
+                                  " rate'.")
+            return
+
+        seps = {"comma": ",", "tab": "\t", "colon": ":", "space": " "}
         self._model.customheader = dict.fromkeys(self._model.customheader, None)    # reset header here since it cannot be reset in controller.get_fpaths()
 
-        if self.signaledit.text():
-            self._model.customheader["signalidx"] = int(self.signaledit.text())
-        if self.markeredit.text():
-            self._model.customheader["markeridx"] = int(self.markeredit.text())
-        if self.headerrowsedit.text():
-            self._model.customheader["skiprows"] = int(self.headerrowsedit.text())
-        if self.sfreqedit.text():
-            self._model.customheader["sfreq"] = int(self.sfreqedit.text())
+        self._model.customheader["signalidx"] = int(self.signaledit.text())
+        self._model.customheader["skiprows"] = int(self.headerrowsedit.text())
+        self._model.customheader["sfreq"] = int(self.sfreqedit.text())
         self._model.customheader["separator"] = seps[self.separatormenu.currentText()]
+        if self.markeredit.text():    # not mandatory
+            self._model.customheader["markeridx"] = int(self.markeredit.text())
 
         self.customfiledialog.done(QDialog.Accepted)    # close the dialog window
-        self._controller.get_fpaths()
+        self._controller.get_fpaths()    # move on to file selection
 
 
     def get_xcursor(self, event):
