@@ -22,8 +22,6 @@ def read_custom(rpath, customheader, channeltype):
         chanidx = customheader["markeridx"]
 
     try:
-        # If sep is None, the Python parsing engine can automatically detect the
-        # separator usinf the  builtin sniffer tool, csv.Sniffer.
         signal = pd.read_csv(rpath, sep=customheader["separator"],
                              usecols=[chanidx - 1], header=None,    # convert chanidx from one-based to zero-based
                              skiprows=customheader["skiprows"])
@@ -49,7 +47,25 @@ def read_custom(rpath, customheader, channeltype):
 
 
 def write_custom(rpath, wpath, segment, customheader):
-    pass
+    """
+    segment : list
+    Start and end of segments in samples.
+    """
+    # Get the header.
+    with open(rpath, "rt") as oldfile:
+        header = [line for line in islice(oldfile, customheader["skiprows"])]
+    # Get the data.
+    data = pd.read_csv(rpath, sep=customheader["separator"], header=None,
+                       skiprows=customheader["skiprows"])
+    # Apply segmentation to all channels.
+    data = data.iloc[segment[0]:segment[1], :]
+
+    # Write header and segmented data to the new file.
+    with open(wpath, "w", newline='') as newfile:
+        for line in header:
+            newfile.write(line)
+        data.to_csv(newfile, sep=customheader["separator"], header=False,
+                    index=False)
 
 
 def read_opensignals(rpath, channel, channeltype):
@@ -97,7 +113,7 @@ def read_opensignals(rpath, channel, channeltype):
         chanidx = int(channel[1])
 
     # Load data with pandas for performance.
-    signal = pd.read_csv(rpath, delimiter='\t', usecols=[chanidx], header=None,
+    signal = pd.read_csv(rpath, sep='\t', usecols=[chanidx], header=None,
                          comment='#')
 
     if channeltype == "signal":
@@ -120,7 +136,7 @@ def write_opensignals(rpath, wpath, segment):
     with open(rpath, "rt") as oldfile:
         header = [line for line in islice(oldfile, 3)]
     # Get the data.
-    data = pd.read_csv(rpath, delimiter='\t', header=None, comment='#')
+    data = pd.read_csv(rpath, sep='\t', header=None, comment='#')
     # Apply segmentation to all channels.
     data = data.iloc[segment[0]:segment[1], :]
 
