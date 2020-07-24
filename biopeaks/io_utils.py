@@ -49,7 +49,7 @@ def read_custom(rpath, customheader, channeltype):
 def write_custom(rpath, wpath, segment, customheader):
     """
     segment : list
-    Start and end of segments in samples.
+    Start and end of segments in seconds.
     """
     # Get the header.
     with open(rpath, "rt") as oldfile:
@@ -58,7 +58,9 @@ def write_custom(rpath, wpath, segment, customheader):
     data = pd.read_csv(rpath, sep=customheader["separator"], header=None,
                        skiprows=customheader["skiprows"])
     # Apply segmentation to all channels.
-    data = data.iloc[segment[0]:segment[1], :]
+    begsamp = int(np.rint(segment[0] * customheader["sfreq"]))
+    endsamp = int(np.rint(segment[1] * customheader["sfreq"]))
+    data = data.iloc[begsamp:endsamp, :]
 
     # Write header and segmented data to the new file.
     with open(wpath, "w", newline='') as newfile:
@@ -127,10 +129,10 @@ def read_opensignals(rpath, channel, channeltype):
     return output
 
 
-def write_opensignals(rpath, wpath, segment):
+def write_opensignals(rpath, wpath, segment, sfreq):
     """
     segment : list
-    Start and end of segments in samples.
+    Start and end of segments in seconds.
     """
     # Get the header.
     with open(rpath, "rt") as oldfile:
@@ -138,7 +140,9 @@ def write_opensignals(rpath, wpath, segment):
     # Get the data.
     data = pd.read_csv(rpath, sep='\t', header=None, comment='#')
     # Apply segmentation to all channels.
-    data = data.iloc[segment[0]:segment[1], :]
+    begsamp = int(np.rint(segment[0] * sfreq))
+    endsamp = int(np.rint(segment[1] * sfreq))
+    data = data.iloc[begsamp:endsamp, :]
 
     # Write header and segmented data to the new file.
     with open(wpath, "w", newline='') as newfile:
@@ -193,13 +197,11 @@ def read_edf(rpath, channel, channeltype):
     return output
 
 
-def write_edf(rpath, wpath, segment):
+def write_edf(rpath, wpath, segment, *args):
     """
     segment : list
     Start and end of segments in seconds.
     """
-    error = False
-
     with open(rpath, "rb") as f:
         info, header = _read_edfheader(f)
         signal = _read_edfsignal(f, info["end_header"])

@@ -23,6 +23,10 @@ readfuncs = {"Custom": read_custom,
              "OpenSignals": read_opensignals,
              "EDF": read_edf}
 
+writefuncs = {"Custom": write_custom,
+              "OpenSignals": write_opensignals,
+              "EDF": write_edf}
+
 # threading is implemented according to https://pythonguis.com/courses/
 # multithreading-pyqt-applications-qthreadpool/complete-example/
 class WorkerSignals(QObject):
@@ -96,7 +100,7 @@ class Controller(QObject):
                                                   "untitled",
                                                   filefilter)[0]
         if self._model.wpathsignal:
-            self.save_signal()
+            self.save_channels()
 
 
     def get_rpathpeaks(self):
@@ -343,32 +347,24 @@ class Controller(QObject):
                                  " marker channel to resolve this segment."
 
     @threaded
-    def save_signal(self):
+    def save_channels(self):
         self._model.status = "Saving signal."
 
         if self._model.segment is None:
             self._model.status = "Error: Cannot save non-segmented file."
             return
 
-        if self._model.filetype == "OpenSignals":
-            begsamp = int(np.rint(self._model.segment[0] * self._model.sfreq))
-            endsamp = int(np.rint(self._model.segment[1] * self._model.sfreq))
-            write_opensignals(self._model.rpathsignal, self._model.wpathsignal,
-                              segment=[begsamp, endsamp])
+        filetype = self._model.filetype
+        writefunc = writefuncs[filetype]
 
-        elif self._model.filetype == "Custom":
-            begsamp = int(np.rint(self._model.segment[0] * self._model.sfreq))
-            endsamp = int(np.rint(self._model.segment[1] * self._model.sfreq))
-            write_custom(self._model.rpathsignal, self._model.wpathsignal,
-                              segment=[begsamp, endsamp],
-                              customheader=self._model.customheader)
+        headerinfo = (self._model.customheader if filetype == "Custom"
+                      else self._model.sfreq)
 
-        elif self._model.filetype == "EDF":
-            status = write_edf(self._model.rpathsignal,
-                               self._model.wpathsignal,
-                               segment=self._model.segment)
-            if status:
-                self._model.status = status
+        status = writefunc(self._model.rpathsignal, self._model.wpathsignal,
+                           self._model.segment, headerinfo)    # only write_edf() returns status, other write functions return None (no return)
+
+        if status:
+            self._model.status = status
 
     @threaded
     def read_peaks(self):

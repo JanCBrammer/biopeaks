@@ -273,7 +273,7 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     # 3. save segment ########################################################
     model.wpathsignal = tmpdir.join(cfg_single["sigfnameseg"])
     with qtbot.waitSignals([model.progress_changed] * 2, timeout=10000):
-        controller.save_signal()
+        controller.save_channels()
 
     # 4. find extrema #########################################################
     with qtbot.waitSignal(model.peaks_changed, timeout=5000):
