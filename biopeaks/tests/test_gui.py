@@ -424,7 +424,7 @@ def test_batchfile(qtbot, tmpdir, cfg_batch):
 
     # Mock the controller's batch_processor in order to avoid
     # calls to the controller's get_wpathpeaks and get_wpathstats methods.
-    controller.methodnb = 0
+    controller.methodnb = -1
     controller.nmethods = 5
     controller.filenb = 0
     controller.nfiles = len(model.fpaths)

@@ -195,14 +195,16 @@ class Controller(QObject):
         is displayed.
         TODO: make method calls and their order more explicit!
         '''
-
-        self.methodnb = 0
-        self.nmethods = 5
-        self.filenb = 0
-        self.nfiles = len(self._model.fpaths)
-
         self.get_wpathpeaks()
         self.get_wpathstats()
+
+        self.methodnb = -1
+        self.nmethods = 5
+        if self._model.wdirstats is None:
+            self._model.status = "No statistics selected for saving."
+            return
+        self.filenb = 0
+        self.nfiles = len(self._model.fpaths)
 
         self._model.status = "Processing files."
         self._model.plotting = False
@@ -219,10 +221,9 @@ class Controller(QObject):
         method. Once all methods are executed, go to the next file and start
         cycling through methods again.
         '''
-        if progress == 0:
+        if not progress:
             return
-        if self.filenb == self.nfiles:
-            # this condition works because filenb starts at 0
+        if self.filenb == self.nfiles:    # works because filenb starts at 0
             self._model.plotting = True
             self._model.progress_changed.disconnect(self.dispatcher)
             self._model.wdirpeaks = None
@@ -230,36 +231,29 @@ class Controller(QObject):
             return
         fpath = self._model.fpaths[self.filenb]
         fname = Path(fpath).stem
+        self.methodnb += 1
         if self.methodnb == 0:
-            self.methodnb += 1
             self._model.reset()
             self.read_channels(path=fpath)
         elif self.methodnb == 1:
-            self.methodnb += 1
             self.find_peaks()
         elif self.methodnb == 2:
-            self.methodnb += 1
             self.autocorrect_peaks()
         elif self.methodnb == 3:
-            self.methodnb += 1
             self.calculate_stats()
         elif self.methodnb == 4:
-            self.methodnb += 1
-            if self._model.wdirpeaks:
-                p = Path(self._model.wdirpeaks).joinpath(f"{fname}_peaks.csv")
-                self._model.wpathpeaks = p
-                self.save_peaks()
-            else:
-                self.dispatcher(1)
+            p = Path(self._model.wdirstats).joinpath(f"{fname}_stats.csv")
+            self._model.wpathstats = p
+            self.save_stats()
         elif self.methodnb == self.nmethods:
             # once all methods are executed, move to next file and start with
             # first method again
-            self.methodnb = 0
+            self.methodnb = -1
             self.filenb += 1
-            if self._model.wdirstats:
-                p = Path(self._model.wdirstats).joinpath(f"{fname}_stats.csv")
-                self._model.wpathstats = p
-                self.save_stats()
+            if self._model.wdirpeaks:    # optional
+                p = Path(self._model.wdirpeaks).joinpath(f"{fname}_peaks.csv")
+                self._model.wpathpeaks = p
+                self.save_peaks()
             else:
                 self.dispatcher(1)
 
