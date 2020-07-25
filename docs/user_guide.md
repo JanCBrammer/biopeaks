@@ -19,10 +19,8 @@ biosignal. Have a look in the [functionality section](#functionality) for detail
 ## Getting started
 The following work-flow is meant as an introduction to the interface. Many other
 work flows are possible and might make more sense given your 
-requirements. Note that `biopeaks` works with the OpenSignals text file format
-as well as EDF files. However, you can analyze any data as long as you format the
-data according to either the [OpenSignals convention](http://bitalino.com/datasheets/OpenSignals_File_Formats.pdf)
-or the [EDF convention](https://www.edfplus.info/specs/index.html). The functions
+requirements. Note that `biopeaks` works with the OpenSignals file format
+as well as EDF files and plain text files (.txt, .csv, .tsv) containing biosignal channels as columns. The functions
 used in the exemplary work-flow are described in detail in the [functionality section](#functionality).
 
 ### examplary workflow on a single file
@@ -43,7 +41,7 @@ Finally, you can [save the biosignal](#save-biosignal), [peaks](#save-peaks), an
 [statistics](#save-statistics), depending on your requirements. If you have
 segmented the biosignal it is a good idea to save it so you can reproduce the work-flow
 later if necessary. Also, save the peaks if you're planning on [reloading](#load-peaks) them later
-or using them for your own computations (e.g., heart rate variability).
+or using them for further analyses (e.g., heart rate variability).
 
 ## Functionality
 
@@ -62,22 +60,32 @@ or using them for your own computations (e.g., heart rate variability).
 
 
 ### load biosignal
-Before loading the biosignal, you need to select the modality of your biosignal
-in **configurations** -> **_processing options_** -> _modality_ ("ECG" for
-electrocardiogram, "PPG" for photoplethysmogram, and "RESP" for breathing).
-Next, under **configurations** -> **_channels_** you need to
-specify which channel contains the _biosignal_ corresponding to your
-modality. Optionally, in addition to the _biosignal_, you can select a
-_marker_. This is useful if you recorded a channel
+#### OpenSignals and EDF
+Under **configurations** -> **_channels_**, specify which channel contains the
+_biosignal_ corresponding to your modality. Optionally, in addition to the
+_biosignal_, you can select a _marker_. This is useful if you recorded a channel
 that marks interesting events such as the onset of an experimental condition,
 button presses etc.. You can use the _marker_ to display any other
 channel alongside your _biosignal_. Once these options are selected,
-you can load the biosignal: **menubar** -> **_biosignal_** -> _load_. A
-dialog will let you select the file containing the biosignal. The file format
-(EDF or OpenSignals) is detected automatically. If the biosignal
-has been loaded successfully it is displayed in the upper **datadisplay**. If
-you selected a _marker_, it will be displayed in the middle
-**datadisplay**. The current file name is always displayed in the lower right
+you can load the biosignal: **menubar** -> **_biosignal_** -> _load_ -> _Opensignals_ or _EDF_. A
+dialog will let you select a file. 
+#### Plain text files
+If you have a .txt, .csv, or .tsv file that contains biosignal channels as columns,
+you can load a biosignal channel and optionally a marker channel using **menubar** -> **_biosignal_** -> _load_ -> _Custom_.
+This will open a dialog that prompts you for some information.
+
+![customfile](images/screenshot_customfile.png)
+
+Note that the fields _biosignal_column_, _number of header rows_, and _sampling rate_
+are required, whereas _marker column_ is optional. In case your file doesn't have a header,
+simply put "0" into the _number of header rows_ field. Also make sure to select the
+correct _column separator_ ("comma" for .csv, "tab" for "tsv", "colon",
+or "space" in case your columns are separated with these characters). Once you're done, 
+pressing _continue loading file_ opens another dialog that will let you select the file.
+
+
+Once the biosignal has been loaded successfully it is displayed in the upper **datadisplay**. If
+you selected a marker, it will be displayed in the middle **datadisplay**. The current file name is displayed in the lower right
 corner of the interface. You can load a new biosignal from either the same file (i.e., another channel)
 or a different file at any time. Note however that this will remove all data that is currently in the interface.
 
@@ -89,8 +97,8 @@ on the right side of the **datadisplay**.
 
 ![segmentdialog](images/screenshot_segmentdialog.png)
 
-Specify the start and end of the segment in seconds either by entering values in
-the respective fields, or with the mouse. For the latter option, first click on
+Specify the start and end of the segment in seconds either by entering values,
+or with the mouse. For the latter option, first click on
 the mouse icon in the respective field and then left-click anywhere on the
 upper **datadisplay** to select a time point. To see which time point is
 currently under the mouse cursor have a look at the x-coordinate
@@ -112,14 +120,16 @@ the segmentation, the signal starts at second 0 again. That is, relative timing
 is not preserved during segmentation.
 
 ### save biosignal
-**menubar** -> **_biosignal_** -> _save_ opens a file dialog that lets you
+**menubar** -> **_biosignal_** -> _save_ opens a dialog that lets you
 select a directory and file name for saving the biosignal.
 Note that saving the biosignal is only possible after segmentation. The file is
 saved in its original format containing all channels.
 
 ### find peaks
-First make sure that the correct modality is selected in **configurations** -> **_processing options_** -> _modality_, 
-since `biopeaks` uses a modality-specific peak detector.
+Before identifying peaks, you need to select the modality of your biosignal
+in **configurations** -> **_processing options_** -> _modality_ ("ECG" for
+electrocardiogram, "PPG" for photoplethysmogram, and "RESP" for breathing).
+This is important since `biopeaks` uses modality-specific peak detectors.
 Then, **menubar** -> **_peaks_** -> _find_ automatically identifies the peaks in the
 biosignal. The peaks appear as dots displayed on top of the biosignal. 
 
@@ -196,11 +206,12 @@ all errors in peak placement will be caught. It is always good to check for erro
 > peak placement is the only way to guarantee sensible statistics. Only use
 > batch processing if you are sure that the biosignal's quality is sufficient!
 
-You can configure your batch processing in the **configurations**.
+You can configure the batch processing in the **configurations**.
 To enable batch processing, select 
 **_processing options_** -> _mode_ -> "multiple files". Make sure to
 select the correct _modality_ in the **_processing options_** as well. Also select
-the desired _biosignal channel_ in **_channels_**. Further, indicate if you'd
+the desired _biosignal channel_ in **_channels_** (for custom files you can
+specify the _biosignal_column_ in the file dialog while loading the files). Further, indicate if you'd
 like to save the peaks during batch processing: **_peak options_** ->
 _save during batch processing_. You can also choose to apply the auto-correction
 to the peaks by selecting **_peak options_** ->
