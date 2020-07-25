@@ -94,8 +94,8 @@ class Controller(QObject):
             filefilter = "OpenSignals (*.txt)"
         elif self._model.filetype == "EDF":
             filefilter = "EDF (*.edf)"
-        else:
-            return
+        elif self._model.filetype == "Custom":
+            filefilter = f"Plain text (*{Path(self._model.rpathsignal).suffix})"
         self._model.wpathsignal = getSaveFileName(None, 'Save signal',
                                                   "untitled",
                                                   filefilter)[0]
