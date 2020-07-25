@@ -357,19 +357,34 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
                          4) == cfg_single["avgtidalamp"]
 
 
-ecg_batch = {"modality": "ECG",
-             "sigchan": "A3",
-             "mode": "multiple files",
-             "filetype": "OpenSignals",
-             "sigfnames": ["OSmontage1A.txt", "OSmontage1J.txt",
-                           "OSmontage2A.txt", "OSmontage2J.txt",
-                           "OSmontage3A.txt", "OSmontage3J.txt"],
-             "peaksums": [3808244, 3412308, 2645824, 3523449, 3611836,
-                          3457936],
-             "stats": [(0.7950, 76.1123), (0.7288, 83.1468),
-                       (0.7894, 76.8911), (0.7402, 81.7864),
-                       (0.7856, 76.9153), (0.7235, 83.6060)],
-             "correctpeaks": False}
+ecg_batch_os = {"modality": "ECG",
+                "sigchan": "A3",
+                "mode": "multiple files",
+                "filetype": "OpenSignals",
+                "sigfnames": ["OSmontage1A.txt", "OSmontage1J.txt",
+                            "OSmontage2A.txt", "OSmontage2J.txt",
+                            "OSmontage3A.txt", "OSmontage3J.txt"],
+                "peaksums": [3808244, 3412308, 2645824, 3523449, 3611836,
+                            3457936],
+                "stats": [(0.7950, 76.1123), (0.7288, 83.1468),
+                        (0.7894, 76.8911), (0.7402, 81.7864),
+                        (0.7856, 76.9153), (0.7235, 83.6060)],
+                "correctpeaks": False}
+
+ecg_batch_custom = {"modality": "ECG",
+                    "header": {"signalidx": 7, "markeridx": None, "skiprows": 3,
+                               "sfreq": 100, "separator": "\t"},
+                    "mode": "multiple files",
+                    "filetype": "Custom",
+                    "sigfnames": ["OSmontage1A.txt", "OSmontage1J.txt",
+                                "OSmontage2A.txt", "OSmontage2J.txt",
+                                "OSmontage3A.txt", "OSmontage3J.txt"],
+                    "peaksums": [3808244, 3412308, 2645824, 3523449, 3611836,
+                                3457936],
+                    "stats": [(0.7950, 76.1123), (0.7288, 83.1468),
+                            (0.7894, 76.8911), (0.7402, 81.7864),
+                            (0.7856, 76.9153), (0.7235, 83.6060)],
+                    "correctpeaks": False}
 
 ecg_batch_autocorrect = {"modality": "ECG",
                          "sigchan": 'A3',
@@ -389,14 +404,16 @@ ecg_batch_autocorrect = {"modality": "ECG",
 def idcfg_batch(cfg):
     """Generate a test ID."""
     modality = cfg["modality"]
+    filetype = cfg["filetype"]
     if cfg["correctpeaks"]:
         correction = "autocorrection"
     else:
         correction = "uncorrected"
-    return f"{modality}_{correction}"
+    return f"{modality}:{correction}:{filetype}"
 
 
-@pytest.fixture(params=[ecg_batch, ecg_batch_autocorrect], ids=idcfg_batch)
+@pytest.fixture(params=[ecg_batch_os, ecg_batch_custom, ecg_batch_autocorrect],
+                ids=idcfg_batch)
 def cfg_batch(request):
     return request.param
 
@@ -412,7 +429,10 @@ def test_batchfile(qtbot, tmpdir, cfg_batch):
 
     # Configure options.
     qtbot.keyClicks(view.modmenu, cfg_batch["modality"])
-    qtbot.keyClicks(view.sigchanmenu, cfg_batch["sigchan"])
+    if cfg_batch["filetype"] == "Custom":
+        model.customheader = cfg_batch["header"]
+    else:
+        qtbot.keyClicks(view.sigchanmenu, cfg_batch["sigchan"])
     qtbot.keyClicks(view.batchmenu, cfg_batch["mode"])
     view.savecheckbox.setCheckState(Qt.Checked)
     if cfg_batch["correctpeaks"]:
