@@ -255,6 +255,9 @@ class View(QMainWindow):
         self.continuecustomfile.clicked.connect(self.set_customheader)
 
         self.customfiledialog = QDialog()
+        self.customfiledialog.setWindowTitle("custom file info")
+        self.customfiledialog.setWindowIcon(QIcon(":/file_icon.png"))
+        self.customfiledialog.setWindowFlags(Qt.WindowCloseButtonHint)    # remove help button by only setting close button
         self.customfilelayout = QFormLayout()
         self.customfilelayout.addRow(self.signallabel, self.signaledit)
         self.customfilelayout.addRow(self.markerlabel, self.markeredit)
