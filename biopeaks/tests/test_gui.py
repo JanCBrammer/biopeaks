@@ -249,9 +249,10 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     model.set_filetype(cfg_single["filetype"])
 
     # 1. load signal #########################################################
+    model.fpaths = [cfg_single["sigpathorig"]]
     with qtbot.waitSignals([model.signal_changed, model.marker_changed],
                            timeout=10000):
-        controller.read_channels(path=cfg_single["sigpathorig"])
+        controller.read_channels()
     assert np.size(model.signal) == cfg_single["siglen"]
     assert np.size(model.sec) == cfg_single["siglen"]
     assert np.size(model.marker) == cfg_single["markerlen"]
@@ -306,9 +307,10 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
         controller.save_peaks()
 
     # 7. re-load signal #######################################################
+    model.fpaths = [tmpdir.join(cfg_single["sigfnameseg"])]
     with qtbot.waitSignals([model.signal_changed, model.marker_changed],
                         timeout=10000):
-        controller.read_channels(path=tmpdir.join(cfg_single["sigfnameseg"]))
+        controller.read_channels()
     sfreq = cfg_single["header"]["sfreq"] if cfg_single["filetype"] == "Custom" else cfg_single["sfreq"]
     assert model.sfreq == sfreq
     assert model.loaded
@@ -444,31 +446,35 @@ def test_batchfile(qtbot, tmpdir, cfg_batch):
 
     # Mock the controller's batch_processor in order to avoid
     # calls to the controller's get_wpathpeaks and get_wpathstats methods.
-    controller.methodnb = -1
-    controller.nmethods = 5
-    controller.filenb = 0
-    controller.nfiles = len(model.fpaths)
-
     model.wdirpeaks = tmpdir
     model.wdirstats = tmpdir
 
     model.status = 'processing files'
     model.plotting = False
+
+    controller.batchmethods = [controller.read_channels, controller.find_peaks,
+                               controller.autocorrect_peaks,
+                               controller.calculate_stats,
+                               controller.save_stats,
+                               controller.save_peaks]
+    controller.iterbatchmethods = iter(controller.batchmethods)
+
     model.progress_changed.connect(controller.dispatcher)
 
     # Initiate batch processing.
     controller.dispatcher(1)
 
     # Wait for all files to be processed.
-    while controller.filenb < controller.nfiles:
-        qtbot.wait(500)
+    while not model.plotting:    # dispatcher enables plotting once all files are processed
+        qtbot.wait(1000)
 
     # Load each peak file saved during batch processing and assess if
     # peaks have been identified correctly.
     for sigfname, peaksum in zip(cfg_batch["sigfnames"],
                                  cfg_batch["peaksums"]):
         with qtbot.waitSignal(model.signal_changed, timeout=5000):
-            controller.read_channels(path=datadir.joinpath(sigfname))
+            model.fpaths = [datadir.joinpath(sigfname)]
+            controller.read_channels()
         fname = Path(sigfname).stem
         model.rpathpeaks = tmpdir.join(f"{fname}_peaks.csv")
         with qtbot.waitSignal(model.peaks_changed, timeout=5000):

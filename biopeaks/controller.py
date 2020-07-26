@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from functools import wraps
 from .heart import ecg_peaks, ppg_peaks, correct_peaks, heart_period
 from .resp import resp_extrema, resp_stats
 from .io_utils import (read_custom, read_opensignals, read_edf,
@@ -51,6 +52,7 @@ class Worker(QRunnable):
 
 # decorator that runs Controller methods in Worker thread
 def threaded(fn):
+    @wraps(fn)
     def threader(controller, **kwargs):
         worker = Worker(fn, controller, **kwargs)
         worker.signals.progress.connect(controller._model.progress)
@@ -82,7 +84,7 @@ class Controller(QObject):
         elif (self._model.batchmode == 'single file' and
               len(self._model.fpaths) == 1):
             self._model.reset()
-            self.read_channels(path=self._model.fpaths[0])
+            self.read_channels()
 
 
     def get_wpathsignal(self):
@@ -175,7 +177,7 @@ class Controller(QObject):
 
 
     def batch_processor(self):
-        '''
+        """
         Initiates batch processing. After initiation, the dispatcher method
         handles the sequential execution of methods that are called on each
         file of the batch. The dispatcher only listenes to the threader's
@@ -193,75 +195,70 @@ class Controller(QObject):
         in rapid succession (i.e., when small files are processed). The user
         can still get an impression of the progress since the current file path
         is displayed.
-        TODO: make method calls and their order more explicit!
-        '''
+        """
         self.get_wpathpeaks()
         self.get_wpathstats()
 
-        self.methodnb = -1
-        self.nmethods = 5
         if self._model.wdirstats is None:
             self._model.status = "No statistics selected for saving."
             return
-        self.filenb = 0
-        self.nfiles = len(self._model.fpaths)
 
         self._model.status = "Processing files."
         self._model.plotting = False
+
+        self.batchmethods = [self.read_channels, self.find_peaks,
+                             self.autocorrect_peaks, self.calculate_stats,
+                             self.save_stats]
+        if self._model.wdirpeaks:    # optional
+            self.batchmethods.append(self.save_peaks)
+
+        self.iterbatchmethods = iter(self.batchmethods)
+
         self._model.progress_changed.connect(self.dispatcher)
 
-        # initiate processing
-        self.dispatcher(1)
+        self.dispatcher(1)    # initiate processing
 
 
     def dispatcher(self, progress):
-        '''
+        """
         Start with first method on first file. As soon as one method has
         finished, (indicated by emission of progress_changed), execute next
         method. Once all methods are executed, go to the next file and start
         cycling through methods again.
-        '''
+        """
         if not progress:
             return
-        if self.filenb == self.nfiles:    # works because filenb starts at 0
-            self._model.plotting = True
-            self._model.progress_changed.disconnect(self.dispatcher)
-            self._model.wdirpeaks = None
-            self._model.wdirstats = None
-            return
-        fpath = self._model.fpaths[self.filenb]
-        fname = Path(fpath).stem
-        self.methodnb += 1
-        if self.methodnb == 0:
-            self._model.reset()
-            self.read_channels(path=fpath)
-        elif self.methodnb == 1:
-            self.find_peaks()
-        elif self.methodnb == 2:
-            self.autocorrect_peaks()
-        elif self.methodnb == 3:
-            self.calculate_stats()
-        elif self.methodnb == 4:
-            p = Path(self._model.wdirstats).joinpath(f"{fname}_stats.csv")
-            self._model.wpathstats = p
-            self.save_stats()
-        elif self.methodnb == self.nmethods:
-            # once all methods are executed, move to next file and start with
-            # first method again
-            self.methodnb = -1
-            self.filenb += 1
+
+        try:
+            batchmethod = next(self.iterbatchmethods)
+
+        except StopIteration:    # all methods finished on current file
+            self._model.reset()    # reset for new file
+            self.iterbatchmethods = iter(self.batchmethods)    # restart cycling through batch methods
+            batchmethod = next(self.iterbatchmethods)
+            self._model.fpaths.pop(0)    # go to next file
+
+            if not self._model.fpaths:    # all files have been processed
+                self._model.plotting = True
+                self._model.progress_changed.disconnect(self.dispatcher)
+                self._model.wdirpeaks = None
+                self._model.wdirstats = None
+                return
+
+        if batchmethod.__name__ == "read_channels":    # set paths prior to calling first method
+            fname = Path(self._model.fpaths[0]).stem
+            self._model.wpathstats = Path(self._model.wdirstats).joinpath(f"{fname}_stats.csv")
             if self._model.wdirpeaks:    # optional
-                p = Path(self._model.wdirpeaks).joinpath(f"{fname}_peaks.csv")
-                self._model.wpathpeaks = p
-                self.save_peaks()
-            else:
-                self.dispatcher(1)
+                self._model.wpathpeaks = Path(self._model.wdirpeaks).joinpath(f"{fname}_peaks.csv")
+
+        batchmethod()
 
 
     @threaded
-    def read_channels(self, path):
+    def read_channels(self):
         self._model.status = "Loading file."
 
+        path = self._model.fpaths[0]
         filetype = self._model.filetype
         readfunc = readfuncs[filetype]
 
