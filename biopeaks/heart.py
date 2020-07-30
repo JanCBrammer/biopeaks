@@ -50,12 +50,9 @@ def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
     min_len = np.mean(end_qrs[:num_qrs] - beg_qrs[:num_qrs]) * minlenweight
     peaks = [0]
 
-    for i in range(num_qrs):
+    for beg, end in zip(beg_qrs, end_qrs):
 
-        beg = beg_qrs[i]
-        end = end_qrs[i]
         len_qrs = end - beg
-
         if len_qrs < min_len:
             continue
 
@@ -123,17 +120,13 @@ def ppg_peaks(signal, sfreq, peakwindow=.111, beatwindow=.667, beatoffset=.02,
     end_waves = end_waves[end_waves > beg_waves[0]]
 
     # Identify systolic peaks within waves (ignore waves that are too short).
-    num_waves = min(beg_waves.size, end_waves.size)
     min_len = int(np.rint(peakwindow * sfreq))
     min_delay = int(np.rint(mindelay * sfreq))
     peaks = [0]
 
-    for i in range(num_waves):
+    for beg, end in zip(beg_waves, end_waves):
 
-        beg = beg_waves[i]
-        end = end_waves[i]
         len_wave = end - beg
-
         if len_wave < min_len:
             continue
 
