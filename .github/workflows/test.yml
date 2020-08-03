@@ -88,10 +88,11 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: source
-        path: source_download
     - name: Install source
+      shell: bash -l {0}
       run: |
-        pip install --find-links=biopeaks/source_download biopeaks
+        ls
+        pip install --find-links=source biopeaks
     - name: Test with pytest on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       shell: bash -l {0}
@@ -131,10 +132,11 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: wheel
-        path: wheel_download
     - name: Install wheel
+      shell: bash -l {0}
       run: |
-        pip install --find-links=biopeaks/wheel_download biopeaks
+        ls
+        pip install --find-links=wheel biopeaks
     - name: Test with pytest on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       shell: bash -l {0}
