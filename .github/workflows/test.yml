@@ -1,0 +1,148 @@
+name: test
+on:
+  push:
+    branches:
+      - master
+      - dev
+  pull_request:
+    branches:
+      - master
+      - dev
+
+jobs:
+
+  lint:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade setuptools pip wheel
+          python -m pip install flake8
+      - name: Linting
+        run: |
+          	flake8 biopeaks --exclude biopeaks/images,biopeaks/tests/testdata --max-line-length=90 --max-complexity=10 --ignore E303,C901,E203,W503
+
+
+  build:
+
+    needs: lint    # only run if lint finishes
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install dependencies
+      - run: |
+          python -m pip install --upgrade setuptools pip wheel
+      - name: Build source and wheel
+      - run: |
+          python setup.py sdist bdist_wheels
+      - name: Upload source
+        uses: actions/upload-artifact@v2
+        with:
+          name: source
+          path: dist/*.tar.gz
+      - name: Upload wheel
+        uses: actions/upload-artifact@v2
+        with:
+          name: wheel
+          path: dist/*.whl
+
+
+  test_source:
+
+    needs: build    # only run if build finishes
+    runs-on: ${{ matrix.os }}
+    continue-on-error: false
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: [3.7, 3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up miniconda
+      uses: goanpeca/setup-miniconda@v1
+      with:
+        auto-update-conda: true
+        channels: conda-forge
+        channel-priority: strict
+        activate-environment: ci_env    # inclused pytest, setuptools
+        environment-file: condaenv.yml
+        python-version: ${{ matrix.python-version }}
+        auto-activate-base: false
+    - name: Download source
+      uses: actions/download-artifact@v2
+      with:
+        name: source
+        path: source
+    - name: Install source
+      run: |
+        pip install --find-links=source biopeaks
+    - name: Test with pytest on Ubuntu
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash -l {0}
+      run: |
+        sudo apt-get install -y xvfb x11-utils libxkbcommon-x11-0
+        xvfb-run pytest -v
+    - name: Test with pytest on Windows and MacOS
+      if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
+      shell: bash -l {0}
+      run: |
+        pytest -v
+
+
+  test_wheel:
+
+    needs: build    # only run if build finishes
+    runs-on: ${{ matrix.os }}
+    continue-on-error: false
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: [3.7, 3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up miniconda
+      uses: goanpeca/setup-miniconda@v1
+      with:
+        auto-update-conda: true
+        channels: conda-forge
+        channel-priority: strict
+        activate-environment: ci_env    # inclused pytest, setuptools
+        environment-file: condaenv.yml
+        python-version: ${{ matrix.python-version }}
+        auto-activate-base: false
+    - name: Download wheel
+      uses: actions/download-artifact@v2
+      with:
+        name: wheel
+        path: wheel
+    - name: Install wheel
+      run: |
+        pip install --find-links=wheel biopeaks
+    - name: Test with pytest on Ubuntu
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash -l {0}
+      run: |
+        sudo apt-get install -y xvfb x11-utils libxkbcommon-x11-0
+        xvfb-run pytest -v
+    - name: Test with pytest on Windows and MacOS
+      if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
+      shell: bash -l {0}
+      run: |
+        pytest -v

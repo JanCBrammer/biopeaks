@@ -1,4 +1,4 @@
-name: biopeaks-build
+name: ci_env
 channels:
   - conda-forge
   - defaults
@@ -10,3 +10,6 @@ dependencies:
   - pandas
   - pytest-qt
   - flake8
+  - setuptools
+  - wheel
+  - twine
