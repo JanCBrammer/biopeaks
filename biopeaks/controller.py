@@ -28,6 +28,7 @@ writefuncs = {"Custom": write_custom,
               "OpenSignals": write_opensignals,
               "EDF": write_edf}
 
+
 # threading is implemented according to https://pythonguis.com/courses/
 # multithreading-pyqt-applications-qthreadpool/complete-example/
 class WorkerSignals(QObject):

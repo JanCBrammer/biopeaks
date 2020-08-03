@@ -309,7 +309,7 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     # 7. re-load signal #######################################################
     model.fpaths = [tmpdir.join(cfg_single["sigfnameseg"])]
     with qtbot.waitSignals([model.signal_changed, model.marker_changed],
-                        timeout=10000):
+                           timeout=10000):
         controller.read_channels()
     sfreq = cfg_single["header"]["sfreq"] if cfg_single["filetype"] == "Custom" else cfg_single["sfreq"]
     assert model.sfreq == sfreq
@@ -364,13 +364,13 @@ ecg_batch_os = {"modality": "ECG",
                 "mode": "multiple files",
                 "filetype": "OpenSignals",
                 "sigfnames": ["OSmontage1A.txt", "OSmontage1J.txt",
-                            "OSmontage2A.txt", "OSmontage2J.txt",
-                            "OSmontage3A.txt", "OSmontage3J.txt"],
+                              "OSmontage2A.txt", "OSmontage2J.txt",
+                              "OSmontage3A.txt", "OSmontage3J.txt"],
                 "peaksums": [3808244, 3412308, 2645824, 3523449, 3611836,
-                            3457936],
+                             3457936],
                 "stats": [(0.7950, 76.1123), (0.7288, 83.1468),
-                        (0.7894, 76.8911), (0.7402, 81.7864),
-                        (0.7856, 76.9153), (0.7235, 83.6060)],
+                          (0.7894, 76.8911), (0.7402, 81.7864),
+                          (0.7856, 76.9153), (0.7235, 83.6060)],
                 "correctpeaks": False}
 
 ecg_batch_custom = {"modality": "ECG",
@@ -379,13 +379,13 @@ ecg_batch_custom = {"modality": "ECG",
                     "mode": "multiple files",
                     "filetype": "Custom",
                     "sigfnames": ["OSmontage1A.txt", "OSmontage1J.txt",
-                                "OSmontage2A.txt", "OSmontage2J.txt",
-                                "OSmontage3A.txt", "OSmontage3J.txt"],
+                                  "OSmontage2A.txt", "OSmontage2J.txt",
+                                  "OSmontage3A.txt", "OSmontage3J.txt"],
                     "peaksums": [3808244, 3412308, 2645824, 3523449, 3611836,
-                                3457936],
+                                 3457936],
                     "stats": [(0.7950, 76.1123), (0.7288, 83.1468),
-                            (0.7894, 76.8911), (0.7402, 81.7864),
-                            (0.7856, 76.9153), (0.7235, 83.6060)],
+                              (0.7894, 76.8911), (0.7402, 81.7864),
+                              (0.7856, 76.9153), (0.7235, 83.6060)],
                     "correctpeaks": False}
 
 ecg_batch_autocorrect = {"modality": "ECG",

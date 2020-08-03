@@ -4,7 +4,7 @@ from PySide2.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                                QVBoxLayout, QHBoxLayout, QCheckBox,
                                QLabel, QStatusBar, QGroupBox, QDockWidget,
                                QLineEdit, QFormLayout, QPushButton,
-                               QProgressBar, QSplitter, QMenu, QDialog)
+                               QProgressBar, QSplitter, QDialog)
 from PySide2.QtCore import Qt, QSignalMapper, QRegExp
 from PySide2.QtGui import QIcon, QRegExpValidator
 from matplotlib.figure import Figure
@@ -29,7 +29,7 @@ class View(QMainWindow):
         self._model = model
         self._controller = controller
         self.segmentcursor = False
-        self.togglecolors = {"#1f77b4":"m", "m":"#1f77b4"}
+        self.togglecolors = {"#1f77b4": "m", "m": "#1f77b4"}
 
 
         #################################################################
@@ -47,7 +47,7 @@ class View(QMainWindow):
         # mpl to throw an error because figure is resized to height 0. The
         # widget can still be fully collapsed with self.splitter-
         self.canvas0.setMinimumHeight(1)    # in pixels
-        self.ax00 = self.figure0.add_subplot(1,1,1)
+        self.ax00 = self.figure0.add_subplot(1, 1, 1)
         self.ax00.set_frame_on(False)
         self.figure0.subplots_adjust(left=0.04, right=0.98, bottom=0.25)
         self.line00 = None
@@ -59,7 +59,7 @@ class View(QMainWindow):
         self.figure1 = Figure()
         self.canvas1 = FigureCanvas(self.figure1)
         self.canvas1.setMinimumHeight(1)
-        self.ax10 = self.figure1.add_subplot(1,1,1, sharex=self.ax00)
+        self.ax10 = self.figure1.add_subplot(1, 1, 1, sharex=self.ax00)
         self.ax10.get_xaxis().set_visible(False)
         self.ax10.set_frame_on(False)
         self.figure1.subplots_adjust(left=0.04, right=0.98)
@@ -70,15 +70,15 @@ class View(QMainWindow):
         self.figure2 = Figure()
         self.canvas2 = FigureCanvas(self.figure2)
         self.canvas2.setMinimumHeight(1)
-        self.ax20 = self.figure2.add_subplot(3,1,1, sharex=self.ax00)
+        self.ax20 = self.figure2.add_subplot(3, 1, 1, sharex=self.ax00)
         self.ax20.get_xaxis().set_visible(False)
         self.ax20.set_frame_on(False)
         self.line20 = None
-        self.ax21 = self.figure2.add_subplot(3,1,2, sharex=self.ax00)
+        self.ax21 = self.figure2.add_subplot(3, 1, 2, sharex=self.ax00)
         self.ax21.get_xaxis().set_visible(False)
         self.ax21.set_frame_on(False)
         self.line21 = None
-        self.ax22 = self.figure2.add_subplot(3,1,3, sharex=self.ax00)
+        self.ax22 = self.figure2.add_subplot(3, 1, 3, sharex=self.ax00)
         self.ax22.get_xaxis().set_visible(False)
         self.ax22.set_frame_on(False)
         self.line22 = None

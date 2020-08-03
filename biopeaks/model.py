@@ -360,7 +360,7 @@ class Model(QObject):
         self._wdirstats = None
         self._savebatchpeaks = False
         self._correctbatchpeaks = False
-        self._savestats = {"period":False, "rate":False, "tidalamp":False}
+        self._savestats = {"period": False, "rate": False, "tidalamp": False}
         self._filetype = None
         self._customheader = {"signalidx": None, "markeridx": None,
                               "skiprows": None, "sfreq": None, "separator": None}
