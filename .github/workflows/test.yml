@@ -92,7 +92,7 @@ jobs:
       shell: bash -l {0}
       run: |
         ls
-        pip install --find-links=source biopeaks
+        pip install --no-index --find-links=. biopeaks
     - name: Test with pytest on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       shell: bash -l {0}
@@ -136,7 +136,7 @@ jobs:
       shell: bash -l {0}
       run: |
         ls
-        pip install --find-links=wheel biopeaks
+        pip install --no-index --find-links=. biopeaks
     - name: Test with pytest on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       shell: bash -l {0}
