@@ -30,7 +30,7 @@ jobs:
           python -m pip install flake8
       - name: Linting
         run: |
-          	flake8 biopeaks --exclude biopeaks/images,biopeaks/tests/testdata --max-line-length=90 --max-complexity=10 --ignore E303,C901,E203,W503
+          flake8 biopeaks --exclude biopeaks/images,biopeaks/tests/testdata --max-line-length=90 --max-complexity=10 --ignore E303,C901,E203,W503
 
 
   build:
@@ -81,7 +81,7 @@ jobs:
         channels: conda-forge
         channel-priority: strict
         activate-environment: ci_env    # inclused pytest, setuptools
-        environment-file: condaenv.yml
+        environment-file: environment.yml
         python-version: ${{ matrix.python-version }}
         auto-activate-base: false
     - name: Download source
@@ -124,7 +124,7 @@ jobs:
         channels: conda-forge
         channel-priority: strict
         activate-environment: ci_env    # inclused pytest, setuptools
-        environment-file: condaenv.yml
+        environment-file: environment.yml
         python-version: ${{ matrix.python-version }}
         auto-activate-base: false
     - name: Download wheel
