@@ -18,7 +18,7 @@ jobs:
       matrix:
         python-version: [3.7, 3.8]
 
-    steps:
+    steps:    # every step is marked with a leading hyphen (-)
       - uses: actions/checkout@v2
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -45,10 +45,10 @@ jobs:
         with:
           python-version: 3.7
       - name: Install dependencies
-      - run: |
+        run: |
           python -m pip install --upgrade setuptools pip wheel
       - name: Build source and wheel
-      - run: |
+        run: |
           python setup.py sdist bdist_wheels
       - name: Upload source
         uses: actions/upload-artifact@v2
