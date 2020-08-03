@@ -91,7 +91,7 @@ jobs:
         path: source_download
     - name: Install source
       run: |
-        pip install --find-links=biopeaks\source_download biopeaks
+        pip install --find-links=biopeaks/source_download biopeaks
     - name: Test with pytest on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       shell: bash -l {0}
@@ -134,7 +134,7 @@ jobs:
         path: wheel_download
     - name: Install wheel
       run: |
-        pip install --find-links=biopeaks\wheel_download biopeaks
+        pip install --find-links=biopeaks/wheel_download biopeaks
     - name: Test with pytest on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       shell: bash -l {0}
