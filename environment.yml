@@ -8,7 +8,6 @@ dependencies:
   - pyside2
   - pandas
   - pytest-qt
-  - flake8
   - setuptools
   - wheel
   - twine
