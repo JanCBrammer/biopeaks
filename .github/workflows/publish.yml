@@ -1,10 +1,8 @@
 name: publish
 on:
-  # release:
-  #   types: [published]
-  push:
-    branches:
-      - dev
+  release:
+    types: [published]
+
 
 jobs:
 
@@ -25,8 +23,13 @@ jobs:
         run: |
           python setup.py sdist bdist_wheel
       - name: Publish
+        # env:
+        #   TWINE_USERNAME: ${{ secrets.TESTPYPI_USERNAME }}
+        #   TWINE_PASSWORD: ${{ secrets.TESTPYPI_PASSWORD }}
+        # run: |
+        #   twine upload --repository-url https://test.pypi.org/legacy/ dist/*
         env:
-          TWINE_USERNAME: ${{ secrets.TESTPYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.TESTPYPI_PASSWORD }}
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
-          twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+          twine upload dist/*
