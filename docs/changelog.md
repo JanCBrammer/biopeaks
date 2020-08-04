@@ -1,6 +1,6 @@
 # Changelog
 
-### Version 1.4.0 (July 25, 2020)
+### Version 1.4.0 (August 04, 2020)
 + enhancement: added support for plain text files (.txt, .csv, .tsv).
 + enhancement: stream [Glasgow University Database (GUDB)](http://researchdata.gla.ac.uk/716/) for ECG benchmarking (download is no longer required).
 

@@ -1,6 +1,6 @@
 ![logo](docs/images/logo.png)
 
-![](https://github.com/JanCBrammer/biopeaks/workflows/build/badge.svg?branch=dev)
+![](https://github.com/JanCBrammer/biopeaks/workflows/test/badge.svg?branch=dev)
 
 # Citation
 Click on the badge below to cite `biopeaks` in a format of your choice.
