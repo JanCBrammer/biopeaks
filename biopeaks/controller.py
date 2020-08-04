@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
+from functools import wraps
 from .heart import ecg_peaks, ppg_peaks, correct_peaks, heart_period
 from .resp import resp_extrema, resp_stats
-from .io_utils import read_opensignals, write_opensignals, read_edf, write_edf
+from .io_utils import (read_custom, read_opensignals, read_edf,
+                       write_custom, write_opensignals, write_edf)
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -13,9 +15,19 @@ getOpenFileName = QFileDialog.getOpenFileName
 getOpenFileNames = QFileDialog.getOpenFileNames
 getSaveFileName = QFileDialog.getSaveFileName
 getExistingDirectory = QFileDialog.getExistingDirectory
+
 peakfuncs = {"ECG": ecg_peaks,
              "PPG": ppg_peaks,
              "RESP": resp_extrema}
+
+readfuncs = {"Custom": read_custom,
+             "OpenSignals": read_opensignals,
+             "EDF": read_edf}
+
+writefuncs = {"Custom": write_custom,
+              "OpenSignals": write_opensignals,
+              "EDF": write_edf}
+
 
 # threading is implemented according to https://pythonguis.com/courses/
 # multithreading-pyqt-applications-qthreadpool/complete-example/
@@ -41,6 +53,7 @@ class Worker(QRunnable):
 
 # decorator that runs Controller methods in Worker thread
 def threaded(fn):
+    @wraps(fn)
     def threader(controller, **kwargs):
         worker = Worker(fn, controller, **kwargs)
         worker.signals.progress.connect(controller._model.progress)
@@ -59,9 +72,12 @@ class Controller(QObject):
 
 
     def get_fpaths(self):
+
         self._model.fpaths = getOpenFileNames(None, 'Choose your data',
                                               "\\home")[0]
         if not self._model.fpaths:
+            self._model.customheader = dict.fromkeys(self._model.customheader, None)    # for custom files also reset header
+            self._model.set_filetype(None)    # reset file type
             return
         if (self._model.batchmode == 'multiple files' and
             len(self._model.fpaths) >= 1):
@@ -69,7 +85,7 @@ class Controller(QObject):
         elif (self._model.batchmode == 'single file' and
               len(self._model.fpaths) == 1):
             self._model.reset()
-            self.read_signal(path=self._model.fpaths[0])
+            self.read_channels()
 
 
     def get_wpathsignal(self):
@@ -81,13 +97,13 @@ class Controller(QObject):
             filefilter = "OpenSignals (*.txt)"
         elif self._model.filetype == "EDF":
             filefilter = "EDF (*.edf)"
-        else:
-            return
+        elif self._model.filetype == "Custom":
+            filefilter = f"Plain text (*{Path(self._model.rpathsignal).suffix})"
         self._model.wpathsignal = getSaveFileName(None, 'Save signal',
                                                   "untitled",
                                                   filefilter)[0]
         if self._model.wpathsignal:
-            self.save_signal()
+            self.save_channels()
 
 
     def get_rpathpeaks(self):
@@ -162,7 +178,7 @@ class Controller(QObject):
 
 
     def batch_processor(self):
-        '''
+        """
         Initiates batch processing. After initiation, the dispatcher method
         handles the sequential execution of methods that are called on each
         file of the batch. The dispatcher only listenes to the threader's
@@ -180,137 +196,106 @@ class Controller(QObject):
         in rapid succession (i.e., when small files are processed). The user
         can still get an impression of the progress since the current file path
         is displayed.
-        TODO: make method calls and their order more explicit!
-        '''
-
-        self.methodnb = 0
-        self.nmethods = 5
-        self.filenb = 0
-        self.nfiles = len(self._model.fpaths)
-
+        """
         self.get_wpathpeaks()
         self.get_wpathstats()
 
+        if self._model.wdirstats is None:
+            self._model.status = "No statistics selected for saving."
+            return
+
         self._model.status = "Processing files."
         self._model.plotting = False
+
+        self.batchmethods = [self.read_channels, self.find_peaks,
+                             self.autocorrect_peaks, self.calculate_stats,
+                             self.save_stats]
+        if self._model.wdirpeaks:    # optional
+            self.batchmethods.append(self.save_peaks)
+
+        self.iterbatchmethods = iter(self.batchmethods)
+
         self._model.progress_changed.connect(self.dispatcher)
 
-        # initiate processing
-        self.dispatcher(1)
+        self.dispatcher(1)    # initiate processing
 
 
     def dispatcher(self, progress):
-        '''
+        """
         Start with first method on first file. As soon as one method has
         finished, (indicated by emission of progress_changed), execute next
         method. Once all methods are executed, go to the next file and start
         cycling through methods again.
-        '''
-        if progress == 0:
+        """
+        if not progress:
             return
-        if self.filenb == self.nfiles:
-            # this condition works because filenb starts at 0
-            self._model.plotting = True
-            self._model.progress_changed.disconnect(self.dispatcher)
-            self._model.wdirpeaks = None
-            self._model.wdirstats = None
-            return
-        fpath = self._model.fpaths[self.filenb]
-        fname = Path(fpath).stem
-        if self.methodnb == 0:
-            self.methodnb += 1
-            self._model.reset()
-            self.read_signal(path=fpath)
-        elif self.methodnb == 1:
-            self.methodnb += 1
-            self.find_peaks()
-        elif self.methodnb == 2:
-            self.methodnb += 1
-            self.autocorrect_peaks()
-        elif self.methodnb == 3:
-            self.methodnb += 1
-            self.calculate_stats()
-        elif self.methodnb == 4:
-            self.methodnb += 1
-            if self._model.wdirpeaks:
-                p = Path(self._model.wdirpeaks).joinpath(f"{fname}_peaks.csv")
-                self._model.wpathpeaks = p
-                self.save_peaks()
-            else:
-                self.dispatcher(1)
-        elif self.methodnb == self.nmethods:
-            # once all methods are executed, move to next file and start with
-            # first method again
-            self.methodnb = 0
-            self.filenb += 1
-            if self._model.wdirstats:
-                p = Path(self._model.wdirstats).joinpath(f"{fname}_stats.csv")
-                self._model.wpathstats = p
-                self.save_stats()
-            else:
-                self.dispatcher(1)
+
+        try:
+            batchmethod = next(self.iterbatchmethods)
+
+        except StopIteration:    # all methods finished on current file
+            self._model.reset()    # reset for new file
+            self.iterbatchmethods = iter(self.batchmethods)    # restart cycling through batch methods
+            batchmethod = next(self.iterbatchmethods)
+            self._model.fpaths.pop(0)    # go to next file
+
+            if not self._model.fpaths:    # all files have been processed
+                self._model.plotting = True
+                self._model.progress_changed.disconnect(self.dispatcher)
+                self._model.wdirpeaks = None
+                self._model.wdirstats = None
+                return
+
+        if batchmethod.__name__ == "read_channels":    # set paths prior to calling first method
+            fname = Path(self._model.fpaths[0]).stem
+            self._model.wpathstats = Path(self._model.wdirstats).joinpath(f"{fname}_stats.csv")
+            if self._model.wdirpeaks:    # optional
+                self._model.wpathpeaks = Path(self._model.wdirpeaks).joinpath(f"{fname}_peaks.csv")
+
+        batchmethod()
 
 
     @threaded
-    def read_signal(self, path):
+    def read_channels(self):
         self._model.status = "Loading file."
-        file_extension = Path(path).suffix
 
-        if file_extension not in [".txt", ".edf"]:
-            self._model.status = "Error: Please select an OpenSignals or EDF file."
+        path = self._model.fpaths[0]
+        filetype = self._model.filetype
+        readfunc = readfuncs[filetype]
+
+        biosignalinfo = (self._model.customheader if filetype == "Custom"
+                         else self._model.signalchan)
+        biosignal = readfunc(path, biosignalinfo, channeltype="signal")
+
+        if biosignal["error"]:
+            self._model.status = biosignal["error"]
+            self._model.customheader = dict.fromkeys(self._model.customheader, None)    # for custom files also reset header
+            self._model.set_filetype(None)    # reset file type
             return
-
-        if file_extension == ".txt":
-
-            # Read signal and associated metadata.
-            output = read_opensignals(path, self._model.signalchan,
-                                      channeltype="signal")
-            # If the io utility returns an error, print the error and return.
-            if output["status"]:
-                self._model.status = output["status"]
-                return
-
-            self._model.filetype = "OpenSignals"
-
-        elif file_extension == ".edf":
-
-            # Read signal and associated metadata.
-            output = read_edf(path, self._model.signalchan,
-                              channeltype="signal")
-            # If the io utility returns an error, print the error and return.
-            if output["status"]:
-                self._model.status = output["status"]
-                return
-
-            self._model.filetype = "EDF"
 
         # Important to set seconds PRIOR TO signal, otherwise plotting
         # behaves unexpectadly (since plotting is triggered as soon as
         # signal changes).
-        self._model.sfreq = output["sfreq"]
-        self._model.sec = output["sec"]
-        self._model.signal = output["signal"]
+        self._model.sfreq = biosignal["sfreq"]    # in case of custom file, sfreq is now taken over from customheader
+        self._model.sec = biosignal["sec"]
+        self._model.signal = biosignal["signal"]
         self._model.loaded = True
         self._model.rpathsignal = path
 
-        # If requested, read marker channel.
-        if self._model.markerchan != "none":
-            self.read_marker(path)
-
-
-    def read_marker(self, path):
-        if self._model.filetype == "OpenSignals":
-            output = read_opensignals(path, self._model.markerchan,
-                                      channeltype="marker")
-        elif self._model.filetype == "EDF":
-            output = read_edf(path, self._model.markerchan,
-                              channeltype="marker")
-        # If the io utility returns an error, print the error and return.
-        if output["status"]:
-            self._model.status = output["status"]
+        markerinfo = (self._model.customheader if filetype == "Custom"
+                      else self._model.markerchan)
+        if filetype == "Custom" and markerinfo["markeridx"] is None:
             return
-        self._model.sfreqmarker = output["sfreq"]
-        self._model.marker = output["signal"]
+        if markerinfo == "none":
+            return
+        marker = readfunc(path, markerinfo, channeltype="marker")
+
+        if marker["error"]:
+            self._model.status = marker["error"]
+            return
+
+        self._model.sfreqmarker = marker["sfreq"]    # only not set to None in case of EDF
+        self._model.marker = marker["signal"]
 
 
     @threaded
@@ -344,7 +329,7 @@ class Controller(QObject):
             return
         if self._model.filetype == "EDF":
             sfreq = self._model.sfreqmarker
-        elif self._model.filetype == "OpenSignals":
+        else:
             sfreq = self._model.sfreq
         begsamp = int(np.rint(self._model.segment[0] * sfreq))
         endsamp = int(np.rint(self._model.segment[1] * sfreq))
@@ -354,26 +339,24 @@ class Controller(QObject):
                                  " marker channel to resolve this segment."
 
     @threaded
-    def save_signal(self):
+    def save_channels(self):
         self._model.status = "Saving signal."
 
         if self._model.segment is None:
             self._model.status = "Error: Cannot save non-segmented file."
             return
 
-        if self._model.filetype == "OpenSignals":
-            begsamp = int(np.rint(self._model.segment[0] * self._model.sfreq))
-            endsamp = int(np.rint(self._model.segment[1] * self._model.sfreq))
-            write_opensignals(self._model.rpathsignal,
-                              self._model.wpathsignal,
-                              segment=[begsamp, endsamp])
+        filetype = self._model.filetype
+        writefunc = writefuncs[filetype]
 
-        elif self._model.filetype == "EDF":
-            status = write_edf(self._model.rpathsignal,
-                               self._model.wpathsignal,
-                               segment=self._model.segment)
-            if status:
-                self._model.status = status
+        headerinfo = (self._model.customheader if filetype == "Custom"
+                      else self._model.sfreq)
+
+        status = writefunc(self._model.rpathsignal, self._model.wpathsignal,
+                           self._model.segment, headerinfo)    # only write_edf() returns status, other write functions return None (no return)
+
+        if status:
+            self._model.status = status
 
     @threaded
     def read_peaks(self):
@@ -534,10 +517,7 @@ class Controller(QObject):
 
     @threaded
     def save_stats(self):
-        savekeys = []
-        for key, value in self._model.savestats.items():
-            if value:
-                savekeys.append(key)
+        savekeys = [key for key, value in self._model.savestats.items() if value]
         savearray = np.zeros((self._model.signal.size, len(savekeys)))
         for i, key in enumerate(savekeys):
             if key == 'period':

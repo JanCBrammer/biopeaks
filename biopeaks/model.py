@@ -199,15 +199,23 @@ class Model(QObject):
             self.status_changed.emit(value)
 
     @property
-    def filetype(self):
-        return self._filetype
+    def customheader(self):
+        return self._customheader
 
-    @filetype.setter
-    def filetype(self, value):
-        self._filetype = value
+    @customheader.setter
+    def customheader(self, value):
+        self._customheader = value
 
     # the following model attributes are slots that are connected to signals
     # from the view or controller
+
+    @Property(object)
+    def filetype(self):
+        return self._filetype
+
+    @Slot(object)
+    def set_filetype(self, value):
+        self._filetype = value
 
     @Property(object)
     def segment(self):
@@ -352,10 +360,18 @@ class Model(QObject):
         self._wdirstats = None
         self._savebatchpeaks = False
         self._correctbatchpeaks = False
-        self._savestats = {"period":False, "rate":False, "tidalamp":False}
+        self._savestats = {"period": False, "rate": False, "tidalamp": False}
         self._filetype = None
+        self._customheader = {"signalidx": None, "markeridx": None,
+                              "skiprows": None, "sfreq": None, "separator": None}
 
     def reset(self):
+        """
+        Don't reset attributes that aren't ideosyncratic to the dataset (e.g.,
+        channels, batchmode, savestats etc.). Also don't reset attributes that
+        must be permanently accessible during batch processing (e.g., fpaths,
+        wdirpeaks, wdirstats, filetype, customheader).
+        """
         self._signal = None
         self._peaks = None
         self._periodintp = None
@@ -374,9 +390,5 @@ class Model(QObject):
         self._wpathsignal = None
         self._rpathsignal = None
         self._wpathstats = None
-        self._filetype = None
-        # don't reset attributes that aren't ideosyncratic to the dataset
-        # (e.g., channels, batchmode, savestats etc.); also don't reset
-        # attributes that must be permanently accessible during batch
-        # processing (e.g., fpaths, wdirpeaks, wdirstats)
+
         self.model_reset.emit()

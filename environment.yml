@@ -1,7 +1,6 @@
-name: biopeaks-build
+name: ci_env
 channels:
   - conda-forge
-  - defaults
 dependencies:
   - scipy
   - numpy
@@ -9,4 +8,3 @@ dependencies:
   - pyside2
   - pandas
   - pytest-qt
-  - flake8

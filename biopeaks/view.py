@@ -4,7 +4,7 @@ from PySide2.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                                QVBoxLayout, QHBoxLayout, QCheckBox,
                                QLabel, QStatusBar, QGroupBox, QDockWidget,
                                QLineEdit, QFormLayout, QPushButton,
-                               QProgressBar, QSplitter)
+                               QProgressBar, QSplitter, QDialog)
 from PySide2.QtCore import Qt, QSignalMapper, QRegExp
 from PySide2.QtGui import QIcon, QRegExpValidator
 from matplotlib.figure import Figure
@@ -29,7 +29,7 @@ class View(QMainWindow):
         self._model = model
         self._controller = controller
         self.segmentcursor = False
-        self.togglecolors = {"#1f77b4":"m", "m":"#1f77b4"}
+        self.togglecolors = {"#1f77b4": "m", "m": "#1f77b4"}
 
 
         #################################################################
@@ -47,7 +47,7 @@ class View(QMainWindow):
         # mpl to throw an error because figure is resized to height 0. The
         # widget can still be fully collapsed with self.splitter-
         self.canvas0.setMinimumHeight(1)    # in pixels
-        self.ax00 = self.figure0.add_subplot(1,1,1)
+        self.ax00 = self.figure0.add_subplot(1, 1, 1)
         self.ax00.set_frame_on(False)
         self.figure0.subplots_adjust(left=0.04, right=0.98, bottom=0.25)
         self.line00 = None
@@ -59,7 +59,7 @@ class View(QMainWindow):
         self.figure1 = Figure()
         self.canvas1 = FigureCanvas(self.figure1)
         self.canvas1.setMinimumHeight(1)
-        self.ax10 = self.figure1.add_subplot(1,1,1, sharex=self.ax00)
+        self.ax10 = self.figure1.add_subplot(1, 1, 1, sharex=self.ax00)
         self.ax10.get_xaxis().set_visible(False)
         self.ax10.set_frame_on(False)
         self.figure1.subplots_adjust(left=0.04, right=0.98)
@@ -70,15 +70,15 @@ class View(QMainWindow):
         self.figure2 = Figure()
         self.canvas2 = FigureCanvas(self.figure2)
         self.canvas2.setMinimumHeight(1)
-        self.ax20 = self.figure2.add_subplot(3,1,1, sharex=self.ax00)
+        self.ax20 = self.figure2.add_subplot(3, 1, 1, sharex=self.ax00)
         self.ax20.get_xaxis().set_visible(False)
         self.ax20.set_frame_on(False)
         self.line20 = None
-        self.ax21 = self.figure2.add_subplot(3,1,2, sharex=self.ax00)
+        self.ax21 = self.figure2.add_subplot(3, 1, 2, sharex=self.ax00)
         self.ax21.get_xaxis().set_visible(False)
         self.ax21.set_frame_on(False)
         self.line21 = None
-        self.ax22 = self.figure2.add_subplot(3,1,3, sharex=self.ax00)
+        self.ax22 = self.figure2.add_subplot(3, 1, 3, sharex=self.ax00)
         self.ax22.get_xaxis().set_visible(False)
         self.ax22.set_frame_on(False)
         self.line22 = None
@@ -216,15 +216,76 @@ class View(QMainWindow):
         self.segmenter.setAllowedAreas(Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.RightDockWidgetArea, self.segmenter)
 
+
+        # Set up dialog to gather user input for custom files.
+
+        regex = QRegExp("[1-9][0-9]")
+        validator = QRegExpValidator(regex)
+
+        self.signallabel = QLabel("biosignal column")
+        self.signaledit = QLineEdit()
+        self.signaledit.setValidator(validator)
+
+        self.markerlabel = QLabel("marker column")
+        self.markeredit = QLineEdit()
+        self.markeredit.setValidator(validator)
+
+        regex = QRegExp("[0-9]{2}")
+        validator = QRegExpValidator(regex)
+
+        self.headerrowslabel = QLabel("number of header rows")
+        self.headerrowsedit = QLineEdit()
+        self.headerrowsedit.setValidator(validator)
+
+        regex = QRegExp("[0-9]{5}")
+        validator = QRegExpValidator(regex)
+
+        self.sfreqlabel = QLabel("sampling rate")
+        self.sfreqedit = QLineEdit()
+        self.sfreqedit.setValidator(validator)
+
+        self.separatorlabel = QLabel("column separator")
+        self.separatormenu = QComboBox(self)
+        self.separatormenu.addItem("comma")
+        self.separatormenu.addItem("tab")
+        self.separatormenu.addItem("colon")
+        self.separatormenu.addItem("space")
+
+        self.continuecustomfile = QPushButton("continue loading file")
+        self.continuecustomfile.clicked.connect(self.set_customheader)
+
+        self.customfiledialog = QDialog()
+        self.customfiledialog.setWindowTitle("custom file info")
+        self.customfiledialog.setWindowIcon(QIcon(":/file_icon.png"))
+        self.customfiledialog.setWindowFlags(Qt.WindowCloseButtonHint)    # remove help button by only setting close button
+        self.customfilelayout = QFormLayout()
+        self.customfilelayout.addRow(self.signallabel, self.signaledit)
+        self.customfilelayout.addRow(self.markerlabel, self.markeredit)
+        self.customfilelayout.addRow(self.separatorlabel, self.separatormenu)
+        self.customfilelayout.addRow(self.headerrowslabel, self.headerrowsedit)
+        self.customfilelayout.addRow(self.sfreqlabel, self.sfreqedit)
+        self.customfilelayout.addRow(self.continuecustomfile)
+        self.customfiledialog.setLayout(self.customfilelayout)
+
         # set up menubar
         menubar = self.menuBar()
 
         # signal menu
         signalmenu = menubar.addMenu("biosignal")
 
-        openSignal = QAction("load", self)
-        openSignal.triggered.connect(self._controller.get_fpaths)
-        signalmenu.addAction(openSignal)
+        openSignal = signalmenu.addMenu("load")
+        openEDF = QAction("EDF", self)
+        openEDF.triggered.connect(lambda: self._model.set_filetype("EDF"))
+        openEDF.triggered.connect(self._controller.get_fpaths)
+        openSignal.addAction(openEDF)
+        openOpenSignals = QAction("OpenSignals", self)
+        openOpenSignals.triggered.connect(lambda: self._model.set_filetype("OpenSignals"))
+        openOpenSignals.triggered.connect(self._controller.get_fpaths)
+        openSignal.addAction(openOpenSignals)
+        openCustom = QAction("Custom", self)
+        openCustom.triggered.connect(lambda: self._model.set_filetype("Custom"))
+        openCustom.triggered.connect(lambda: self.customfiledialog.exec_())
+        openSignal.addAction(openCustom)
 
         segmentSignal = QAction("select segment", self)
         segmentSignal.triggered.connect(self.segmentermap.map)
@@ -345,7 +406,7 @@ class View(QMainWindow):
         self.optionsgroup.setWidget(self.optionsgroupwidget)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.optionsgroup)
 
-        
+
         self.vlayout0.addWidget(self.splitter)
 
         self.hlayout0.addWidget(self.navitools)
@@ -514,6 +575,32 @@ class View(QMainWindow):
             self.segmentcursor = "start"
         elif self.endedit.hasFocus():
             self.segmentcursor = "end"
+
+
+    def set_customheader(self):
+        """Populate the customheader with inputs from the customfiledialog"""
+
+        # Check if one of the mandatory fields is missing.
+        mandatoryfields = self.signaledit.text() and self.headerrowsedit.text() and self.sfreqedit.text()
+
+        if not mandatoryfields:
+            self._model.status = ("Please provide values for 'biosignal column'"
+                                  ", 'number of header rows' and 'sampling"
+                                  " rate'.")
+            return
+
+        seps = {"comma": ",", "tab": "\t", "colon": ":", "space": " "}
+        self._model.customheader = dict.fromkeys(self._model.customheader, None)    # reset header here since it cannot be reset in controller.get_fpaths()
+
+        self._model.customheader["signalidx"] = int(self.signaledit.text())
+        self._model.customheader["skiprows"] = int(self.headerrowsedit.text())
+        self._model.customheader["sfreq"] = int(self.sfreqedit.text())
+        self._model.customheader["separator"] = seps[self.separatormenu.currentText()]
+        if self.markeredit.text():    # not mandatory
+            self._model.customheader["markeridx"] = int(self.markeredit.text())
+
+        self.customfiledialog.done(QDialog.Accepted)    # close the dialog window
+        self._controller.get_fpaths()    # move on to file selection
 
 
     def get_xcursor(self, event):

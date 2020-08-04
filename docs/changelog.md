@@ -1,5 +1,9 @@
 # Changelog
 
+### Version 1.4.0 (August 04, 2020)
++ enhancement: added support for plain text files (.txt, .csv, .tsv).
++ enhancement: stream [Glasgow University Database (GUDB)](http://researchdata.gla.ac.uk/716/) for ECG benchmarking (download is no longer required).
+
 ### Version 1.3.2 (June 07, 2020)
 + enhancement: visibility of configuration panel can now be toggled (more screen space for signals).
 + bugfix: fixed index-out-of-range error in `heart._correct_misaligned()`.
@@ -33,10 +37,10 @@ accordance with [Elgendi et al., (2013)](https://journals.plos.org/plosone/artic
 
 |metric     |summary|version 1.2.0
 |:---------:|:-----:|:-----------:
-|precision  |mean   |.996         
-|           |std    |.004         
-|sensitivity|mean   |.999         
-|           |std    |.001         
+|precision  |mean   |.996
+|           |std    |.004
+|sensitivity|mean   |.999
+|           |std    |.001
 
 + bugfix: the PATCH version has been reset to 0 after incrementing MINOR version (https://semver.org/)
 
@@ -80,14 +84,14 @@ sample.
 
 |condition|metric     |summary|version 1.0.2|version 1.0.3
 |:-------:|:---------:|:-----:|:-----------:|:-----------:
-|sitting  |precision  |mean   |.999         |.998         
-|         |           |std    |.002         |.005         
-|         |sensitivity|mean   |.996         |.996         
-|         |           |std    |.008         |.004         
-|handbike |precision  |mean   |.904         |.930         
-|         |           |std    |.135         |.127         
-|         |sensitivity|mean   |.789         |.857         
-|         |           |std    |.281         |.247         
+|sitting  |precision  |mean   |.999         |.998
+|         |           |std    |.002         |.005
+|         |sensitivity|mean   |.996         |.996
+|         |           |std    |.008         |.004
+|handbike |precision  |mean   |.904         |.930
+|         |           |std    |.135         |.127
+|         |sensitivity|mean   |.789         |.857
+|         |           |std    |.281         |.247
 
 ### Version 1.0.2 (December 1, 2019)
 + enhancement: `resp.resp_extrema()` is now based on zerocrossings and makes

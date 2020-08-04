@@ -4,7 +4,7 @@ from setuptools import setup, find_namespace_packages
 
 setup(
     name="biopeaks",
-    version="1.3.2",
+    version="1.4.0",
     description="A graphical user interface for feature extraction from heart- and breathing biosignals.",
     url="https://github.com/JanCBrammer/biopeaks",
     author="Jan C. Brammer",

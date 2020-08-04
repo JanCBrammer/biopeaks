@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from itertools import cycle
 from .filters import butter_bandpass_filter
 from .analysis_utils import interp_stats
 
@@ -25,34 +26,18 @@ def resp_extrema(signal, sfreq):
     risex = np.where(np.bitwise_and(smaller[:-1], greater[1:]))[0]
     fallx = np.where(np.bitwise_and(greater[:-1], smaller[1:]))[0]
 
-    if risex[0] < fallx[0]:
-        startx = "rise"
-    elif fallx[0] < risex[0]:
-        startx = "fall"
-
     allx = np.concatenate((risex, fallx))
     allx.sort(kind="mergesort")
 
+    argextreme = cycle([np.argmax, np.argmin])
+    if fallx[0] < risex[0]:
+        next(argextreme)    # cycle once to switch order
+
     # find extrema
     extrema = []
-    for i in range(len(allx) - 1):
+    for beg, end in zip(allx[0:], allx[1:]):
 
-        # determine whether to search for min or max
-        if startx == "rise":
-            if (i + 1) % 2 != 0:
-                argextreme = np.argmax
-            else:
-                argextreme = np.argmin
-        elif startx == "fall":
-            if (i + 1) % 2 != 0:
-                argextreme = np.argmin
-            else:
-                argextreme = np.argmax
-
-        beg = allx[i]
-        end = allx[i + 1]
-
-        extreme = argextreme(signal[beg:end])
+        extreme = next(argextreme)(signal[beg:end])
         extrema.append(beg + extreme)
 
     extrema = np.asarray(extrema)
