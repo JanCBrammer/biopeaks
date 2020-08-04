@@ -77,7 +77,7 @@ jobs:
         auto-update-conda: true
         channels: conda-forge
         channel-priority: strict
-        activate-environment: ci_env    # inclused pytest, setuptools
+        activate-environment: ci_env    # includes pytest and pip
         environment-file: environment.yml
         python-version: ${{ matrix.python-version }}
         auto-activate-base: false
@@ -121,7 +121,7 @@ jobs:
         auto-update-conda: true
         channels: conda-forge
         channel-priority: strict
-        activate-environment: ci_env    # inclused pytest, setuptools
+        activate-environment: ci_env
         environment-file: environment.yml
         python-version: ${{ matrix.python-version }}
         auto-activate-base: false
