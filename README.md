@@ -2,6 +2,7 @@
 
 ![](https://github.com/JanCBrammer/biopeaks/workflows/test/badge.svg?branch=dev)
 
+
 # Citation
 Click on the badge below to cite `biopeaks` in a format of your choice.
 
@@ -27,3 +28,5 @@ peaks in breathing signals) with signal-specific, sensible defaults
 + automatic analysis of multiple files (batch processing)
 
 Visit the [documentation](https://jancbrammer.github.io/biopeaks/) for additional information.
+
+![GUI](docs/images/screenshot_statistics.png)
