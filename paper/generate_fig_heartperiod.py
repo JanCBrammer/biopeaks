@@ -77,6 +77,6 @@ for i in np.arange(1, peaks.size):
                             arrowstyle="->", mutation_scale=10, color="k")
     fig.patches.append(arrow)
 
-plt.savefig("fig_heartperiod.svg", dpi=600, transparent=False,
+plt.savefig("fig_heartperiod.png", dpi=600, transparent=False,
             bbox_inches="tight")    # tight to remove extra whitespace around figure
 plt.show()

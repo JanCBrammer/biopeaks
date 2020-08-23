@@ -92,6 +92,6 @@ for i in np.arange(0, peaks.size):
                             connectionstyle="arc3,rad=-0.2")
     fig.patches.append(arrow)
 
-plt.savefig("fig_breathingamplitude.svg", dpi=600, transparent=False,
+plt.savefig("fig_breathingamplitude.png", dpi=600, transparent=False,
             bbox_inches="tight")    # tight to remove extra whitespace around figure
 plt.show()

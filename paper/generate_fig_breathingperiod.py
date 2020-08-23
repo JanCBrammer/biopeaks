@@ -81,6 +81,6 @@ for i in np.arange(1, peaks.size):
     fig.patches.append(arrow)
 
 
-plt.savefig("fig_breathingperiod.svg", dpi=600, transparent=False,
+plt.savefig("fig_breathingperiod.png", dpi=600, transparent=False,
             bbox_inches="tight")    # tight to remove extra whitespace around figure
 plt.show()
