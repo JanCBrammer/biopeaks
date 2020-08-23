@@ -1,25 +1,26 @@
 ---
-title: 'biopeaks: a graphical user interface for feature extraction from heart- and
-  breathing biosignals'
+title: 'biopeaks: a graphical user interface for feature extraction from heart- and breathing biosignals'
 tags:
-- Python
-- GUI
-- biosignals
-- heart
-- breathing
-- PPG
-- ECG
-- feature extraction
+  - Python
+  - GUI
+  - biosignals
+  - heart
+  - breathing
+  - PPG
+  - ECG
+  - feature extraction
 authors:
-- affiliation: 1
-  name: Jan C. Brammer
-  orcid: 0000-0002-7664-3753
+  - name: Jan C. Brammer
+    orcid: 0000-0002-7664-3753
+    affiliation: 1
 affiliations:
-- index: 1
-  name: Behavioral Science Institute, Radboud University Nijmegen, Nijmegen, The Netherlands
-date: "23 August 2020"
+  - name: Behavioral Science Institute, Radboud University Nijmegen, Nijmegen, The Netherlands
+    index: 1
+date: 23 August 2020
 bibliography: paper.bib
+
 ---
+
 
 # Statement of need
 
@@ -30,6 +31,7 @@ available graphical user interfaces (GUI) for heart-and breathing biosignal anal
 Compared to application programming interfaces [@neurokit; @biosppy], its GUI allows for
 more intuitive and immediate visual interaction with the biosignal, which is especially valuable
 during data preprocessing and exploration. At the time of writing, `biopeaks` is used in multiple projects at the [Gemhlab](https://gemhlab.com/).
+
 
 # Functionality
 
