@@ -7,7 +7,8 @@ from matplotlib.patches import Polygon
 from scipy.signal import find_peaks
 from .filters import (butter_highpass_filter, powerline_filter,
                       moving_average, butter_bandpass_filter)
-from .analysis_utils import (compute_threshold, interp_stats, update_indices)
+from .analysis_utils import (compute_threshold, find_segments, interp_stats,
+                             update_indices)
 
 
 def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
@@ -40,20 +41,15 @@ def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
 
     # Identify start and end of QRS complexes.
     qrs = smoothgrad > gradthreshold
-    beg_qrs = np.where(np.logical_and(np.logical_not(qrs[0:-1]), qrs[1:]))[0]
-    end_qrs = np.where(np.logical_and(qrs[0:-1], np.logical_not(qrs[1:])))[0]
-    # Throw out QRS-ends that precede first QRS-start.
-    end_qrs = end_qrs[end_qrs > beg_qrs[0]]
+    beg_qrs, end_qrs, durations_qrs = find_segments(qrs)
 
     # Identify R-peaks within QRS (ignore QRS that are too short).
-    num_qrs = min(beg_qrs.size, end_qrs.size)
-    min_len = np.mean(end_qrs[:num_qrs] - beg_qrs[:num_qrs]) * minlenweight
+    min_len = np.mean(durations_qrs) * minlenweight
     peaks = [0]
 
-    for beg, end in zip(beg_qrs, end_qrs):
+    for beg, end, duration in zip(beg_qrs, end_qrs, durations_qrs):
 
-        len_qrs = end - beg
-        if len_qrs < min_len:
+        if duration < min_len:
             continue
 
         # Visualize QRS intervals.
@@ -112,22 +108,16 @@ def ppg_peaks(signal, sfreq, peakwindow=.111, beatwindow=.667, beatoffset=.02,
 
     # Identify start and end of PPG waves.
     waves = ma_peak > thr1
-    beg_waves = np.where(np.logical_and(np.logical_not(waves[0:-1]),
-                                        waves[1:]))[0]
-    end_waves = np.where(np.logical_and(waves[0:-1],
-                                        np.logical_not(waves[1:])))[0]
-    # Throw out wave-ends that precede first wave-start.
-    end_waves = end_waves[end_waves > beg_waves[0]]
+    beg_waves, end_waves, duration_waves = find_segments(waves)
 
     # Identify systolic peaks within waves (ignore waves that are too short).
     min_len = int(np.rint(peakwindow * sfreq))
     min_delay = int(np.rint(mindelay * sfreq))
     peaks = [0]
 
-    for beg, end in zip(beg_waves, end_waves):
+    for beg, end, duration in zip(beg_waves, end_waves, duration_waves):
 
-        len_wave = end - beg
-        if len_wave < min_len:
+        if duration < min_len:
             continue
 
         # Visualize wave span.

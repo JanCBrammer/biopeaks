@@ -49,3 +49,33 @@ def interp_stats(peaks, stats, nsamp):
     statsintp = f(samples)
 
     return statsintp
+
+
+def find_segments(condition):
+    """Find the on- and offset of segments that meet a condition.
+
+    Parameters
+    ----------
+    condition : Boolean array
+        True where condition is met.
+    """
+    change = np.diff(condition)
+    idcs, = change.nonzero()
+
+    idcs += 1    # Get indices following the change.
+
+    if condition[0]:
+        # If the first sample fulfills the condition, prepend a zero.
+        idcs = np.r_[0, idcs]
+
+    if condition[-1]:
+        # If the last sample fulfills the condition, append an index
+        # corresponding to the length of signal
+        idcs = np.r_[idcs, condition.size]
+
+    starts = idcs[0::2]
+    ends = idcs[1::2]
+    assert starts.size == ends.size
+    durations = ends - starts
+
+    return starts, ends, durations
