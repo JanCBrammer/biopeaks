@@ -49,7 +49,7 @@ ax1.plot(amp, linewidth=2.5, c="mediumvioletred")
 ax1.vlines(peaks, ymin=min(amp), ymax=max(amp), colors="deeppink", linewidth=3,
            alpha=.2)
 ax1.grid(True, axis="y", alpha=.2)
-ax1.set_xlabel("Time (sec)", fontsize="large", fontweight="bold")
+ax1.set_xlabel("Seconds", fontsize="large", fontweight="bold")
 ax1.set_ylabel("Inhalation amplitude (a.u.)", fontsize="large",
                fontweight="bold")
 
@@ -60,9 +60,9 @@ sec = np.rint((ax1.get_xticks() / sfreq)).astype(int)
 ax1.set_xticklabels(sec)
 ax1.tick_params(axis="both", which="major", labelsize="medium")
 
-ax0.text(ax0.get_xbound()[-1], ax0.get_ybound()[-1], "a", fontsize="large",
+ax0.text(ax0.get_xbound()[-1], ax0.get_ybound()[-1], "A", fontsize="large",
          fontweight="medium")
-ax1.text(ax1.get_xbound()[-1], ax1.get_ybound()[-1], "b", fontsize="large",
+ax1.text(ax1.get_xbound()[-1], ax1.get_ybound()[-1], "B", fontsize="large",
          fontweight="medium")
 
 fig.canvas.draw()
@@ -92,6 +92,6 @@ for i in np.arange(0, peaks.size):
                             connectionstyle="arc3,rad=-0.2")
     fig.patches.append(arrow)
 
-plt.savefig("fig_breathingamplitude.svg", dpi=600, transparent=False,
+plt.savefig("fig_breathingamplitude.png", dpi=600, transparent=False,
             bbox_inches="tight")    # tight to remove extra whitespace around figure
 plt.show()
