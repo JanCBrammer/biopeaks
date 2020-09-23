@@ -68,7 +68,7 @@ custom algorithm that has been evaluated on the Glasgow University Database (GUD
 
 The code for performance evaluation is included in the `biopeaks` installation and can be run without downloading the GUDB (database is streamed).
 Despite the robust performance of the extrema detectors, algorithmically identified extrema can be misplaced (false positives) or extrema might be missed (false negatives),
-if there are noisy segments in the biosignal. If left uncorrected, these errors can significantly distort subsequent analysis steps [@berntson]. To adress this problem and ensure the correct placement of extrema, `biopeaks` offers intuitive
+if there are noisy segments in the biosignal. If left uncorrected, these errors can significantly distort subsequent analysis steps [@berntson]. To address this problem and ensure the correct placement of extrema, `biopeaks` offers intuitive
 point-and-click extrema editing (i.e., removing and adding extrema). Additionally, for cardiac biosignals,
 `biopeaks` offers state-of-the-art automatic extrema correction [@lipponen]. Finally, based on the local extrema, the analyst can extract features
 from the biosignal. The features are based on temporal or amplitude differences between the local extrema.
