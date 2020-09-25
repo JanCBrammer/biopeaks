@@ -57,7 +57,7 @@ the relevant local extrema are inhalation peaks and exhalation troughs. `biopeak
 using three biosignal-specific algorithms. Breathing extrema are detected using a variant of the "zero-crossing algorithm
 with amplitude threshold" [@khodadad]. Systolic peaks in PPG signals are identified using an implementation of "Method IV;
 Event-Related Moving Averages with Dynamic Threshold" introduced by Elgendi et al. [@elgendi]. Lastly, the ECG R-peak detector is a
-custom algorithm that has been evaluated on the Glasgow University Database (GUDB) [@gudb] which contains ECG signals along with R-peak annotations. The performance of the R-peak detector has been evaluated in terms of sensitivity (aka recall; i.e., how many of the correct extrema were detected?) and precision (i.e., how many of the detected extrema are correct extrema?). Peak detection has been evaluated on Einthoven lead II of all 25 records, with a tolerance of 1 sample for true positive peak detection. The GUDB has not been used to optimize the R-peak detector prior to the performance evaluation. The performance at rest (sitting) and in dynamic conditions (handbike) is as follows:
+custom algorithm that has been evaluated on the Glasgow University Database (GUDB) [@gudb] which contains ECG signals along with R-peak annotations. The performance of the R-peak detector has been evaluated in terms of sensitivity (aka recall; i.e., how many of the correct extrema were detected?) and precision (i.e., how many of the detected extrema are correct extrema?). Peak detection has been evaluated on all 25 records using the ECG channel corresponding to Einthoven lead II. The tolerance for true positive peak detection was set to one sample. The GUDB has not been used to optimize the R-peak detector prior to the performance evaluation. The performance at rest (sitting) and in dynamic conditions (handbike) is as follows:
 
 |           |    |sitting|handbike|
 |:---------:|:--:|:-----:|:------:|
@@ -66,9 +66,9 @@ custom algorithm that has been evaluated on the Glasgow University Database (GUD
 |sensitivity|mean|.998   |.984    |
 |           |std |.004   |.025    |
 
-The code for performance evaluation is included in the `biopeaks` installation and can be run without downloading the GUDB (database is streamed).
+The code for performance evaluation is included in the `biopeaks` installation and can be run without downloading the GUDB (the database is streamed).
 Despite the robust performance of the extrema detectors, algorithmically identified extrema can be misplaced (false positives) or extrema might be missed (false negatives),
-if there are noisy segments in the biosignal. If left uncorrected, these errors can significantly distort subsequent analysis steps [@berntson]. To adress this problem and ensure the correct placement of extrema, `biopeaks` offers intuitive
+if there are noisy segments in the biosignal. If left uncorrected, these errors can significantly distort subsequent analysis steps [@berntson]. To address this problem and ensure the correct placement of extrema, `biopeaks` offers intuitive
 point-and-click extrema editing (i.e., removing and adding extrema). Additionally, for cardiac biosignals,
 `biopeaks` offers state-of-the-art automatic extrema correction [@lipponen]. Finally, based on the local extrema, the analyst can extract features
 from the biosignal. The features are based on temporal or amplitude differences between the local extrema.
