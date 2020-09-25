@@ -54,10 +54,7 @@ Follow these steps to contribute documentation, tests, or code:
 
 ## Resources
 
-### Using git
+### [Using git](https://github.com/dictcp/awesome-git)
 
-https://github.com/dictcp/awesome-git
+### [Using GitHub](https://docs.github.com/en)
 
-### Using GitHub
-
-https://docs.github.com/en
