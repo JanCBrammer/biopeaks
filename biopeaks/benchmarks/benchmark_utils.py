@@ -61,7 +61,7 @@ class BenchmarkDetectorGUDB:
         """
         detector_annotation = self.detector(record, self.sfreq)
 
-        comparitor = compare_annotations(detector_annotation, annotation,
+        comparitor = compare_annotations(annotation, detector_annotation,
                                          self.tolerance)
         tp = comparitor.tp
         fp = comparitor.fp
@@ -170,16 +170,16 @@ class BenchmarkDetectorGUDB:
         print(f"\nAverage results over {len(precisions)} records")
         print("-" * 31)
 
-        mean_avg_time = np.mean(avg_times)
-        std_avg_time = np.std(avg_times)
+        mean_avg_time = round(np.mean(avg_times), 4)
+        std_avg_time = round(np.std(avg_times), 4)
         print(f"average run time over {self.n_runs} runs: mean = {mean_avg_time}, std = {std_avg_time}")
 
-        mean_sensitivity = np.mean(sensitivities)
-        std_sensitivity = np.std(sensitivities)
+        mean_sensitivity = round(np.mean(sensitivities), 4)
+        std_sensitivity = round(np.std(sensitivities), 4)
         print(f"sensitivity: mean = {mean_sensitivity}, std = {std_sensitivity}")
 
-        mean_precision = np.mean(precisions)
-        std_precision = np.std(precisions)
+        mean_precision = round(np.mean(precisions), 4)
+        std_precision = round(np.std(precisions), 4)
         print(f"precision: mean = {mean_precision}, std = {std_precision}")
 
 

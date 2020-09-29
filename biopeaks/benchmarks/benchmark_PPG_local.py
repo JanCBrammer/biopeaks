@@ -25,13 +25,13 @@ for subject in data_dir.iterdir():
 
     peaks = ppg_peaks(record, sfreq)
 
-    comparitor = compare_annotations(peaks, annotation, tolerance)
+    comparitor = compare_annotations(annotation, peaks, tolerance)
     tp = comparitor.tp
     fp = comparitor.fp
     fn = comparitor.fn
 
-    sensitivity.append(float(tp) / (tp + fn))
-    precision.append(float(tp) / (tp + fp))
+    sensitivity.append(tp / (tp + fn))
+    precision.append(tp / (tp + fp))
 
     print(f"\nResults {subject}")
     print("-" * len(str(subject)))
@@ -40,5 +40,5 @@ for subject in data_dir.iterdir():
 
 print(f"\nAverage results over {len(precision)} records")
 print("-" * 31)
-print(f"sensitivity: mean = {np.mean(sensitivity)}, std = {np.std(sensitivity)}")
-print(f"precision: mean = {np.mean(precision)}, std = {np.std(precision)}")
+print(f"sensitivity: mean = {round(np.mean(sensitivity), 4)}, std = {round(np.std(sensitivity), 4)}")
+print(f"precision: mean = {round(np.mean(precision), 4)}, std = {round(np.std(precision), 4)}")
