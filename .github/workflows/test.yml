@@ -139,7 +139,7 @@ jobs:
       shell: bash -l {0}
       run: | # generate coverage report on ubuntu only
         sudo apt-get install -y xvfb x11-utils libxkbcommon-x11-0
-        xvfb-run pytest -v --cov-config=.coveragerc --cov-report=xml --cov=biopeaks/
+        xvfb-run pytest -v --cov-config=.coveragerc --cov-report=xml --cov=biopeaks/ biopeaks/tests
     - name: Test with pytest on Windows and MacOS
       if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
       shell: bash -l {0}
