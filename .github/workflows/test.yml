@@ -146,7 +146,7 @@ jobs:
       run: |
         pytest -v
     - name: Upload coverage report
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.7'
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml

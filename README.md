@@ -1,6 +1,7 @@
 ![logo](docs/images/logo.png)
 
 ![GH Actions](https://github.com/JanCBrammer/biopeaks/workflows/test/badge.svg?branch=dev)
+[![codecov](https://codecov.io/gh/JanCBrammer/biopeaks/branch/master/graph/badge.svg)](https://codecov.io/gh/JanCBrammer/biopeaks)
 [![DOI](https://www.zenodo.org/badge/172897525.svg)](https://www.zenodo.org/badge/latestdoi/172897525)
 [![PyPI version](https://img.shields.io/pypi/v/biopeaks.svg)](https://pypi.org/project/biopeaks/)
 
