@@ -1,0 +1,5 @@
+[run]
+omit =
+	biopeaks/tests/*
+	biopeaks/__main__.py
+	biopeaks/resources.py
