@@ -11,110 +11,18 @@ on:
 
 jobs:
 
-  lint:
-
-    runs-on: ubuntu-latest
-
-    steps:    # every step is marked with a leading hyphen (-)
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.7
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade setuptools pip wheel
-          python -m pip install flake8
-      - name: Linting
-        run: |
-          flake8 biopeaks --exclude biopeaks/images,biopeaks/tests/testdata,biopeaks/resources.py --max-complexity=10 --ignore E303,C901,E203,W503,E501,W504,E129,W605,E371,E731
-
-
   build:
 
-    needs: lint    # only run if lint finishes
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.7
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade setuptools pip wheel
-      - name: Build source and wheel
-        run: |
-          python setup.py sdist bdist_wheel
-      - name: Upload source
-        uses: actions/upload-artifact@v2
-        with:
-          name: source
-          path: dist/*.tar.gz
-      - name: Upload wheel
-        uses: actions/upload-artifact@v2
-        with:
-          name: wheel
-          path: dist/*.whl
-
-
-  test_source:
-
-    needs: build    # only run if build finishes
     runs-on: ${{ matrix.os }}
     continue-on-error: false
     strategy:
       matrix:    # all steps of this job will run using this matrix (matrix not accessible to other jobs)
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [3.7, 3.8]
+        python-version: [3.8]
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up miniconda
-      uses: goanpeca/setup-miniconda@v1
-      with:
-        auto-update-conda: true
-        channels: conda-forge
-        channel-priority: strict
-        activate-environment: ci_env    # includes pytest and pip
-        environment-file: environment.yml
-        python-version: ${{ matrix.python-version }}
-        auto-activate-base: false
-    - name: Download source
-      uses: actions/download-artifact@v2
-      with:
-        name: source
-    - name: Install source
-      shell: bash -l {0}
-      run: |
-        ls
-        pip install --no-index --find-links=. biopeaks    # --no-index: do not install from PyPI, --find-links=.:search local dir for wheels or source
-    - name: Test with pytest on Ubuntu
-      if: matrix.os == 'ubuntu-latest'
-      shell: bash -l {0}
-      run: |
-        sudo apt-get install -y xvfb x11-utils libxkbcommon-x11-0
-        xvfb-run pytest -v
-    - name: Test with pytest on Windows and MacOS
-      if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
-      shell: bash -l {0}
-      run: |
-        pytest -v
 
-
-  test_wheel:
-
-    needs: build    # only run if build finishes
-    runs-on: ${{ matrix.os }}
-    continue-on-error: false
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [3.7, 3.8]
-
-    steps:
-    - uses: actions/checkout@v2
     - name: Set up miniconda
       uses: goanpeca/setup-miniconda@v1
       with:
@@ -125,28 +33,25 @@ jobs:
         environment-file: environment.yml
         python-version: ${{ matrix.python-version }}
         auto-activate-base: false
-    - name: Download wheel
-      uses: actions/download-artifact@v2
-      with:
-        name: wheel
-    - name: Install wheel
-      shell: bash -l {0}
+
+    - name: Lint
+      if: matrix.platform == 'ubuntu-latest'"
       run: |
-        ls
-        pip install --no-index --find-links=. biopeaks
-    - name: Test with pytest on Ubuntu
-      if: matrix.os == 'ubuntu-latest'
-      shell: bash -l {0}
-      run: | # generate coverage report on ubuntu only
-        sudo apt-get install -y xvfb x11-utils libxkbcommon-x11-0
-        xvfb-run pytest -v --cov-config=.coveragerc --cov-report=xml --cov=biopeaks/ biopeaks/tests
-    - name: Test with pytest on Windows and MacOS
+        flake8 biopeaks --exclude biopeaks/images,biopeaks/tests/testdata,biopeaks/resources.py --max-complexity=10 --ignore E303,C901,E203,W503,E501,W504,E129,W605,E371,E731
+
+    - name: Test on Windows and MacOS
       if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
-      shell: bash -l {0}
       run: |
         pytest -v
+
+    - name: Test on Ubuntu
+      if: matrix.os == 'ubuntu-latest'
+      run: |    # run coverage only on Ubuntu
+        sudo apt-get install -y xvfb x11-utils libxkbcommon-x11-0
+        xvfb-run pytest -v --cov-config=.coveragerc --cov-report=xml --cov=biopeaks
+
     - name: Upload coverage report
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.7'
+      if: matrix.platform == 'ubuntu-latest'
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml

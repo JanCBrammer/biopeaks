@@ -9,3 +9,4 @@ dependencies:
   - pandas>=0.25.3
   - pytest-qt
   - pytest-cov
+  - flake8
