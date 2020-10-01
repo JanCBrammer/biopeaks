@@ -35,7 +35,7 @@ jobs:
         auto-activate-base: false
 
     - name: Lint
-      if: matrix.platform == 'ubuntu-latest'"
+      if: matrix.platform == 'ubuntu-latest'
       run: |
         flake8 biopeaks --exclude biopeaks/images,biopeaks/tests/testdata,biopeaks/resources.py --max-complexity=10 --ignore E303,C901,E203,W503,E501,W504,E129,W605,E371,E731
 
