@@ -34,6 +34,11 @@ jobs:
         python-version: ${{ matrix.python-version }}
         auto-activate-base: false
 
+    - name: Local install
+      shell: bash -l {0}
+      run: |
+        pip install -e .
+
     - name: Lint
       if: matrix.os == 'ubuntu-latest'
       shell: bash -l {0}
