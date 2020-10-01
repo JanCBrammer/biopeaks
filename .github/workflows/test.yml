@@ -35,23 +35,26 @@ jobs:
         auto-activate-base: false
 
     - name: Lint
-      if: matrix.platform == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash -l {0}
       run: |
         flake8 biopeaks --exclude biopeaks/images,biopeaks/tests/testdata,biopeaks/resources.py --max-complexity=10 --ignore E303,C901,E203,W503,E501,W504,E129,W605,E371,E731
 
     - name: Test on Windows and MacOS
       if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
+      shell: bash -l {0}
       run: |
         pytest -v
 
     - name: Test on Ubuntu
       if: matrix.os == 'ubuntu-latest'
+      shell: bash -l {0}
       run: |    # run coverage only on Ubuntu
         sudo apt-get install -y xvfb x11-utils libxkbcommon-x11-0
         xvfb-run pytest -v --cov-config=.coveragerc --cov-report=xml --cov=biopeaks
 
     - name: Upload coverage report
-      if: matrix.platform == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-latest'
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
