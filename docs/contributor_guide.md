@@ -26,10 +26,9 @@ Follow these steps to contribute documentation, tests, or code:
    1. Make a [local clone of your fork](https://docs.github.com/en/free-pro-team@latest/github/getting-started-with-github/fork-a-repo#step-2-create-a-local-clone-of-your-fork).
    2. Navigate to the directory containing the cloned fork.
    3. Install `biopeaks` with `pip install -e .` The `e` stand for editable, meaning you can immediatly test all the changes you make to the cloned fork. The `.` simply tells pip to install the content of the current directory.
-4. Implement your contribution in the `topic` branch.
-5. If you contribute code that is not covered by the existing tests, please add tests if possible.
-6. [Make a pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request-from-a-fork) from the `topic` branch on your fork to the [`dev` branch of the `biopeaks` repository](https://github.com/JanCBrammer/biopeaks/tree/dev).
-7. Once all tests pass and your contribution has been reviewed, your PR will merged and you'll be added to the list of contributors.
+4. Implement your contribution in the `topic` branch, following the [conventions](##Conventions).
+5. [Make a pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request-from-a-fork) from the `topic` branch on your fork to the [`dev` branch of the `biopeaks` repository](https://github.com/JanCBrammer/biopeaks/tree/dev).
+6. Once all tests pass and your contribution has been reviewed, your PR will merged and you'll be added to the list of contributors.
 
 
 ## Conventions
@@ -37,6 +36,9 @@ Follow these steps to contribute documentation, tests, or code:
 ### General
 
 * avoid introducing new dependencies
+* write [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) docstrings
+  for every (non-private) new function
+* add tests if you contribute code that is not covered by the existing [tests](##Tests)
 
 ### Code style
 
@@ -54,6 +56,18 @@ Follow these steps to contribute documentation, tests, or code:
   `controller`, whereas the `model` has no reference to any of the other
   components of the architecture (i.e., the `model` is agnostic to the `view` and
   `controller`).
+
+
+## Documentation
+
+The documentation is hosted on GitHub pages, essentially a static website associated
+with the `biopeaks` repository: <https://jancbrammer.github.io/biopeaks/>. It
+is automatically build from the `/docs` folder in the root of the `biopeaks` repository.
+The website is re-build every very time the content of `/docs` changes on the
+master branch (pushes, merged pull requests). `/docs` includes an `index.md` file
+that constitutes the "landing page". It contains links to all other parts of the
+documentation. The layout of the website is defined in `/docs/layouts`. For
+additional information, head over to the [GitHub pages documentation](https://docs.github.com/en/free-pro-team@latest/github/working-with-github-pages).
 
 
 ## Tests
