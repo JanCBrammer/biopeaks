@@ -7,7 +7,7 @@ from matplotlib.patches import Polygon
 from scipy.signal import find_peaks
 from .filters import (butter_highpass_filter, powerline_filter,
                       moving_average, butter_bandpass_filter)
-from .analysis_utils import (compute_threshold, interp_stats, update_indices)
+from .analysis_utils import interp_stats
 
 
 def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
@@ -225,7 +225,7 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
     drrs = np.ediff1d(rr, to_begin=0)
     drrs[0] = np.mean(drrs[1:])
     # Normalize by threshold.
-    th1 = compute_threshold(drrs, alpha, window_width)
+    th1 = _compute_threshold(drrs, alpha, window_width)
     drrs /= th1
 
     # Cast dRRs to subspace s12.
@@ -257,7 +257,7 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
     mrrs = rr - medrr
     mrrs[mrrs < 0] = mrrs[mrrs < 0] * 2
     # Normalize by threshold.
-    th2 = compute_threshold(mrrs, alpha, window_width)
+    th2 = _compute_threshold(mrrs, alpha, window_width)
     mrrs /= th2
 
     # Artifact classification #################################################
@@ -418,16 +418,16 @@ def _correct_artifacts(artifacts, peaks):
     if extra_idcs:
         peaks = _correct_extra(extra_idcs, peaks)
         # Update remaining indices.
-        missed_idcs = update_indices(extra_idcs, missed_idcs, -1)
-        ectopic_idcs = update_indices(extra_idcs, ectopic_idcs, -1)
-        longshort_idcs = update_indices(extra_idcs, longshort_idcs, -1)
+        missed_idcs = _update_indices(extra_idcs, missed_idcs, -1)
+        ectopic_idcs = _update_indices(extra_idcs, ectopic_idcs, -1)
+        longshort_idcs = _update_indices(extra_idcs, longshort_idcs, -1)
 
     # Add missing peaks.
     if missed_idcs:
         peaks = _correct_missed(missed_idcs, peaks)
         # Update remaining indices.
-        ectopic_idcs = update_indices(missed_idcs, ectopic_idcs, 1)
-        longshort_idcs = update_indices(missed_idcs, longshort_idcs, 1)
+        ectopic_idcs = _update_indices(missed_idcs, ectopic_idcs, 1)
+        longshort_idcs = _update_indices(missed_idcs, longshort_idcs, 1)
 
     if ectopic_idcs:
         peaks = _correct_misaligned(ectopic_idcs, peaks)
@@ -485,3 +485,30 @@ def _correct_misaligned(misaligned_idcs, peaks):
     corrected_peaks.sort(kind="mergesort")
 
     return corrected_peaks
+
+
+def _compute_threshold(signal, alpha, window_width):
+
+    df = pd.DataFrame({'signal': np.abs(signal)})
+    q1 = df.rolling(window_width, center=True,
+                    min_periods=1).quantile(.25).signal.to_numpy()
+    q3 = df.rolling(window_width, center=True,
+                    min_periods=1).quantile(.75).signal.to_numpy()
+    th = alpha * ((q3 - q1) / 2)
+
+    return th
+
+
+def _update_indices(source_idcs, update_idcs, update):
+    """
+    For every element s in source_idcs, change every element u in update_idcs
+    according to update, if u is larger than s.
+    """
+    if not update_idcs:
+        return update_idcs
+
+    for s in source_idcs:
+        # For each list, find the indices (of indices) that need to be updated.
+        update_idcs = [u + update if u > s else u for u in update_idcs]
+
+    return update_idcs

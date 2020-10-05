@@ -1,35 +1,8 @@
 # -*- coding: utf-8 -*-
+"""Generic analysis utilities."""
 
 import numpy as np
-import pandas as pd
 from scipy.interpolate import interp1d
-
-
-def compute_threshold(signal, alpha, window_width):
-
-    df = pd.DataFrame({'signal': np.abs(signal)})
-    q1 = df.rolling(window_width, center=True,
-                    min_periods=1).quantile(.25).signal.to_numpy()
-    q3 = df.rolling(window_width, center=True,
-                    min_periods=1).quantile(.75).signal.to_numpy()
-    th = alpha * ((q3 - q1) / 2)
-
-    return th
-
-
-def update_indices(source_idcs, update_idcs, update):
-    """
-    For every element s in source_idcs, change every element u in update_idcs
-    according to update, if u is larger than s.
-    """
-    if not update_idcs:
-        return update_idcs
-
-    for s in source_idcs:
-        # For each list, find the indices (of indices) that need to be updated.
-        update_idcs = [u + update if u > s else u for u in update_idcs]
-
-    return update_idcs
 
 
 def interp_stats(peaks, stats, nsamp):
