@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Instantiate the QApplication."""
 
 import sys
 from PySide2.QtWidgets import QApplication
@@ -8,6 +9,12 @@ from .controller import Controller
 
 
 class Application(QApplication):
+    """GUI application.
+
+    See also
+    --------
+    model.Model, view.View, controller.Controller
+    """
     def __init__(self, sys_argv):
         super(Application, self).__init__(sys_argv)
         self._model = Model()
@@ -16,6 +23,14 @@ class Application(QApplication):
 
 
 def main():
+    """Command line entry point.
+
+    Called when 'biopeaks' command is executed on the command line.
+
+    See Also
+    --------
+    setup : See entry_points argument
+    """
     app = Application(sys.argv)
     app._view.show()
     sys.exit(app.exec_())
