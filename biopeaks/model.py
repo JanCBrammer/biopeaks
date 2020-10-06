@@ -25,8 +25,105 @@ class Model(QObject):
     progress_changed = Signal(int)
     model_reset = Signal()
 
+    def __init__(self):
+        super().__init__()
+
+        self._signal = None
+        self._peaks = None
+        self._periodintp = None
+        self._rateintp = None
+        self._tidalampintp = None
+        self._sec = None
+        self._marker = None
+        self._segment = None
+        self._status = None
+        self._progress = None
+        self._sfreq = None
+        self._sfreqmarker = None
+        self._loaded = False
+        self._plotting = True
+        self._signalchan = None
+        self._markerchan = None
+        self._modality = None
+        self._batchmode = None
+        self._peakseditable = False
+        self._fpaths = None
+        self._wpathpeaks = None
+        self._wdirpeaks = None
+        self._rpathpeaks = None
+        self._wpathsignal = None
+        self._rpathsignal = None
+        self._wpathstats = None
+        self._wdirstats = None
+        self._savebatchpeaks = False
+        self._correctbatchpeaks = False
+        self._savestats = {"period": False, "rate": False, "tidalamp": False}
+        self._filetype = None
+        self._customheader = {"signalidx": None, "markeridx": None,
+                              "skiprows": None, "sfreq": None, "separator": None}
+
+    def reset(self):
+        """
+        Don't reset attributes that aren't ideosyncratic to the dataset (e.g.,
+        channels, batchmode, savestats etc.). Also don't reset attributes that
+        must be permanently accessible during batch processing (e.g., fpaths,
+        wdirpeaks, wdirstats, filetype, customheader).
+        """
+        self._signal = None
+        self._peaks = None
+        self._periodintp = None
+        self._rateintp = None
+        self._tidalampintp = None
+        self._sec = None
+        self._marker = None
+        self._segment = None
+        self._status = None
+        self._progress = None
+        self._sfreq = None
+        self._sfreqmarker = None
+        self._loaded = False
+        self._wpathpeaks = None
+        self._rpathpeaks = None
+        self._wpathsignal = None
+        self._rpathsignal = None
+        self._wpathstats = None
+
+        self.model_reset.emit()
+
     # The following attributes are set by the View or Controller (i.e., they
     # are not slots connected to a signal).
+
+    @property
+    def plotting(self):
+        return self._plotting
+
+    @plotting.setter
+    def plotting(self, value):    # Controller
+        self._plotting = value
+
+    @property
+    def loaded(self):
+        return self._loaded
+
+    @loaded.setter
+    def loaded(self, value):    # Controller
+        self._loaded = value
+
+    @property
+    def sfreqmarker(self):
+        return self._sfreqmarker
+
+    @sfreqmarker.setter
+    def sfreqmarker(self, value):    # Controller
+        self._sfreqmarker = value
+
+    @property
+    def sfreq(self):
+        return self._sfreq
+
+    @sfreq.setter
+    def sfreq(self, value):    # Controller
+        self._sfreq = value
 
     @property
     def savestats(self):
@@ -46,7 +143,7 @@ class Model(QObject):
         # Check if attribute is reset to None, in that case do not emit its
         # signal. Also do not emit signal if plotting is not desired (e.g.,
         # during batch processing).
-        if value is not None and self.plotting:
+        if value is not None and self._plotting:
             self.signal_changed.emit(value)
 
     @property
@@ -58,7 +155,7 @@ class Model(QObject):
 
         if isinstance(value, np.ndarray) and value.size > 1:
             self._peaks = value
-        if value is not None and self.plotting:
+        if value is not None and self._plotting:
             self.peaks_changed.emit(value)
 
     @property
@@ -68,7 +165,7 @@ class Model(QObject):
     @periodintp.setter
     def periodintp(self, value):    # Controller
         self._periodintp = value
-        if value is not None and self.plotting:
+        if value is not None and self._plotting:
             self.period_changed.emit(value)
 
     @property
@@ -78,7 +175,7 @@ class Model(QObject):
     @rateintp.setter
     def rateintp(self, value):    # Controller
         self._rateintp = value
-        if value is not None and self.plotting:
+        if value is not None and self._plotting:
             self.rate_changed.emit(value)
 
     @property
@@ -88,7 +185,7 @@ class Model(QObject):
     @tidalampintp.setter
     def tidalampintp(self, value):    # Controller
         self._tidalampintp = value
-        if value is not None and self.plotting:
+        if value is not None and self._plotting:
             self.tidalamp_changed.emit(value)
 
     @property
@@ -106,12 +203,12 @@ class Model(QObject):
     @marker.setter
     def marker(self, value):    # Controller
         self._marker = value
-        if value is not None and self.plotting:
+        if value is not None and self._plotting:
             # In case the marker channel is sampled at a different rate than
             # signal channel (possible for EDF format), generate the seconds
             # vector for the markers on the spot.
             if len(value) != len(self._signal):
-                sec = np.linspace(0, len(value) / self.sfreqmarker,
+                sec = np.linspace(0, len(value) / self._sfreqmarker,
                                   len(value))
             else:
                 sec = self._sec
@@ -322,68 +419,3 @@ class Model(QObject):
         self._progress = value
         if value is not None:
             self.progress_changed.emit(value)
-
-    def __init__(self):
-        super().__init__()
-
-        self._signal = None
-        self._peaks = None
-        self._periodintp = None
-        self._rateintp = None
-        self._tidalampintp = None
-        self._sec = None
-        self._marker = None
-        self._segment = None
-        self._status = None
-        self._progress = None
-        self.sfreq = None
-        self.sfreqmarker = None
-        self.loaded = False
-        self.plotting = True
-        self._signalchan = None
-        self._markerchan = None
-        self._modality = None
-        self._batchmode = None
-        self._peakseditable = False
-        self._fpaths = None
-        self._wpathpeaks = None
-        self._wdirpeaks = None
-        self._rpathpeaks = None
-        self._wpathsignal = None
-        self._rpathsignal = None
-        self._wpathstats = None
-        self._wdirstats = None
-        self._savebatchpeaks = False
-        self._correctbatchpeaks = False
-        self._savestats = {"period": False, "rate": False, "tidalamp": False}
-        self._filetype = None
-        self._customheader = {"signalidx": None, "markeridx": None,
-                              "skiprows": None, "sfreq": None, "separator": None}
-
-    def reset(self):
-        """
-        Don't reset attributes that aren't ideosyncratic to the dataset (e.g.,
-        channels, batchmode, savestats etc.). Also don't reset attributes that
-        must be permanently accessible during batch processing (e.g., fpaths,
-        wdirpeaks, wdirstats, filetype, customheader).
-        """
-        self._signal = None
-        self._peaks = None
-        self._periodintp = None
-        self._rateintp = None
-        self._tidalampintp = None
-        self._sec = None
-        self._marker = None
-        self._segment = None
-        self._status = None
-        self._progress = None
-        self.sfreq = None
-        self.sfreqmarker = None
-        self.loaded = False
-        self._wpathpeaks = None
-        self._rpathpeaks = None
-        self._wpathsignal = None
-        self._rpathsignal = None
-        self._wpathstats = None
-
-        self.model_reset.emit()
