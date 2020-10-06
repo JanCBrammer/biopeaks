@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""Controller component of the MVC implementation.
+
+Manipulates the state of the Model based on user input from the View.
+"""
 
 from functools import wraps
 from .heart import ecg_peaks, ppg_peaks, correct_peaks, heart_period

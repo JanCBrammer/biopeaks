@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""View component of the MVC implementation.
+
+Presents the state of the application as well as the available means of
+interaction. Receives updates about the state from the Model and informs
+Controller about user interactions.
+"""
 
 from PySide2.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                                QVBoxLayout, QHBoxLayout, QCheckBox,
@@ -412,9 +418,7 @@ class View(QMainWindow):
         self.hlayout0.addWidget(self.navitools)
         self.vlayout0.addLayout(self.hlayout0)
 
-        ##############################################
-        # connect output widgets to external signals #
-        ##############################################
+        # Subscribe to updates from the Model component.
         self._model.signal_changed.connect(self.plot_signal)
         self._model.marker_changed.connect(self.plot_marker)
         self._model.peaks_changed.connect(self.plot_peaks)
@@ -434,8 +438,7 @@ class View(QMainWindow):
     def plot_signal(self, value):
         self.ax00.clear()
         self.ax00.relim()
-        # reset navitools history
-        self.navitools.update()
+        self.navitools.update()    # reset navitools history
         self.line00 = self.ax00.plot(self._model.sec, value, zorder=1)
         self.ax00.set_xlabel("seconds", fontsize="large", fontweight="heavy")
         self.canvas0.draw()
@@ -444,8 +447,7 @@ class View(QMainWindow):
 
 
     def plot_peaks(self, value):
-        # self.scat is listed in ax.collections
-        if self.ax00.collections:
+        if self.ax00.collections:    # self.scat is listed in ax.collections
             self.ax00.collections[0].remove()
         self.scat = self.ax00.scatter(self._model.sec[value],
                                       self._model.signal[value], c="m",

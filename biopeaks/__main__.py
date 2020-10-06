@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Instantiate the QApplication."""
+"""Instantiate the MVC application."""
 
 import sys
 from PySide2.QtWidgets import QApplication
@@ -9,7 +9,7 @@ from .controller import Controller
 
 
 class Application(QApplication):
-    """GUI application.
+    """MVC application.
 
     See also
     --------
