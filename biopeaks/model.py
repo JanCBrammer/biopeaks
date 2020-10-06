@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+"""Model component of the MVC implementation.
+
+Stores the current state of the application. Receives state updates from the
+View or Controller and informs View about changes in state.
+"""
 
 import numpy as np
 from pathlib import Path
@@ -7,7 +12,6 @@ from PySide2.QtCore import QObject, Signal, Slot, Property
 
 class Model(QObject):
 
-    # costum signals
     signal_changed = Signal(object)
     peaks_changed = Signal(object)
     marker_changed = Signal(object)
@@ -21,15 +25,15 @@ class Model(QObject):
     progress_changed = Signal(int)
     model_reset = Signal()
 
-    # the following model attributes aren't slots, but are set by controller
-    # methods
+    # The following attributes are set by the View or Controller (i.e., they
+    # are not slots connected to a signal).
 
     @property
     def savestats(self):
         return self._savestats
 
     @savestats.setter
-    def savestats(self, value):
+    def savestats(self, value):    # View
         self._savestats = value
 
     @property
@@ -37,11 +41,11 @@ class Model(QObject):
         return self._signal
 
     @signal.setter
-    def signal(self, value):
+    def signal(self, value):    # Controller
         self._signal = value
-        # check if attribute is reset to None, in that case do not emit its
-        # signal, also do not emit signal if plotting is not desired (e.g.,
-        # during batch processing)
+        # Check if attribute is reset to None, in that case do not emit its
+        # signal. Also do not emit signal if plotting is not desired (e.g.,
+        # during batch processing).
         if value is not None and self.plotting:
             self.signal_changed.emit(value)
 
@@ -50,7 +54,7 @@ class Model(QObject):
         return self._peaks
 
     @peaks.setter
-    def peaks(self, value):
+    def peaks(self, value):    # Controller
 
         if isinstance(value, np.ndarray) and value.size > 1:
             self._peaks = value
@@ -58,19 +62,11 @@ class Model(QObject):
             self.peaks_changed.emit(value)
 
     @property
-    def period(self):
-        return self._period
-
-    @period.setter
-    def period(self, value):
-        self._period = value
-
-    @property
     def periodintp(self):
         return self._periodintp
 
     @periodintp.setter
-    def periodintp(self, value):
+    def periodintp(self, value):    # Controller
         self._periodintp = value
         if value is not None and self.plotting:
             self.period_changed.emit(value)
@@ -80,7 +76,7 @@ class Model(QObject):
         return self._rateintp
 
     @rateintp.setter
-    def rateintp(self, value):
+    def rateintp(self, value):    # Controller
         self._rateintp = value
         if value is not None and self.plotting:
             self.rate_changed.emit(value)
@@ -90,7 +86,7 @@ class Model(QObject):
         return self._tidalampintp
 
     @tidalampintp.setter
-    def tidalampintp(self, value):
+    def tidalampintp(self, value):    # Controller
         self._tidalampintp = value
         if value is not None and self.plotting:
             self.tidalamp_changed.emit(value)
@@ -100,7 +96,7 @@ class Model(QObject):
         return self._sec
 
     @sec.setter
-    def sec(self, value):
+    def sec(self, value):    # Controller
         self._sec = value
 
     @property
@@ -108,7 +104,7 @@ class Model(QObject):
         return self._marker
 
     @marker.setter
-    def marker(self, value):
+    def marker(self, value):    # Controller
         self._marker = value
         if value is not None and self.plotting:
             # In case the marker channel is sampled at a different rate than
@@ -126,7 +122,7 @@ class Model(QObject):
         return self._rpathsignal
 
     @rpathsignal.setter
-    def rpathsignal(self, value):
+    def rpathsignal(self, value):    # Controller
         self._rpathsignal = value
         if value is not None:
             displaypath = Path(value).name
@@ -137,7 +133,7 @@ class Model(QObject):
         return self._wpathsignal
 
     @wpathsignal.setter
-    def wpathsignal(self, value):
+    def wpathsignal(self, value):    # Controller
         self._wpathsignal = value
 
     @property
@@ -145,7 +141,7 @@ class Model(QObject):
         return self._fpaths
 
     @fpaths.setter
-    def fpaths(self, value):
+    def fpaths(self, value):    # Controller
         self._fpaths = value
 
     @property
@@ -153,7 +149,7 @@ class Model(QObject):
         return self._wpathpeaks
 
     @wpathpeaks.setter
-    def wpathpeaks(self, value):
+    def wpathpeaks(self, value):    # Controller
         self._wpathpeaks = value
 
     @property
@@ -161,7 +157,7 @@ class Model(QObject):
         return self._rpathpeaks
 
     @rpathpeaks.setter
-    def rpathpeaks(self, value):
+    def rpathpeaks(self, value):    # Controller
         self._rpathpeaks = value
 
     @property
@@ -169,7 +165,7 @@ class Model(QObject):
         return self._wdirpeaks
 
     @wdirpeaks.setter
-    def wdirpeaks(self, value):
+    def wdirpeaks(self, value):    # Controller
         self._wdirpeaks = value
 
     @property
@@ -177,7 +173,7 @@ class Model(QObject):
         return self._wpathstats
 
     @wpathstats.setter
-    def wpathstats(self, value):
+    def wpathstats(self, value):    # Controller
         self._wpathstats = value
 
     @property
@@ -185,7 +181,7 @@ class Model(QObject):
         return self._wdirstats
 
     @wdirstats.setter
-    def wdirstats(self, value):
+    def wdirstats(self, value):    # Controller
         self._wdirstats = value
 
     @property
@@ -193,7 +189,7 @@ class Model(QObject):
         return self._status
 
     @status.setter
-    def status(self, value):
+    def status(self, value):    # View, Controller
         self._status = value
         if value is not None:
             self.status_changed.emit(value)
@@ -203,18 +199,18 @@ class Model(QObject):
         return self._customheader
 
     @customheader.setter
-    def customheader(self, value):
+    def customheader(self, value):    # View, Controller
         self._customheader = value
 
-    # the following model attributes are slots that are connected to signals
-    # from the view or controller
+    # The following attributes are slots that are connected to signals
+    # from the View or Controller.
 
     @Property(object)
     def filetype(self):
         return self._filetype
 
     @Slot(object)
-    def set_filetype(self, value):
+    def set_filetype(self, value):    # View, Controller
         self._filetype = value
 
     @Property(object)
@@ -222,7 +218,7 @@ class Model(QObject):
         return self._segment
 
     @Slot(object)
-    def set_segment(self, values):
+    def set_segment(self, values):    # View
 
         self._segment = None
 
@@ -243,12 +239,12 @@ class Model(QObject):
                                          f"{endsamp}.")
                 self.segment_changed.emit(self._segment)
                 return
-            # Ensure that the segment has a minimum duration of 5
-            # seconds. If this is not the case algorithms break
-            # (convolution kernel length etc.).
+            # Ensure that the segment has a minimum duration of 5 seconds. If
+            # this is not the case algorithms break (convolution kernel length
+            # etc.).
             elif endsamp - begsamp < 5:
-                self.status_changed.emit(f"Please select a segment longer than "
-                                         f"5 seconds. The current segment is "
+                self.status_changed.emit("Please select a segment longer than "
+                                         "5 seconds. The current segment is "
                                          f"{endsamp - begsamp} seconds long.")
                 self.segment_changed.emit(self._segment)
                 return
@@ -261,7 +257,7 @@ class Model(QObject):
         return self._batchmode
 
     @Slot(str)
-    def set_batchmode(self, value):
+    def set_batchmode(self, value):    # View, Controller
         self._batchmode = value
 
     @Property(str)
@@ -269,7 +265,7 @@ class Model(QObject):
         return self._markerchan
 
     @Slot(str)
-    def set_markerchan(self, value):
+    def set_markerchan(self, value):    # View
         self._markerchan = value
 
     @Property(str)
@@ -277,7 +273,7 @@ class Model(QObject):
         return self._signalchan
 
     @Slot(str)
-    def set_signalchan(self, value):
+    def set_signalchan(self, value):    # View
         self._signalchan = value
 
     @Property(str)
@@ -285,7 +281,7 @@ class Model(QObject):
         return self._modality
 
     @Slot(str)
-    def set_modality(self, value):
+    def set_modality(self, value):    # View
         self._modality = value
 
     @Property(int)
@@ -293,7 +289,7 @@ class Model(QObject):
         return self._peakseditable
 
     @Slot(int)
-    def set_peakseditable(self, value):
+    def set_peakseditable(self, value):    # View
         if value == 2:
             self._peakseditable = True
         elif value == 0:
@@ -304,7 +300,7 @@ class Model(QObject):
         return self._savebatchpeaks
 
     @Slot(int)
-    def set_savebatchpeaks(self, value):
+    def set_savebatchpeaks(self, value):    # View
         if value == 2:
             self._savebatchpeaks = True
         elif value == 0:
@@ -315,18 +311,17 @@ class Model(QObject):
         return self._correctbatchpeaks
 
     @Slot(int)
-    def set_correctbatchpeaks(self, value):
+    def set_correctbatchpeaks(self, value):    # View
         if value == 2:
             self._correctbatchpeaks = True
         elif value == 0:
             self._correctbatchpeaks = False
 
     @Slot(int)
-    def progress(self, value):
+    def progress(self, value):    # Controller
         self._progress = value
         if value is not None:
             self.progress_changed.emit(value)
-
 
     def __init__(self):
         super().__init__()
