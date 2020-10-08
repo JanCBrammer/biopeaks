@@ -459,10 +459,10 @@ def test_batchfile(qtbot, tmpdir, cfg_batch):
                                controller.save_peaks]
     controller.iterbatchmethods = iter(controller.batchmethods)
 
-    model.progress_changed.connect(controller.dispatcher)
+    model.progress_changed.connect(controller._dispatcher)
 
     # Initiate batch processing.
-    controller.dispatcher(1)
+    controller._dispatcher(1)
 
     # Wait for all files to be processed.
     while not model.plotting:    # dispatcher enables plotting once all files are processed

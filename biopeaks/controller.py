@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Controller component of the MVC implementation.
+"""Controller component of the MVC application.
 
 Manipulates the state of the Model based on user input from the View.
 """
@@ -182,24 +182,27 @@ class Controller(QObject):
 
 
     def batch_processor(self):
-        """
-        Initiates batch processing. After initiation, the dispatcher method
-        handles the sequential execution of methods that are called on each
-        file of the batch. The dispatcher only listenes to the threader's
-        progress signal during batch processing. The progress signal informs
-        the dispatcher that a method has finshed and that the next method can
-        be called. This slightly convoluted way of handling a batch is
-        necessary for the following reason. Since each method is run in a
-        thread (decorator), looping over the files of a batch will lead to ill-
-        defined states of the model. The dispatcher ensures strictly sequential
-        execution of methods (although limiting the threadpools capacity to one
-        thread at a time should achieve the same). Also, busy-waiting can be
-        avoided by using the dispatcher. Plotting is disabled during batch
-        processing (model.plotting flag), since matplotlib cannot update the
-        canvas fast enough when multiple plotting operations must be executed
-        in rapid succession (i.e., when small files are processed). The user
-        can still get an impression of the progress since the current file path
-        is displayed.
+        """Process a set of files.
+
+        Initiates batch processing. After initiation, _dispatcher handles the
+        sequential execution of methods that are called on each file of the
+        batch. _dispatcher starts with first method on first file. As soon as
+        one method has finished, (indicated by emission of progress_changed),
+        it executes next method. Once all methods are executed, it proceeds
+        with the next file and starts cycling through methods again.
+        This slightly convoluted way of handling a batch is necessary for the
+        following reason. Since each method is run in a thread, looping over
+        the files of a batch (as opposed to handling method execution with the
+        _dispatcher) will lead to ill-defined states of the model. _dispatcher
+        ensures strictly sequential execution of methods (although limiting
+        the threadpools capacity to one thread at a time should achieve the
+        same). Also, busy-waiting can be avoided by using _dispatcher.
+        Plotting is disabled during batch processing (model.plotting),
+        since matplotlib cannot update the canvas fast enough when multiple
+        plotting operations must be executed in rapid succession (when
+        small files are processed). The user can still get an impression of the
+        progress since the current file path is displayed.
+
         """
         self.get_wpathpeaks()
         self.get_wpathstats()
@@ -219,18 +222,13 @@ class Controller(QObject):
 
         self.iterbatchmethods = iter(self.batchmethods)
 
-        self._model.progress_changed.connect(self.dispatcher)
+        self._model.progress_changed.connect(self._dispatcher)
 
-        self.dispatcher(1)    # initiate processing
+        self._dispatcher(1)    # initiate processing
 
 
-    def dispatcher(self, progress):
-        """
-        Start with first method on first file. As soon as one method has
-        finished, (indicated by emission of progress_changed), execute next
-        method. Once all methods are executed, go to the next file and start
-        cycling through methods again.
-        """
+    def _dispatcher(self, progress):
+
         if not progress:
             return
 
@@ -245,7 +243,7 @@ class Controller(QObject):
 
             if not self._model.fpaths:    # all files have been processed
                 self._model.plotting = True
-                self._model.progress_changed.disconnect(self.dispatcher)
+                self._model.progress_changed.disconnect(self._dispatcher)
                 self._model.wdirpeaks = None
                 self._model.wdirstats = None
                 return
