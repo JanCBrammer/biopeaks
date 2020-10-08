@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Controller component of the MVC application.
-
-Manipulates the state of the Model based on user input from the View.
-"""
+"""Controller component of the MVC application."""
 
 from functools import wraps
 from .heart import ecg_peaks, ppg_peaks, correct_peaks, heart_period
@@ -66,6 +63,10 @@ def threaded(fn):
 
 
 class Controller(QObject):
+    """Controller component of the MVC application.
+
+    Manipulates the state of the Model based on user input from the View.
+    """
 
     def __init__(self, model):
         super().__init__()

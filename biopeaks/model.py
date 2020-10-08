@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Model component of the MVC implementation.
-
-Stores the current state of the application. Receives state updates from the
-View or Controller and informs View about changes in state.
-"""
+"""Model component of the MVC application."""
 
 import numpy as np
 from pathlib import Path
@@ -11,12 +7,75 @@ from PySide2.QtCore import QObject, Signal, Slot, Property
 
 
 class Model(QObject):
+    """Model component of the MVC application.
+
+    Stores the current state of the application. Receives state updates from
+    the View or Controller and informs View about changes in state.
+
+    Attributes
+    ----------
+    signal
+    peaks
+    periodintp
+    rateintp
+    tidalampintp
+    sec
+    marker
+    segment
+    status
+    progress
+    sfreq
+    sfreqmarker
+    loaded
+    plotting
+    signalchan
+    markerchan
+    modality
+    batchmode
+    peakseditable
+    fpaths
+    wpathpeaks
+    wdirpeaks
+    rpathpeaks
+    wpathsignal
+    rpathsignal
+    wpathstats
+    wdirstats
+    savebatchpeaks
+    correctbatchpeaks
+    savestats
+    filetype
+    customheader
+    signal_changed : Signal
+        Notify View that the signal attribute changed.
+    peaks_changed : Signal
+        Notify View that the peaks attribute changed.
+    marker_changed : Signal
+        Notify View that the marker attribute changed.
+    segment_changed : Signal
+        Notify View that the segment attribute changed.
+    period_changed : Signal
+        Notify View that the period attribute changed.
+    rate_changed : Signal
+        Notify View that the rate attribute changed.
+    tidalamp_changed : Signal
+        Notify View that the tidalamp attribute changed.
+    path_changed : Signal
+        Notify View that the rpathsignal attribute changed.
+    status_changed : Signal
+        Notify View that the status attribute changed.
+    progress_changed : Signal
+        Notify View that the progress attribute changed.
+    model_reset : Signal
+        Notify View that attributes have been reset to their default value.
+        See reset method.
+
+    """
 
     signal_changed = Signal(object)
     peaks_changed = Signal(object)
     marker_changed = Signal(object)
     segment_changed = Signal(object)
-    # makes sure that the emitted stats signal has the same length as self._sec
     period_changed = Signal(object)
     rate_changed = Signal(object)
     tidalamp_changed = Signal(object)
@@ -26,8 +85,14 @@ class Model(QObject):
     model_reset = Signal()
 
     def __init__(self):
+        """Instantiate all attributes with their default value."""
         super().__init__()
 
+        self._loaded = False
+        self._peakseditable = False
+        self._plotting = True
+        self._savebatchpeaks = False
+        self._correctbatchpeaks = False
         self._signal = None
         self._peaks = None
         self._periodintp = None
@@ -40,13 +105,10 @@ class Model(QObject):
         self._progress = None
         self._sfreq = None
         self._sfreqmarker = None
-        self._loaded = False
-        self._plotting = True
         self._signalchan = None
         self._markerchan = None
         self._modality = None
         self._batchmode = None
-        self._peakseditable = False
         self._fpaths = None
         self._wpathpeaks = None
         self._wdirpeaks = None
@@ -55,20 +117,24 @@ class Model(QObject):
         self._rpathsignal = None
         self._wpathstats = None
         self._wdirstats = None
-        self._savebatchpeaks = False
-        self._correctbatchpeaks = False
-        self._savestats = {"period": False, "rate": False, "tidalamp": False}
         self._filetype = None
+        self._savestats = {"period": False, "rate": False, "tidalamp": False}
         self._customheader = {"signalidx": None, "markeridx": None,
                               "skiprows": None, "sfreq": None, "separator": None}
 
     def reset(self):
+        """Reset attributes to their default value.
+
+        Only resets attributes that are idiosyncratic to the current dataset.
+        Doesn't reset attributes that must be permanently accessible during
+        batch processing (e.g., fpaths, wdirpeaks, wdirstats, filetype,
+        customheader).
+
+        See Also
+        --------
+        controller.Controller.batch_processor
         """
-        Don't reset attributes that aren't ideosyncratic to the dataset (e.g.,
-        channels, batchmode, savestats etc.). Also don't reset attributes that
-        must be permanently accessible during batch processing (e.g., fpaths,
-        wdirpeaks, wdirstats, filetype, customheader).
-        """
+        self._loaded = False
         self._signal = None
         self._peaks = None
         self._periodintp = None
@@ -81,7 +147,6 @@ class Model(QObject):
         self._progress = None
         self._sfreq = None
         self._sfreqmarker = None
-        self._loaded = False
         self._wpathpeaks = None
         self._rpathpeaks = None
         self._wpathsignal = None
@@ -95,8 +160,10 @@ class Model(QObject):
 
     @property
     def plotting(self):
-        """
-        Set by Controller.
+        """bool: Indicates whether or not View should be updated in response
+        to state changes.
+
+        Set by Controller. Default is True.
         """
         return self._plotting
 
@@ -106,8 +173,10 @@ class Model(QObject):
 
     @property
     def loaded(self):
-        """
-        Set by Controller.
+        """bool: Indicates whether or not current dataset (signal and/or
+        marker) has been loaded successfully.
+
+        Set by Controller. Default is False.
         """
         return self._loaded
 
@@ -117,8 +186,9 @@ class Model(QObject):
 
     @property
     def sfreqmarker(self):
-        """
-        Set by Controller.
+        """int: Sampling frequency of the marker channel.
+
+        Set by Controller. Default is None.
         """
         return self._sfreqmarker
 
@@ -128,8 +198,9 @@ class Model(QObject):
 
     @property
     def sfreq(self):
-        """
-        Set by Controller.
+        """int: Sampling frequency of the signal channel.
+
+        Set by Controller. Default is None.
         """
         return self._sfreq
 
@@ -139,8 +210,10 @@ class Model(QObject):
 
     @property
     def savestats(self):
-        """
-        Set by View.
+        """dict of bool: Indicates which statistics (one of {period, rate,
+        tidalamp}) to save.
+
+        Set by View. Default is False for all statistics.
         """
         return self._savestats
 
@@ -150,8 +223,10 @@ class Model(QObject):
 
     @property
     def signal(self):
-        """
-        Set by Controller.
+        """ndarray of float: Vector representing the biosignal channel
+        (one of {electrocardiogram, photoplethysmogram, breathing}).
+
+        Set by Controller. Default is None.
         """
         return self._signal
 
@@ -166,14 +241,15 @@ class Model(QObject):
 
     @property
     def peaks(self):
-        """
-        Set by Controller.
+        """ndarray of int: Vector representing the local extrema (one of {
+        R-peaks, systolic peaks, breathing extrema}).
+
+        Set by Controller. Default is None.
         """
         return self._peaks
 
     @peaks.setter
     def peaks(self, value):
-
         if isinstance(value, np.ndarray) and value.size > 1:
             self._peaks = value
         if value is not None and self._plotting:
@@ -181,8 +257,11 @@ class Model(QObject):
 
     @property
     def periodintp(self):
-        """
-        Set by Controller.
+        """ndarray of float: Vector representing the instantaneous period (one
+        of {heart, breathing}).
+
+        The period is interpolated between peaks over the entire duration of
+        signal. Set by Controller. Default is None.
         """
         return self._periodintp
 
@@ -194,8 +273,11 @@ class Model(QObject):
 
     @property
     def rateintp(self):
-        """
-        Set by Controller.
+        """ndarray of float: Vector representing the instantaneous rate (one
+        of {heart, breathing}).
+
+        The rate is interpolated between peaks over the entire duration of
+        signal. Set by Controller. Default is None.
         """
         return self._rateintp
 
@@ -207,8 +289,11 @@ class Model(QObject):
 
     @property
     def tidalampintp(self):
-        """
-        Set by Controller.
+        """ndarray of float: Vector representing the instantaneous tidal
+        amplitude associated with a breathing signal.
+
+        The tidal amplitude is interpolated between peaks over the entire
+        duration of signal. Set by Controller. Default is None.
         """
         return self._tidalampintp
 
@@ -220,8 +305,10 @@ class Model(QObject):
 
     @property
     def sec(self):
-        """
-        Set by Controller.
+        """ndarray of float: Vector representing the seconds associated with
+        each sample in signal and marker.
+
+        Set by Controller. Default is None.
         """
         return self._sec
 
@@ -231,8 +318,9 @@ class Model(QObject):
 
     @property
     def marker(self):
-        """
-        Set by Controller.
+        """ndarray of float: Vector representing the marker channel.
+
+        Set by Controller. Default is None.
         """
         return self._marker
 
@@ -252,8 +340,10 @@ class Model(QObject):
 
     @property
     def rpathsignal(self):
-        """
-        Set by Controller.
+        """str: Path to the file containing the signal and marker to be
+        loaded.
+
+        Set by Controller. Default is None.
         """
         return self._rpathsignal
 
@@ -266,8 +356,10 @@ class Model(QObject):
 
     @property
     def wpathsignal(self):
-        """
-        Set by Controller.
+        """str: Path for saving the file containing the segmented signal and
+        marker.
+
+        Set by Controller. Default is None.
         """
         return self._wpathsignal
 
@@ -277,8 +369,12 @@ class Model(QObject):
 
     @property
     def fpaths(self):
-        """
-        Set by Controller.
+        """list of str: Multiple instances of rpathsignal.
+
+        Depending on the processing mode (one of {multiple files,
+        single file}), either first element is selected as rpathsignal or all
+        elements are used for batch procssing. Set by Controller. Default is
+        None.
         """
         return self._fpaths
 
@@ -288,8 +384,9 @@ class Model(QObject):
 
     @property
     def wpathpeaks(self):
-        """
-        Set by Controller.
+        """str: Path for saving the file containing the extrema.
+
+        Set by Controller. Default is None.
         """
         return self._wpathpeaks
 
@@ -299,8 +396,9 @@ class Model(QObject):
 
     @property
     def rpathpeaks(self):
-        """
-        Set by Controller.
+        """str: Path to the file containing the extrema to be loaded.
+
+        Set by Controller. Default is None.
         """
         return self._rpathpeaks
 
@@ -310,8 +408,10 @@ class Model(QObject):
 
     @property
     def wdirpeaks(self):
-        """
-        Set by Controller.
+        """str: Directory for saving the files containing the extrema during
+        batch processing.
+
+        Set by Controller. Default is None.
         """
         return self._wdirpeaks
 
@@ -321,8 +421,9 @@ class Model(QObject):
 
     @property
     def wpathstats(self):
-        """
-        Set by Controller.
+        """str: Path for saving the file containing the statistics.
+
+        Set by Controller. Default is None.
         """
         return self._wpathstats
 
@@ -332,8 +433,10 @@ class Model(QObject):
 
     @property
     def wdirstats(self):
-        """
-        Set by Controller.
+        """str: Directory for saving the files containing the statistics during
+        batch processing.
+
+        Set by Controller. Default is None.
         """
         return self._wdirstats
 
@@ -343,8 +446,9 @@ class Model(QObject):
 
     @property
     def status(self):
-        """
-        Set by View or Controller.
+        """str: Status message displayed in the View.
+
+        Set by View or Controller. Default is None.
         """
         return self._status
 
@@ -356,8 +460,9 @@ class Model(QObject):
 
     @property
     def customheader(self):
-        """
-        Set by View or Controller.
+        """dict of {int, str}: Header information when loading a Custom dataset.
+
+        Set by View or Controller. Default is None for all keys.
         """
         return self._customheader
 
@@ -370,8 +475,10 @@ class Model(QObject):
 
     @Property(object)
     def filetype(self):
-        """
-        Set by View or Controller.
+        """str: Indicates the type of dataset (one of {OpenSignals, EDF,
+        Custom}).
+
+        Set by View or Controller. Default is None.
         """
         return self._filetype
 
@@ -381,8 +488,9 @@ class Model(QObject):
 
     @Property(object)
     def segment(self):
-        """
-        Set by View.
+        """list of float: Start and end of the user-selected segment in seconds.
+
+        Set by View. Default is None.
         """
         return self._segment
 
@@ -392,39 +500,39 @@ class Model(QObject):
         self._segment = None
 
         if values[0] and values[1]:
-            begsamp = float(values[0])
-            endsamp = float(values[1])
-            evalarray = [np.asarray([begsamp, endsamp]) >= self._sec[0],
-                         np.asarray([begsamp, endsamp]) <= self._sec[-1]]
+            beg = float(values[0])
+            end = float(values[1])
+            evalarray = [np.asarray([beg, end]) >= self._sec[0],
+                         np.asarray([beg, end]) <= self._sec[-1]]
             # Ensure that values are inside temporal bounds.
             if not np.all(evalarray):
-                self.status_changed.emit(f"Error: Invalid segment {begsamp} - "
-                                         f"{endsamp}.")
+                self.status_changed.emit(f"Error: Invalid segment {beg} - {end}.")
                 self.segment_changed.emit(self._segment)
                 return
             # Ensure that order is valid.
-            if begsamp > endsamp:
-                self.status_changed.emit(f"Error: Invalid segment {begsamp} - "
-                                         f"{endsamp}.")
+            if beg > end:
+                self.status_changed.emit(f"Error: Invalid segment {beg} - "
+                                         f"{end}.")
                 self.segment_changed.emit(self._segment)
                 return
             # Ensure that the segment has a minimum duration of 5 seconds. If
             # this is not the case algorithms break (convolution kernel length
             # etc.).
-            elif endsamp - begsamp < 5:
+            elif end - beg < 5:
                 self.status_changed.emit("Please select a segment longer than "
                                          "5 seconds. The current segment is "
-                                         f"{endsamp - begsamp} seconds long.")
+                                         f"{end - beg} seconds long.")
                 self.segment_changed.emit(self._segment)
                 return
-            self.status_changed.emit(f"Valid segment {begsamp} - {endsamp}.")
-            self._segment = [begsamp, endsamp]
+            self.status_changed.emit(f"Valid segment {beg} - {end}.")
+            self._segment = [beg, end]
             self.segment_changed.emit(self._segment)
 
     @Property(str)
     def batchmode(self):
-        """
-        Set by View or Controller.
+        """str: Processing mode (one of {single file, multiple files}).
+
+        Set by View or Controller. Default is None.
         """
         return self._batchmode
 
@@ -434,8 +542,9 @@ class Model(QObject):
 
     @Property(str)
     def markerchan(self):
-        """
-        Set by View.
+        """str: Marker channel. One of {none, I1, I2, A1, A2, A3, A4, A5, A6}.
+
+        Set by View. Default is None.
         """
         return self._markerchan
 
@@ -445,8 +554,9 @@ class Model(QObject):
 
     @Property(str)
     def signalchan(self):
-        """
-        Set by View.
+        """str: Signal channel. One of {A1, A2, A3, A4, A5, A6}.
+
+        Set by View. Default is None.
         """
         return self._signalchan
 
@@ -456,8 +566,9 @@ class Model(QObject):
 
     @Property(str)
     def modality(self):
-        """
-        Set by View.
+        """str: Signal modality. One of {ECG, PPG, RESP}.
+
+        Set by View. Default is None.
         """
         return self._modality
 
@@ -467,8 +578,9 @@ class Model(QObject):
 
     @Property(int)
     def peakseditable(self):
-        """
-        Set by View.
+        """bool: Indicates whether or not the extrema are user-editable.
+
+        Set by View. Default is False.
         """
         return self._peakseditable
 
@@ -481,8 +593,10 @@ class Model(QObject):
 
     @Property(int)
     def savebatchpeaks(self):
-        """
-        Set by View.
+        """bool: Indicates whether or not to save the extrema during batch
+        processing.
+
+        Set by View. Default is False.
         """
         return self._savebatchpeaks
 
@@ -495,8 +609,10 @@ class Model(QObject):
 
     @Property(int)
     def correctbatchpeaks(self):
-        """
-        Set by View.
+        """bool: Indicates whether or not to auto-correct the extrema during
+        batch processing.
+
+        Set by View. Default is False.
         """
         return self._correctbatchpeaks
 
@@ -509,8 +625,12 @@ class Model(QObject):
 
     @Slot(int)
     def progress(self, value):
-        """
-        Set by Controller.
+        """int: Conveys the progress signal of the Controller's worker thread.
+
+        Necessary because View or Controller cannot directly be connected to
+        the Controller's worker thread. Doesn't have a corresponding getter
+        since value is never assessed directly. Set by Controller. Default is
+        None.
         """
         self._progress = value
         if value is not None:

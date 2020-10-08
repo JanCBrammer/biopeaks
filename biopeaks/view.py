@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""View component of the MVC implementation.
-
-Presents the state of the application as well as the available means of
-interaction. Receives updates about the state from the Model and informs
-Controller about user interactions.
-"""
+"""View component of the MVC application."""
 
 from PySide2.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                                QVBoxLayout, QHBoxLayout, QCheckBox,
@@ -22,12 +17,17 @@ import biopeaks.resources    # noqa
 
 
 class CustomNavigationToolbar(NavigationToolbar):
-    # only retain desired functionality of navitoolbar
     toolitems = [t for t in NavigationToolbar.toolitems if t[0] in
-                 ("Home", "Pan", "Zoom", "Back", "Forward")]
+                 ("Home", "Pan", "Zoom", "Back", "Forward")]    # only retain desired functionality
 
 
 class View(QMainWindow):
+    """View component of the MVC application.
+
+    Presents the state of the application as well as the available means of
+    interaction. Receives updates about the state from the Model and informs
+    Controller about user interactions.
+    """
 
     def __init__(self, model, controller):
         super().__init__()
@@ -431,9 +431,6 @@ class View(QMainWindow):
         self._model.progress_changed.connect(self.display_progress)
         self._model.model_reset.connect(self.reset_plot)
 
-    ###########
-    # methods #
-    ###########
 
     def plot_signal(self, value):
         self.ax00.clear()
