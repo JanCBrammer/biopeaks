@@ -252,7 +252,7 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     model.fpaths = [cfg_single["sigpathorig"]]
     with qtbot.waitSignals([model.signal_changed, model.marker_changed],
                            timeout=10000):
-        controller.read_channels()
+        controller._load_channels()
     assert np.size(model.signal) == cfg_single["siglen"]
     assert np.size(model.sec) == cfg_single["siglen"]
     assert np.size(model.marker) == cfg_single["markerlen"]
@@ -265,7 +265,7 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
         model.set_segment(values=cfg_single["segment"])
     assert model.segment == cfg_single["segment"]
     with qtbot.waitSignal(model.signal_changed, timeout=5000):
-        controller.segment_signal()
+        controller.segment_dataset()
     seg = int(np.rint((cfg_single["segment"][1] - cfg_single["segment"][0]) *
                       model.sfreq))
     assert np.allclose(np.size(model.signal), seg, atol=1)
@@ -274,7 +274,7 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     # 3. save segment ########################################################
     model.wpathsignal = tmpdir.join(cfg_single["sigfnameseg"])
     with qtbot.waitSignals([model.progress_changed] * 2, timeout=10000):
-        controller.save_channels()
+        controller._save_channels()
 
     # 4. find extrema #########################################################
     with qtbot.waitSignal(model.peaks_changed, timeout=5000):
@@ -304,13 +304,13 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     # 6. save peaks ###########################################################
     model.wpathpeaks = tmpdir.join(cfg_single["peakfname"])
     with qtbot.waitSignals([model.progress_changed] * 2, timeout=10000):
-        controller.save_peaks()
+        controller._save_peaks()
 
     # 7. re-load signal #######################################################
     model.fpaths = [tmpdir.join(cfg_single["sigfnameseg"])]
     with qtbot.waitSignals([model.signal_changed, model.marker_changed],
                            timeout=10000):
-        controller.read_channels()
+        controller._load_channels()
     sfreq = cfg_single["header"]["sfreq"] if cfg_single["filetype"] == "Custom" else cfg_single["sfreq"]
     assert model.sfreq == sfreq
     assert model.loaded
@@ -324,7 +324,7 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     # 8. load peaks ###########################################################
     model.rpathpeaks = tmpdir.join(cfg_single["peakfname"])
     with qtbot.waitSignal(model.peaks_changed, timeout=5000):
-        controller.read_peaks()
+        controller._load_peaks()
     # For the breathing, after peak editing, the re-inserted peak can
     # be shifted by a few samples. This is not a bug, but inherent in the
     # way extrema are added and deleted in controller.edit_peaks().
@@ -349,7 +349,7 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
         view.tidalampcheckbox.setCheckState(Qt.Checked)
     model.wpathstats = tmpdir.join(cfg_single["statsfname"])
     with qtbot.waitSignals([model.progress_changed] * 2, timeout=10000):
-        controller.save_stats()
+        controller._save_stats()
     # load and check content
     stats = pd.read_csv(tmpdir.join(cfg_single["statsfname"]))
     assert np.around(stats["period"].mean(), 4) == cfg_single["avgperiod"]
@@ -445,18 +445,18 @@ def test_batchfile(qtbot, tmpdir, cfg_batch):
     model.set_filetype(cfg_batch["filetype"])
 
     # Mock the controller's batch_processor in order to avoid
-    # calls to the controller's get_wpathpeaks and get_wpathstats methods.
+    # calls to the controller's save_peaks and save_stats methods.
     model.wdirpeaks = tmpdir
     model.wdirstats = tmpdir
 
     model.status = 'processing files'
     model.plotting = False
 
-    controller.batchmethods = [controller.read_channels, controller.find_peaks,
+    controller.batchmethods = [controller._load_channels, controller.find_peaks,
                                controller.autocorrect_peaks,
                                controller.calculate_stats,
-                               controller.save_stats,
-                               controller.save_peaks]
+                               controller._save_stats,
+                               controller._save_peaks]
     controller.iterbatchmethods = iter(controller.batchmethods)
 
     model.progress_changed.connect(controller._dispatcher)
@@ -465,7 +465,7 @@ def test_batchfile(qtbot, tmpdir, cfg_batch):
     controller._dispatcher(1)
 
     # Wait for all files to be processed.
-    while not model.plotting:    # dispatcher enables plotting once all files are processed
+    while not model.plotting:    # _dispatcher enables plotting once all files are processed
         qtbot.wait(1000)
 
     # Load each peak file saved during batch processing and assess if
@@ -474,11 +474,11 @@ def test_batchfile(qtbot, tmpdir, cfg_batch):
                                  cfg_batch["peaksums"]):
         with qtbot.waitSignal(model.signal_changed, timeout=5000):
             model.fpaths = [datadir.joinpath(sigfname)]
-            controller.read_channels()
+            controller._load_channels()
         fname = Path(sigfname).stem
         model.rpathpeaks = tmpdir.join(f"{fname}_peaks.csv")
         with qtbot.waitSignal(model.peaks_changed, timeout=5000):
-            controller.read_peaks()
+            controller._load_peaks()
         assert sum(model.peaks) == peaksum
         model.reset()
 

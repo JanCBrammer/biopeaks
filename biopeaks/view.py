@@ -42,7 +42,15 @@ class View(QMainWindow):
     """
 
     def __init__(self, model, controller):
-        """Define GUI elements and their layout."""
+        """Define GUI elements and their layout.
+
+        Parameters
+        ----------
+        model : QObject
+            Model component of the MVC application.
+        controller : QObject
+            Controller component of the MVC application.
+        """
         super().__init__()
 
         self._model = model
@@ -197,7 +205,7 @@ class View(QMainWindow):
         self.previewedit.clicked.connect(lambdafn)
 
         self.confirmedit = QPushButton("confirm segment")
-        self.confirmedit.clicked.connect(self._controller.segment_signal)
+        self.confirmedit.clicked.connect(self._controller.segment_dataset)
         self.confirmedit.clicked.connect(self.segmentermap.map)
         self.segmentermap.setMapping(self.confirmedit, 0)
 
@@ -276,11 +284,11 @@ class View(QMainWindow):
         openSignal = signalmenu.addMenu("load")
         openEDF = QAction("EDF", self)
         openEDF.triggered.connect(lambda: self._model.set_filetype("EDF"))
-        openEDF.triggered.connect(self._controller.get_fpaths)
+        openEDF.triggered.connect(self._controller.load_channels)
         openSignal.addAction(openEDF)
         openOpenSignals = QAction("OpenSignals", self)
         openOpenSignals.triggered.connect(lambda: self._model.set_filetype("OpenSignals"))
-        openOpenSignals.triggered.connect(self._controller.get_fpaths)
+        openOpenSignals.triggered.connect(self._controller.load_channels)
         openSignal.addAction(openOpenSignals)
         openCustom = QAction("Custom", self)
         openCustom.triggered.connect(lambda: self._model.set_filetype("Custom"))
@@ -295,7 +303,7 @@ class View(QMainWindow):
         self.segmentermap.mapped.connect(self.toggle_segmenter)
 
         saveSignal = QAction("save", self)
-        saveSignal.triggered.connect(self._controller.get_wpathsignal)
+        saveSignal.triggered.connect(self._controller.save_channels)
         signalmenu.addAction(saveSignal)
 
         peakmenu = menubar.addMenu("peaks")
@@ -309,11 +317,11 @@ class View(QMainWindow):
         peakmenu.addAction(autocorrectPeaks)
 
         savePeaks = QAction("save", self)
-        savePeaks.triggered.connect(self._controller.get_wpathpeaks)
+        savePeaks.triggered.connect(self._controller.save_peaks)
         peakmenu.addAction(savePeaks)
 
         loadPeaks = QAction("load", self)
-        loadPeaks.triggered.connect(self._controller.get_rpathpeaks)
+        loadPeaks.triggered.connect(self._controller.load_peaks)
         peakmenu.addAction(loadPeaks)
 
         statsmenu = menubar.addMenu("statistics")
@@ -323,7 +331,7 @@ class View(QMainWindow):
         statsmenu.addAction(calculateStats)
 
         saveStats = QAction("save", self)
-        saveStats.triggered.connect(self._controller.get_wpathstats)
+        saveStats.triggered.connect(self._controller.save_stats)
         statsmenu.addAction(saveStats)
 
         self.statusBar = QStatusBar()
@@ -701,7 +709,7 @@ class View(QMainWindow):
             return
 
         seps = {"comma": ",", "tab": "\t", "colon": ":", "space": " "}
-        self._model.customheader = dict.fromkeys(self._model.customheader, None)    # reset header here since it cannot be reset in controller.get_fpaths()
+        self._model.customheader = dict.fromkeys(self._model.customheader, None)    # reset header here since it cannot be reset in controller.load_chanels
 
         self._model.customheader["signalidx"] = int(self.signaledit.text())
         self._model.customheader["skiprows"] = int(self.headerrowsedit.text())
@@ -711,7 +719,7 @@ class View(QMainWindow):
             self._model.customheader["markeridx"] = int(self.markeredit.text())
 
         self.customfiledialog.done(QDialog.Accepted)    # close the dialog window
-        self._controller.get_fpaths()    # move on to file selection
+        self._controller.load_channels()    # move on to file selection
 
     def select_stats(self, statistic):
         """Select statistics to be saved.

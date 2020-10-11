@@ -132,7 +132,7 @@ class Model(QObject):
 
         See Also
         --------
-        controller.Controller.batch_processor
+        controller.Controller._batch_processor
         """
         self._loaded = False
         self._signal = None
