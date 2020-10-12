@@ -561,7 +561,7 @@ class View(QMainWindow):
         self.navitools.update()
         self.canvas2.draw()
 
-    def plot_tidalamp(self, value):
+    def plot_tidalamp(self, tidalamp):
         """Plot instantaneous tidal amplitude.
 
         Receives updates in tidal amplitude from Model.
@@ -579,10 +579,10 @@ class View(QMainWindow):
         self.ax22.relim()
         self.navitools.home()
         if self._model.savestats["tidalamp"]:
-            self.line22 = self.ax22.plot(self._model.sec, value, c="m")
+            self.line22 = self.ax22.plot(self._model.sec, tidalamp, c="m")
         else:
-            self.line22 = self.ax22.plot(self._model.sec, value)
-        self.ax22.set_ylim(bottom=min(value), top=max(value))
+            self.line22 = self.ax22.plot(self._model.sec, tidalamp)
+        self.ax22.set_ylim(bottom=min(tidalamp), top=max(tidalamp))
         self.ax22.set_title("amplitude", pad=0, fontweight="heavy")
         self.ax22.grid(True, axis="y")
         self.navitools.update()

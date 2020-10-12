@@ -25,7 +25,7 @@ class Application(QApplication):
 def main():
     """Command line entry point.
 
-    Called when 'biopeaks' command is executed on the command line.
+    Called when "biopeaks" command is executed on the command line.
 
     See Also
     --------

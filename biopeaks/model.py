@@ -210,8 +210,8 @@ class Model(QObject):
 
     @property
     def savestats(self):
-        """dict of bool: Indicates which statistics (one of {period, rate,
-        tidalamp}) to save.
+        """dict of bool: Indicates which statistics (one of {"period", "rate",
+        "tidalamp"}) to save.
 
         Set by View. Default is False for all statistics.
         """
@@ -224,7 +224,7 @@ class Model(QObject):
     @property
     def signal(self):
         """ndarray of float: Vector representing the biosignal channel
-        (one of {electrocardiogram, photoplethysmogram, breathing}).
+        (electrocardiogram, photoplethysmogram, or breathing).
 
         Set by Controller. Default is None.
         """
@@ -241,8 +241,8 @@ class Model(QObject):
 
     @property
     def peaks(self):
-        """ndarray of int: Vector representing the local extrema (one of {
-        R-peaks, systolic peaks, breathing extrema}).
+        """ndarray of int: Vector representing the local extrema (R-peaks,
+        systolic peaks, or breathing extrema).
 
         Set by Controller. Default is None.
         """
@@ -257,8 +257,8 @@ class Model(QObject):
 
     @property
     def periodintp(self):
-        """ndarray of float: Vector representing the instantaneous period (one
-        of {heart, breathing}).
+        """ndarray of float: Vector representing the instantaneous heart or
+        breathing -period.
 
         The period is interpolated between peaks over the entire duration of
         signal. Set by Controller. Default is None.
@@ -273,8 +273,8 @@ class Model(QObject):
 
     @property
     def rateintp(self):
-        """ndarray of float: Vector representing the instantaneous rate (one
-        of {heart, breathing}).
+        """ndarray of float: Vector representing the instantaneous heart or
+        breathing -rate.
 
         The rate is interpolated between peaks over the entire duration of
         signal. Set by Controller. Default is None.
@@ -340,8 +340,8 @@ class Model(QObject):
 
     @property
     def rpathsignal(self):
-        """str: Path to the file containing the signal and marker to be
-        loaded.
+        """str: File system location of the file containing the signal and
+        marker to be loaded.
 
         Set by Controller. Default is None.
         """
@@ -356,8 +356,8 @@ class Model(QObject):
 
     @property
     def wpathsignal(self):
-        """str: Path for saving the file containing the segmented signal and
-        marker.
+        """str: File system location of the file containing the segmented
+        signal and marker.
 
         Set by Controller. Default is None.
         """
@@ -371,10 +371,9 @@ class Model(QObject):
     def fpaths(self):
         """list of str: Multiple instances of rpathsignal.
 
-        Depending on the processing mode (one of {multiple files,
-        single file}), either first element is selected as rpathsignal or all
-        elements are used for batch procssing. Set by Controller. Default is
-        None.
+        Depending on the processing mode, either first element is selected as
+        rpathsignal or all elements are used for batch procssing. Set by
+        Controller. Default is None.
         """
         return self._fpaths
 
@@ -384,7 +383,7 @@ class Model(QObject):
 
     @property
     def wpathpeaks(self):
-        """str: Path for saving the file containing the extrema.
+        """str: File system location for saving the file containing the extrema.
 
         Set by Controller. Default is None.
         """
@@ -396,7 +395,8 @@ class Model(QObject):
 
     @property
     def rpathpeaks(self):
-        """str: Path to the file containing the extrema to be loaded.
+        """str: File system location of the file containing the extrema to be
+        loaded.
 
         Set by Controller. Default is None.
         """
@@ -421,7 +421,8 @@ class Model(QObject):
 
     @property
     def wpathstats(self):
-        """str: Path for saving the file containing the statistics.
+        """str: File system location for saving the file containing the
+        statistics.
 
         Set by Controller. Default is None.
         """
@@ -475,8 +476,8 @@ class Model(QObject):
 
     @Property(object)
     def filetype(self):
-        """str: Indicates the type of dataset (one of {OpenSignals, EDF,
-        Custom}).
+        """str: Indicates the type of dataset (one of {"OpenSignals", "EDF",
+        "Custom"}).
 
         Set by View or Controller. Default is None.
         """
@@ -530,7 +531,7 @@ class Model(QObject):
 
     @Property(str)
     def batchmode(self):
-        """str: Processing mode (one of {single file, multiple files}).
+        """str: Processing mode (one of {"single file", "multiple files"}).
 
         Set by View or Controller. Default is None.
         """
@@ -542,7 +543,8 @@ class Model(QObject):
 
     @Property(str)
     def markerchan(self):
-        """str: Marker channel. One of {none, I1, I2, A1, A2, A3, A4, A5, A6}.
+        """str: Marker channel. One of {"none", "I1", "I2", "A1", "A2", "A3",
+        "A4", "A5", "A6"}.
 
         Set by View. Default is None.
         """
@@ -554,7 +556,7 @@ class Model(QObject):
 
     @Property(str)
     def signalchan(self):
-        """str: Signal channel. One of {A1, A2, A3, A4, A5, A6}.
+        """str: Signal channel. One of {"A1", "A2", "A3", "A4", "A5", "A6"}.
 
         Set by View. Default is None.
         """
@@ -566,7 +568,7 @@ class Model(QObject):
 
     @Property(str)
     def modality(self):
-        """str: Signal modality. One of {ECG, PPG, RESP}.
+        """str: Signal modality. One of {"ECG", "PPG", "RESP"}.
 
         Set by View. Default is None.
         """

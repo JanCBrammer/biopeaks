@@ -227,7 +227,7 @@ class Controller(QObject):
                                                          'statistics',
                                                          "\\home")
 
-    def edit_peaks(self, event):
+    def edit_peaks(self, key_event):
         """Edit extrema based on cursor position.
 
         Editing is based on the current cursor position in the data's
@@ -235,22 +235,32 @@ class Controller(QObject):
         the local extreme that is closest to the current cursor position.
         If the user pressed the "a" key, search the local extreme that is
         closest to the current cursor position and add it to the extrema.
+
+        Parameters
+        ----------
+        key_event : KeyEvent
+            Event containing information about the current key press and cursor
+            position in data coordinates.
+
+        See Also
+        --------
+        matplotlib.backend_bases.KeyEvent
         """
         if not self._model.peakseditable:
             return
         if self._model.peaks is None:
             return
-        cursor = int(np.rint(event.xdata * self._model.sfreq))
+        cursor = int(np.rint(key_event.xdata * self._model.sfreq))
         extend = int(np.rint(self._model.sfreq * 0.1))
         searchrange = np.arange(cursor - extend, cursor + extend)    # search peak in a window of 200 msec, centered on selected x coordinate of cursor position
         retainidcs = np.logical_and(searchrange > 0,
                                     searchrange < self._model.signal.size)    # make sure that searchrange doesn't extend beyond signal
         searchrange = searchrange[retainidcs]
-        if event.key == 'd':
+        if key_event.key == 'd':
             peakidx = np.argmin(np.abs(self._model.peaks - cursor))
             if np.any(searchrange == self._model.peaks[peakidx]):    # only delete peaks that are within search range
                 self._model.peaks = np.delete(self._model.peaks, peakidx)
-        elif event.key == 'a':
+        elif key_event.key == 'a':
             searchsignal = self._model.signal[searchrange]
             locmax, _ = find_peaks_scipy(searchsignal)    # use Scipy's find_peaks to also detect local extrema that are plateaus
             locmin, _ = find_peaks_scipy(searchsignal * -1)
