@@ -2,7 +2,7 @@
 """Controller component of the MVC application."""
 
 from functools import wraps
-from .heart import ecg_peaks, ppg_peaks, correct_peaks, heart_period
+from .heart import ecg_peaks, ppg_peaks, correct_peaks, heart_stats
 from .resp import resp_extrema, resp_stats
 from .io_utils import (read_custom, read_opensignals, read_edf,
                        write_custom, write_opensignals, write_edf)
@@ -356,9 +356,9 @@ class Controller(QObject):
             return
         if self._model.modality in ["ECG", "PPG"]:
             (self._model.periodintp,
-             self._model.rateintp) = heart_period(peaks=self._model.peaks,
-                                                  sfreq=self._model.sfreq,
-                                                  nsamp=self._model.signal.size)
+             self._model.rateintp) = heart_stats(peaks=self._model.peaks,
+                                                 sfreq=self._model.sfreq,
+                                                 nsamp=self._model.signal.size)
         elif self._model.modality == 'RESP':
             (self._model.periodintp,
              self._model.rateintp,

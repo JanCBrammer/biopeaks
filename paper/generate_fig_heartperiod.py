@@ -16,7 +16,7 @@ signal = np.ravel(pd.read_csv("ecg_snippet.tsv", sep="\t"))
 
 peaks = heart.ecg_peaks(signal, sfreq)
 
-period, _ = heart.heart_period(peaks, sfreq, signal.size)
+period, _ = heart.heart_stats(peaks, sfreq, signal.size)
 
 minsignal = min(signal)
 maxsignal = max(signal)

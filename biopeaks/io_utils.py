@@ -221,10 +221,10 @@ def read_edf(rpath, channel, channeltype):
 
     References
     ----------
-    [1] B. Kemp, A. Värri, A. Rosa, K. Nielsen and J. Gade, "A simple format for
-    exchange of digitized polygraphic recordings", Electroencephalography and
-    Clinical Neurophysiology, vol. 82, no. 5, pp. 391-393, 1992. Available:
-    10.1016/0013-4694(92)90009-7.
+    [1] B. Kemp, A. Värri, A. C. Rosa, K. D. Nielsen, and J. Gade, “A simple
+    format for exchange of digitized polygraphic recordings,”
+    Electroencephalography and Clinical Neurophysiology, vol. 82, no. 5,
+    pp. 391–393, May 1992, doi: 10.1016/0013-4694(92)90009-7.
     """
     output = {"error": False,
               "sec": None,
@@ -285,10 +285,10 @@ def write_edf(rpath, wpath, segment, *args):
 
     References
     ----------
-    [1] B. Kemp, A. Värri, A. Rosa, K. Nielsen and J. Gade, "A simple format for
-    exchange of digitized polygraphic recordings", Electroencephalography and
-    Clinical Neurophysiology, vol. 82, no. 5, pp. 391-393, 1992. Available:
-    10.1016/0013-4694(92)90009-7.
+    [1] B. Kemp, A. Värri, A. C. Rosa, K. D. Nielsen, and J. Gade, “A simple
+    format for exchange of digitized polygraphic recordings,”
+    Electroencephalography and Clinical Neurophysiology, vol. 82, no. 5,
+    pp. 391–393, May 1992, doi: 10.1016/0013-4694(92)90009-7.
     """
     with open(rpath, "rb") as f:
         info, header = _read_edfheader(f)
