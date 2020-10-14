@@ -104,7 +104,7 @@ conda install -c conda-forge aiohttp
 ```
 
 You can then run the `benchmark_ECG_stream` script in the `benchmarks` folder. The script streams ECG and annotation files from the [Glasgow University Database (GUDB)](http://researchdata.gla.ac.uk/716/).
-You can select an experiment, ECG channel, and annotation file (for details have a look at the docstrings of `BenchmarkDetectorGUDB.benchmark_records()` in `benchmarks\benchmark_utils`).
+You can select an experiment, ECG channel, and annotation file.
 
 Alternatively, you can download the GUDB and run the `benchmark_ECG_local` script in the `benchmarks` folder. In the script, replace the `data_dir` with your local directory (see comments in the script).
 

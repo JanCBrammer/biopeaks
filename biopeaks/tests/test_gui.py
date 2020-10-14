@@ -1,26 +1,15 @@
 # -*- coding: utf-8 -*-
+"""Functional GUI tests.
 
-'''
-Test GUI with a few functional tests (as opposed to unit tests that cover every
-function, or integration tests):
-
-https://codeutopia.net/blog/2015/04/11/what-are-unit-testing-integration-
-testing-and-functional-testing/
-
-"You shouldn’t try to make very fine grained functional tests. You don’t want
-to test a single function, despite the name “functional” perhaps hinting at it.
-Instead, functional tests should be used for testing common user interactions.
-If you would manually test a certain flow of your app in a browser, such as
-registering an account, you could make that into a functional test."
-
-The tests will be restricted to a few typical, meaningful workflows (i.e.,
+Test GUI with a few functional tests (as opposed to unit tests or integration
+tests). The tests are restricted to a few meaningful workflows (i.e.,
 sequences of function calls), since testing all possible workflows is
 unfeasible and for a majority of workflows meaningless (e.g., saving peaks
 before finding peaks etc.).
 
-Note that the timeouts used in qtbot.waitSignal(s) might cause flaky tests
+IMPORTANT: The timeouts used in qtbot.waitSignal(s) might cause flaky tests
 depending on which machine runs the tests.
-'''
+"""
 
 import pytest
 from pathlib import Path
@@ -174,7 +163,7 @@ rsp_os = {"modality": "RESP",
           "filetype": "OpenSignals"}
 
 rsp_custom = {"modality": "RESP",
-              "header" : {"signalidx": 6, "markeridx": 1, "skiprows": 3,
+              "header": {"signalidx": 6, "markeridx": 1, "skiprows": 3,
                           "sfreq": 1000, "separator": "\t"},
               "mode": "single file",
               "sigpathorig": datadir.joinpath("OSmontage0J.txt"),
@@ -226,6 +215,7 @@ def idcfg_single(cfg):
                         rsp_os, rsp_custom, rsp_edf],
                 ids=idcfg_single)    # automatically runs the test(s) using this fixture with all values of params
 def cfg_single(request):
+
     return request.param
 
 
@@ -316,7 +306,7 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     assert model.loaded
     # Increase tolerance to 38, since for EDF files data needs to be saved as
     # epochs of fixed size which can lead to deviations from original segment
-    # length.
+    # length (signal might be shortened by a few samples during saving).
     assert np.allclose(np.size(model.signal), seg, atol=38)
     assert np.allclose(np.size(model.sec), seg, atol=38)
     assert np.size(model.signal) == np.size(model.sec)
@@ -350,7 +340,6 @@ def test_singlefile(qtbot, tmpdir, cfg_single):
     model.wpathstats = tmpdir.join(cfg_single["statsfname"])
     with qtbot.waitSignals([model.progress_changed] * 2, timeout=10000):
         controller._save_stats()
-    # load and check content
     stats = pd.read_csv(tmpdir.join(cfg_single["statsfname"]))
     assert np.around(stats["period"].mean(), 4) == cfg_single["avgperiod"]
     assert np.around(stats["rate"].mean(), 4) == cfg_single["avgrate"]
@@ -404,7 +393,7 @@ ecg_batch_autocorrect = {"modality": "ECG",
 
 
 def idcfg_batch(cfg):
-    """Generate a test ID."""
+
     modality = cfg["modality"]
     filetype = cfg["filetype"]
     if cfg["correctpeaks"]:
@@ -417,6 +406,7 @@ def idcfg_batch(cfg):
 @pytest.fixture(params=[ecg_batch_os, ecg_batch_custom, ecg_batch_autocorrect],
                 ids=idcfg_batch)
 def cfg_batch(request):
+
     return request.param
 
 
@@ -483,7 +473,7 @@ def test_batchfile(qtbot, tmpdir, cfg_batch):
         model.reset()
 
     # Load each stats file saved during batch processing and assess if
-    # stats have been caclualted correctly.
+    # stats have been calculated correctly.
     for sigfname, stat in zip(cfg_batch["sigfnames"], cfg_batch["stats"]):
         fname = Path(sigfname).stem
         statsfname = tmpdir.join(f"{fname}_stats.csv")

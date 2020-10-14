@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""Benchmark the heart.ppg_peaks detector.
+
+Before running this script, please download the Capnobase IEEE TBME benchmark
+dataset from http://www.capnobase.org/index.php?id=857. Then specify `data_dir`
+and optionally `tolerance`.
+"""
 
 import h5py
 import numpy as np
@@ -7,12 +13,13 @@ from biopeaks.heart import ppg_peaks
 from wfdb.processing import compare_annotations
 
 
-data_dir = Path(".../TBME2013-PPGRR-Benchmark_R3/data")    # replace with your local "data" directory once you've downloaded the database
-
 sfreq = 300
-tolerance = int(np.rint(.05 * sfreq))    # in samples; 50 milliseconds in accordance with Elgendi et al., 2013, doi:10.1371/journal.pone.0076585
+data_dir = Path(".../TBME2013-PPGRR-Benchmark_R3/data")    # replace with your local "data" directory once you've downloaded the database
+tolerance = int(np.rint(.05 * sfreq))    # in samples; 50 milliseconds in accordance with doi:10.1371/journal.pone.0076585
+
 print(f"Setting tolerance for match between algorithmic and manual annotation"
-      f" to {tolerance} samples, corresponding to 50 milliseconds at a sampling rate of {sfreq}.")
+      f" to {tolerance} sample(s), corresponding to {tolerance / sfreq} seconds"
+      f" at a sampling rate of {sfreq}.")
 
 sensitivity = []
 precision = []
