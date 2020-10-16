@@ -8,3 +8,5 @@ dependencies:
   - pyside2>=5.13.2
   - pandas>=0.25.3
   - pytest-qt
+  - pytest-cov
+  - flake8

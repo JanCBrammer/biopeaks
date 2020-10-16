@@ -16,12 +16,11 @@ peaks in breathing signals) with signal-specific, sensible defaults
 + automatic analysis of multiple files (batch processing)
 
 
-Have a look at the documentation to find out more: 
+Have a look at the documentation to find out more:
 
 + [Installation](installation.md)
 + [User Guide](user_guide.md)
 + [Contributor Guide](contributor_guide.md)
-+ [Tests](tests.md)
 + [Changelog](changelog.md)
 + [Further Resources](additional_resources.md)
 + [Citation](citation.md)

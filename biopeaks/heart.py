@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Extract features from cardiac signals."""
 
 import numpy as np
 import pandas as pd
@@ -12,11 +13,46 @@ from .analysis_utils import (compute_threshold, find_segments, interp_stats,
 
 
 def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
-              gradthreshweight=1.5, minlenweight=0.4, mindelay=.3,
+              gradthreshweight=1.5, minlenweight=.4, mindelay=.3,
               enable_plot=False):
-    """
-    enable_plot is for debugging and demonstration purposes when the function
-    is called in isolation.
+    """Detect R-peaks in an electrocardiogram (ECG).
+
+    QRS complexes are detected based on the steepness of the absolute gradient
+    of the ECG signal. Subsequently, R-peaks are detected as local maxima in
+    the QRS complexes.
+
+    Parameters
+    ----------
+    signal : ndarray
+        The ECG signal.
+    sfreq : int
+        The sampling frequency of `signal`.
+    smoothwindow : float, optional
+        Size of the kernel used for smoothing the absolute gradient of `signal`.
+        In seconds. Default is .1.
+    avgwindow : float, optional
+        Size of the kernel used for computing the local average of the smoothed
+        absolute gradient of `signal`. In seconds. Default is .75.
+    gradthreshweight : float, optional
+        Factor used to offset the averaged absolute gradient of `signal`. The
+        resulting time series is then used as a threshold for QRS detection.
+        Default is 1.5.
+    minlenweight : float, optional
+        The average QRS duration is multiplied by `minlenweight` in order to
+        obtain a threshold for the minimal duration of QRS complexes (QRS
+        complexes shorted than the minimal duration will be discared). Default
+        is .4.
+    mindelay : float, optional
+        Minimal delay between R-peaks. R-peaks that follow other R-peaks by less
+        than `mindelay` will be discarded. In seconds. Default is .3.
+    enable_plot : bool, optional
+        Visualize `signal` along with the detection thresholds, as well as the
+        detected QRS complexes and R-peaks. Default is False.
+
+    Returns
+    -------
+    peaks : ndarray
+        The samples within `signal` that mark the occurrences of R-peaks.
     """
     if enable_plot:
         plt.figure()
@@ -33,13 +69,11 @@ def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
     gradthreshold = gradthreshweight * avggrad
     mindelay = int(np.rint(sfreq * mindelay))
 
-    # Visualize thresholds.
     if enable_plot:
         ax1.plot(filt)
         ax2.plot(smoothgrad)
         ax2.plot(gradthreshold)
 
-    # Identify start and end of QRS complexes.
     qrs = smoothgrad > gradthreshold
     beg_qrs, end_qrs, durations_qrs = find_segments(qrs)
 
@@ -52,19 +86,15 @@ def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
         if duration < min_len:
             continue
 
-        # Visualize QRS intervals.
         if enable_plot:
-            ax2.axvspan(beg, end, facecolor="m", alpha=0.5)
+            ax2.axvspan(beg, end, facecolor="m", alpha=0.5)    # visualize QRS
 
-        # Find local maxima and their prominence within QRS.
         data = signal[beg:end]
-        locmax, props = find_peaks(data, prominence=(None, None))
+        locmax, props = find_peaks(data, prominence=(None, None))    # find local maxima and their prominence within QRS
 
         if locmax.size > 0:
-            # Identify most prominent local maximum.
-            peak = beg + locmax[np.argmax(props["prominences"])]
-            # Enforce minimum delay between peaks.
-            if peak - peaks[-1] > mindelay:
+            peak = beg + locmax[np.argmax(props["prominences"])]    # identify most prominent local maximum
+            if peak - peaks[-1] > mindelay:    # enforce minimum delay between R-peaks
                 peaks.append(peak)
 
     peaks.pop(0)
@@ -77,20 +107,47 @@ def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,
 
 def ppg_peaks(signal, sfreq, peakwindow=.111, beatwindow=.667, beatoffset=.02,
               mindelay=.3, enable_plot=False):
-    """
-    Implementation of Elgendi M, Norton I, Brearley M, Abbott D, Schuurmans D
-    (2013) Systolic Peak Detection in Acceleration Photoplethysmograms Measured
-    from Emergency Responders in Tropical Conditions. PLoS ONE 8(10): e76585.
-    doi:10.1371/journal.pone.0076585.
+    """Detect systolic peaks in a photoplethysmogram (PPG).
 
-    Enable_plot is for debugging and demonstration purposes when the function
-    is called in isolation.
-    """
+    Implementation of "Method IV: Event-Related Moving Averages with Dynamic
+    Threshold" introduced by [1].
 
+    Parameters
+    ----------
+    signal : ndarray
+        The PPG signal.
+    sfreq : int
+        Sampling frequency of `signal`.
+    peakwindow : float, optional
+        "W1" parameter described in [1]. In seconds. Default is .111.
+    beatwindow : float, optional
+        "W2" parameter described in [1]. In seconds. Default is .667.
+    beatoffset : float, optional
+        "beta" parameter described in [1]. Default is .02.
+    mindelay : float, optional
+        Minimal delay between systolic peaks. Systolic peaks that follow other
+        systolic peaks by less than `mindelay` will be discarded. In seconds.
+        Default is .3.
+    enable_plot : bool, optional
+        Visualize `signal` along with the detection thresholds, as well as the
+        detected PPG waves and systolic peaks. Default is False.
+
+    Returns
+    -------
+    peaks : ndarray
+        The samples within `signal` that mark the occurrences of systolic peaks.
+
+    References
+    ----------
+    [1] M. Elgendi, I. Norton, M. Brearley, D. Abbott, and D. Schuurmans,
+    “Systolic Peak Detection in Acceleration Photoplethysmograms Measured from
+    Emergency Responders in Tropical Conditions,” PLoS ONE, vol. 8, no. 10,
+    Oct. 2013, doi: 10.1371/journal.pone.0076585.
+    """
     if enable_plot:
         fig, (ax0, ax1) = plt.subplots(nrows=2, ncols=1, sharex=True)
 
-    filt = butter_bandpass_filter(signal, lowcut=.5, highcut=8, fs=sfreq,
+    filt = butter_bandpass_filter(signal, lowcut=.5, highcut=8, sfreq=sfreq,
                                   order=3)
     filt[filt < 0] = 0
     sqrd = filt**2
@@ -106,11 +163,9 @@ def ppg_peaks(signal, sfreq, peakwindow=.111, beatwindow=.667, beatoffset=.02,
         ax1.plot(thr1, label="threshold")
         ax1.legend(loc="upper right")
 
-    # Identify start and end of PPG waves.
     waves = ma_peak > thr1
     beg_waves, end_waves, duration_waves = find_segments(waves)
 
-    # Identify systolic peaks within waves (ignore waves that are too short).
     min_len = int(np.rint(peakwindow * sfreq))
     min_delay = int(np.rint(mindelay * sfreq))
     peaks = [0]
@@ -120,19 +175,16 @@ def ppg_peaks(signal, sfreq, peakwindow=.111, beatwindow=.667, beatoffset=.02,
         if duration < min_len:
             continue
 
-        # Visualize wave span.
         if enable_plot:
-            ax1.axvspan(beg, end, facecolor="m", alpha=0.5)
+            ax1.axvspan(beg, end, facecolor="m", alpha=0.5)    # visualize waves
 
-        # Find local maxima and their prominence within wave span.
         data = signal[beg:end]
-        locmax, props = find_peaks(data, prominence=(None, None))
+        locmax, props = find_peaks(data, prominence=(None, None))    # find local maxima and their prominence within waves
 
         if locmax.size > 0:
-            # Identify most prominent local maximum.
-            peak = beg + locmax[np.argmax(props["prominences"])]
-            # Enforce minimum delay between peaks.
-            if peak - peaks[-1] > min_delay:
+
+            peak = beg + locmax[np.argmax(props["prominences"])]    # identify most prominent local maximum
+            if peak - peaks[-1] > min_delay:    # enforce minimum delay between systolic peaks
                 peaks.append(peak)
 
     peaks.pop(0)
@@ -143,13 +195,32 @@ def ppg_peaks(signal, sfreq, peakwindow=.111, beatwindow=.667, beatoffset=.02,
     return np.asarray(peaks).astype(int)
 
 
-def heart_period(peaks, sfreq, nsamp):
+def heart_stats(peaks, sfreq, nsamp):
+    """Compute instantaneous cardiac features.
 
-    # Compute normal-to-normal intervals.
+    Compute heart period and -rate based on cardiac extrema (R-peaks or
+    systolic peaks). Cardiac period and -rate are calculated as horizontal
+    (temporal) peak-peak differences. I.e., to each peak assign the horizontal
+    difference to the preceding peak.
+
+    Parameters
+    ----------
+    peaks : ndarray
+        Cardiac extrema (R-peaks or systolic peaks).
+    sfreq : int
+        Sampling frequency of the cardiac signal containing `peaks`.
+    nsamp : int
+        The length of the signal containing `peaks`. In samples.
+
+    Returns
+    -------
+    periodintp, rateintp : ndarray, ndarray
+        Vectors with witb `nsamp` elements, containing the instantaneous
+        heart period, and -rate.
+    """
     rr = np.ediff1d(peaks, to_begin=0) / sfreq
     rr[0] = np.mean(rr[1:])
 
-    # Interpolate rr at the signals sampling rate for plotting.
     periodintp = interp_stats(peaks, rr, nsamp)
     rateintp = 60 / periodintp
 
@@ -157,16 +228,38 @@ def heart_period(peaks, sfreq, nsamp):
 
 
 def correct_peaks(peaks, sfreq, iterative=True):
+    """Correct artifacts in cardiac peak detection.
 
-    # Get corrected peaks and normal-to-normal intervals.
+    Implementation of [1].
+
+    Parameters
+    ----------
+    peaks : ndarray
+        Cardiac extrema (R-peaks or systolic peaks).
+    sfreq : int
+        Sampling frequency of the cardiac signal containing `peaks`.
+    iterative : bool, optional
+        Repeat correction until no artifacts are identified. Default is True.
+        The iterative application of the artifact correction is not part of
+        the algorithm described in [1].
+
+    Returns
+    -------
+    peaks_clean
+        [description]
+
+    References
+    ----------
+    [1] J. A. Lipponen and M. P. Tarvainen, “A robust algorithm for heart rate
+    variability time series artefact correction using novel beat
+    classification,” Journal of Medical Engineering & Technology, vol. 43,
+    no. 3, pp. 173–181, Apr. 2019, doi: 10.1080/03091902.2019.1640306.
+    """
     artifacts = _find_artifacts(peaks, sfreq)
     peaks_clean = _correct_artifacts(artifacts, peaks)
 
-    if iterative:
+    if iterative:    # apply artifact correction until the number of artifacts doesn't change from one iteration to the next
 
-        # Iteratively apply the artifact correction until the number of artifact
-        # reaches an equilibrium (i.e., the number of artifacts does not change
-        # anymore from one iteration to the next).
         n_artifacts_previous = np.inf
         n_artifacts_current = sum([len(i) for i in artifacts.values()])
 
@@ -186,81 +279,62 @@ def correct_peaks(peaks, sfreq, iterative=True):
 
 
 def _find_artifacts(peaks, sfreq, enable_plot=False):
-    """
-    Implementation of Jukka A. Lipponen & Mika P. Tarvainen (2019): A robust
-    algorithm for heart rate variability time series artefact correction using
-    novel beat classification, Journal of Medical Engineering & Technology,
-    DOI: 10.1080/03091902.2019.1640306
-    """
+    """Detect and classify artifacts."""
     peaks = np.ravel(peaks)
 
-    # Set free parameters.
     c1 = 0.13
     c2 = 0.17
     alpha = 5.2
     window_width = 91
     medfilt_order = 11
 
-    # Compute period series (make sure it has same numer of elements as peaks);
-    # peaks are in samples, convert to seconds.
-    rr = np.ediff1d(peaks, to_begin=0) / sfreq
-    # For subsequent analysis it is important that the first element has
-    # a value in a realistic range (e.g., for median filtering).
+    rr = np.ediff1d(peaks, to_begin=0) / sfreq    # first difference of peaks
     rr[0] = np.mean(rr[1:])
 
     # Artifact identification #################################################
     ###########################################################################
 
-    # Compute dRRs: time series of differences of consecutive periods (dRRs).
-    drrs = np.ediff1d(rr, to_begin=0)
+    drrs = np.ediff1d(rr, to_begin=0)    # differences of consecutive periods, i.e., second difference of peaks
     drrs[0] = np.mean(drrs[1:])
-    # Normalize by threshold.
-    th1 = compute_threshold(drrs, alpha, window_width)
-    drrs /= th1
+    th1 = _compute_threshold(drrs, alpha, window_width)
+    drrs /= th1    # normalize by threshold
 
-    # Cast dRRs to subspace s12.
-    # Pad drrs with one element.
     padding = 2
-    drrs_pad = np.pad(drrs, padding, "reflect")
+    drrs_pad = np.pad(drrs, padding, "reflect")    # pad drrs with two elements
 
     s12 = np.zeros(drrs.size)
-    for d in np.arange(padding, padding + drrs.size):
+    for d in np.arange(padding, padding + drrs.size):    # cast dRRs to subspace s12
 
         if drrs_pad[d] > 0:
             s12[d - padding] = np.max([drrs_pad[d - 1], drrs_pad[d + 1]])
         elif drrs_pad[d] < 0:
             s12[d - padding] = np.min([drrs_pad[d - 1], drrs_pad[d + 1]])
 
-    # Cast dRRs to subspace s22.
     s22 = np.zeros(drrs.size)
-    for d in np.arange(padding, padding + drrs.size):
+    for d in np.arange(padding, padding + drrs.size):    # cast dRRs to subspace s22
 
         if drrs_pad[d] >= 0:
             s22[d - padding] = np.min([drrs_pad[d + 1], drrs_pad[d + 2]])
         elif drrs_pad[d] < 0:
             s22[d - padding] = np.max([drrs_pad[d + 1], drrs_pad[d + 2]])
 
-    # Compute mRRs: time series of deviation of RRs from median.
     df = pd.DataFrame({'signal': rr})
     medrr = df.rolling(medfilt_order, center=True,
                        min_periods=1).median().signal.to_numpy()
-    mrrs = rr - medrr
+    mrrs = rr - medrr    # deviation of RRs from median RR
     mrrs[mrrs < 0] = mrrs[mrrs < 0] * 2
-    # Normalize by threshold.
-    th2 = compute_threshold(mrrs, alpha, window_width)
-    mrrs /= th2
+    th2 = _compute_threshold(mrrs, alpha, window_width)
+    mrrs /= th2    # normalize by threshold
 
     # Artifact classification #################################################
     ###########################################################################
-
-    # Artifact classes.
     extra_idcs = []
     missed_idcs = []
     ectopic_idcs = []
     longshort_idcs = []
 
     i = 0
-    while i < rr.size - 2:    # The flow control is implemented based on Figure 1
+    while i < rr.size - 2:    # flow control is implemented based on Figure 1
 
         if np.abs(drrs[i]) <= 1:    # Figure 1
             i += 1
@@ -268,8 +342,7 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
         eq1 = np.logical_and(drrs[i] > 1, s12[i] < (-c1 * drrs[i] - c2))    # Figure 2a
         eq2 = np.logical_and(drrs[i] < -1, s12[i] > (-c1 * drrs[i] + c2))    # Figure 2a
 
-        if np.any([eq1, eq2]):
-            # If any of the two equations is true.
+        if np.any([eq1, eq2]):    # If any of the two equations is true.
             ectopic_idcs.append(i)
             i += 1
             continue
@@ -278,43 +351,33 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
             i += 1
             continue
         longshort_candidates = [i]
-        # Check if the following beat also needs to be evaluated.
-        if np.abs(drrs[i + 1]) < np.abs(drrs[i + 2]):
+
+        if np.abs(drrs[i + 1]) < np.abs(drrs[i + 2]):    # check if the following beat also needs to be evaluated
             longshort_candidates.append(i + 1)
 
         for j in longshort_candidates:
-            # Long beat.
-            eq3 = np.logical_and(drrs[j] > 1, s22[j] < -1)    # Figure 2b
-            # Long or short.
-            eq4 = np.abs(mrrs[j]) > 3    # Figure 1
-            # Short beat.
-            eq5 = np.logical_and(drrs[j] < -1, s22[j] > 1)    # Figure 2b
 
-            if ~np.any([eq3, eq4, eq5]):
-                # If none of the three equations is true: normal beat.
+            eq3 = np.logical_and(drrs[j] > 1, s22[j] < -1)    # long beat, Figure 2b
+            eq4 = np.abs(mrrs[j]) > 3    # long or short, Figure 1
+            eq5 = np.logical_and(drrs[j] < -1, s22[j] > 1)    # short beat, Figure 2b
+
+            if ~np.any([eq3, eq4, eq5]):    # if none of the three equations is true: normal beat
                 i += 1
                 continue
             # If any of the three equations is true: check for missing or extra
             # peaks.
+            eq6 = np.abs(rr[j] / 2 - medrr[j]) < th2[j]    # missing beat, Figure 1
+            eq7 = np.abs(rr[j] + rr[j + 1] - medrr[j]) < th2[j]    # extra beat, Figure 1
 
-            # Missing.
-            eq6 = np.abs(rr[j] / 2 - medrr[j]) < th2[j]    # Figure 1
-            # Extra.
-            eq7 = np.abs(rr[j] + rr[j + 1] - medrr[j]) < th2[j]    # Figure 1
-
-            # Check if extra.
-            if np.all([eq5, eq7]):
+            if np.all([eq5, eq7]):    # check if extra
                 extra_idcs.append(j)
                 i += 1
                 continue
-            # Check if missing.
-            if np.all([eq3, eq6]):
+            if np.all([eq3, eq6]):    # check if missing
                 missed_idcs.append(j)
                 i += 1
                 continue
-            # If neither classified as extra or missing, classify as "long or
-            # short".
-            longshort_idcs.append(j)
+            longshort_idcs.append(j)    # if neither classified as extra or missing, classify as "long or short"
             i += 1
 
     artifacts = {"ectopic": ectopic_idcs, "missed": missed_idcs,
@@ -392,13 +455,13 @@ def _find_artifacts(peaks, sfreq, enable_plot=False):
 
 
 def _correct_artifacts(artifacts, peaks):
+    """Apply artifact-class specific correction.
 
-    # Artifact correction
-    #####################
-    # The integrity of indices must be maintained if peaks are inserted or
-    # deleted: for each deleted beat, decrease indices following that beat in
-    # all other index lists by 1. Likewise, for each added beat, increment the
-    # indices following that beat in all other lists by 1.
+    The integrity of indices must be maintained if peaks are inserted or
+    deleted: for each deleted beat, decrease indices following that beat in
+    all other index lists by 1. Likewise, for each added beat, increment the
+    indices following that beat in all other lists by 1.
+    """
     extra_idcs = artifacts["extra"]
     missed_idcs = artifacts["missed"]
     ectopic_idcs = artifacts["ectopic"]
@@ -408,16 +471,16 @@ def _correct_artifacts(artifacts, peaks):
     if extra_idcs:
         peaks = _correct_extra(extra_idcs, peaks)
         # Update remaining indices.
-        missed_idcs = update_indices(extra_idcs, missed_idcs, -1)
-        ectopic_idcs = update_indices(extra_idcs, ectopic_idcs, -1)
-        longshort_idcs = update_indices(extra_idcs, longshort_idcs, -1)
+        missed_idcs = _update_indices(extra_idcs, missed_idcs, -1)
+        ectopic_idcs = _update_indices(extra_idcs, ectopic_idcs, -1)
+        longshort_idcs = _update_indices(extra_idcs, longshort_idcs, -1)
 
     # Add missing peaks.
     if missed_idcs:
         peaks = _correct_missed(missed_idcs, peaks)
         # Update remaining indices.
-        ectopic_idcs = update_indices(missed_idcs, ectopic_idcs, 1)
-        longshort_idcs = update_indices(missed_idcs, longshort_idcs, 1)
+        ectopic_idcs = _update_indices(missed_idcs, ectopic_idcs, 1)
+        longshort_idcs = _update_indices(missed_idcs, longshort_idcs, 1)
 
     if ectopic_idcs:
         peaks = _correct_misaligned(ectopic_idcs, peaks)
@@ -440,16 +503,12 @@ def _correct_missed(missed_idcs, peaks):
 
     corrected_peaks = peaks.copy()
     missed_idcs = np.array(missed_idcs)
-    # Calculate the position(s) of new beat(s). Make sure to not generate
-    # negative indices. prev_peaks and next_peaks must have the same
-    # number of elements.
-    valid_idcs = missed_idcs > 1
+    valid_idcs = missed_idcs > 1    # make sure to not generate negative indices
     missed_idcs = missed_idcs[valid_idcs]
     prev_peaks = corrected_peaks[[i - 1 for i in missed_idcs]]
-    next_peaks = corrected_peaks[missed_idcs]
-    added_peaks = prev_peaks + (next_peaks - prev_peaks) / 2
-    # Add the new peaks before the missed indices (see numpy docs).
-    corrected_peaks = np.insert(corrected_peaks, missed_idcs, added_peaks)
+    next_peaks = corrected_peaks[missed_idcs]    # prev_peaks and next_peaks must have the same number of elements
+    added_peaks = prev_peaks + (next_peaks - prev_peaks) / 2    # calculate the position(s) of new beat(s)
+    corrected_peaks = np.insert(corrected_peaks, missed_idcs, added_peaks)    # add the new peaks before the missed indices (see NumPy docs)
 
     return corrected_peaks
 
@@ -458,20 +517,40 @@ def _correct_misaligned(misaligned_idcs, peaks):
 
     corrected_peaks = peaks.copy()
     misaligned_idcs = np.array(misaligned_idcs)
-    # Make sure to not generate negative indices, or indices that exceed
-    # the total number of peaks. prev_peaks and next_peaks must have the
-    # same number of elements.
     valid_idcs = np.logical_and(misaligned_idcs > 1,
-                                misaligned_idcs < (len(corrected_peaks) - 1))
+                                misaligned_idcs < (len(corrected_peaks) - 1))    # make sure to not generate negative indices, or indices that exceed the total number of peaks
     misaligned_idcs = misaligned_idcs[valid_idcs]
     prev_peaks = corrected_peaks[[i - 1 for i in misaligned_idcs]]
-    next_peaks = corrected_peaks[[i + 1 for i in misaligned_idcs]]
+    next_peaks = corrected_peaks[[i + 1 for i in misaligned_idcs]]    # prev_peaks and next_peaks must have the same number of elements
+    # Shift the R-peaks from the old to the new position.
     half_ibi = (next_peaks - prev_peaks) / 2
     peaks_interp = prev_peaks + half_ibi
-    # Shift the R-peaks from the old to the new position.
     corrected_peaks = np.delete(corrected_peaks, misaligned_idcs)
     corrected_peaks = np.concatenate((corrected_peaks,
                                       peaks_interp)).astype(int)
     corrected_peaks.sort(kind="mergesort")
 
     return corrected_peaks
+
+
+def _compute_threshold(signal, alpha, window_width):
+
+    df = pd.DataFrame({'signal': np.abs(signal)})
+    q1 = df.rolling(window_width, center=True,
+                    min_periods=1).quantile(.25).signal.to_numpy()
+    q3 = df.rolling(window_width, center=True,
+                    min_periods=1).quantile(.75).signal.to_numpy()
+    th = alpha * ((q3 - q1) / 2)
+
+    return th
+
+
+def _update_indices(source_idcs, update_idcs, update):
+
+    if not update_idcs:
+        return update_idcs
+
+    for s in source_idcs:
+        update_idcs = [u + update if u > s else u for u in update_idcs]    # for each list, find the indices (of indices) that need to be updated
+
+    return update_idcs

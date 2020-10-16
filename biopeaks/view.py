@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""View component of the MVC application."""
 
 from PySide2.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
                                QVBoxLayout, QHBoxLayout, QCheckBox,
@@ -16,14 +17,40 @@ import biopeaks.resources    # noqa
 
 
 class CustomNavigationToolbar(NavigationToolbar):
-    # only retain desired functionality of navitoolbar
+    """Matplotlib navigation toolbar.
+
+    Same as superclass except for removed Subplot-configuration and Save
+    buttons.
+
+    See Also
+    --------
+    matplotlib.backends.backend_qt5agg.NavigationToolbar2QT
+
+    """
+
     toolitems = [t for t in NavigationToolbar.toolitems if t[0] in
-                 ("Home", "Pan", "Zoom", "Back", "Forward")]
+                 ("Home", "Pan", "Zoom", "Back", "Forward")]    # only retain desired functionality
 
 
 class View(QMainWindow):
+    """View component of the MVC application.
+
+    Presents the state of the application as well as the available means of
+    interaction. Receives updates about the state from the Model and informs
+    Controller about user interactions.
+
+    """
 
     def __init__(self, model, controller):
+        """Define GUI elements and their layout.
+
+        Parameters
+        ----------
+        model : QObject
+            Model component of the MVC application.
+        controller : QObject
+            Controller component of the MVC application.
+        """
         super().__init__()
 
         self._model = model
@@ -31,21 +58,16 @@ class View(QMainWindow):
         self.segmentcursor = False
         self.togglecolors = {"#1f77b4": "m", "m": "#1f77b4"}
 
-
-        #################################################################
-        # define GUI layout and connect input widgets to external slots #
-        #################################################################
-
         self.setWindowTitle("biopeaks")
         self.setGeometry(50, 50, 1750, 750)
         self.setWindowIcon(QIcon(":/python_icon.png"))
 
-        # figure0 for signal
+        # Figure for biosignal.
         self.figure0 = Figure()
         self.canvas0 = FigureCanvas(self.figure0)
         # Enforce minimum height, otherwise resizing with self.splitter causes
         # mpl to throw an error because figure is resized to height 0. The
-        # widget can still be fully collapsed with self.splitter-
+        # widget can still be fully collapsed with self.splitter.
         self.canvas0.setMinimumHeight(1)    # in pixels
         self.ax00 = self.figure0.add_subplot(1, 1, 1)
         self.ax00.set_frame_on(False)
@@ -54,8 +76,7 @@ class View(QMainWindow):
         self.scat = None
         self.segmentspan = None
 
-
-        # figure1 for marker
+        # Figure for marker.
         self.figure1 = Figure()
         self.canvas1 = FigureCanvas(self.figure1)
         self.canvas1.setMinimumHeight(1)
@@ -65,8 +86,7 @@ class View(QMainWindow):
         self.figure1.subplots_adjust(left=0.04, right=0.98)
         self.line10 = None
 
-
-        # figure2 for statistics
+        # Figure for statistics.
         self.figure2 = Figure()
         self.canvas2 = FigureCanvas(self.figure2)
         self.canvas2.setMinimumHeight(1)
@@ -84,23 +104,22 @@ class View(QMainWindow):
         self.line22 = None
         self.figure2.subplots_adjust(left=0.04, right=0.98)
 
-        # navigation bar
         self.navitools = CustomNavigationToolbar(self.canvas0, self)
 
-        # peak editing
+        # Peak editing.
         self.editcheckbox = QCheckBox("editable", self)
         self.editcheckbox.stateChanged.connect(self._model.set_peakseditable)
 
-        # peak saving batch
+        # Peak saving during batch processing.
         self.savecheckbox = QCheckBox("save during batch processing", self)
         self.savecheckbox.stateChanged.connect(self._model.set_savebatchpeaks)
 
-        # peak auto-correction batch
+        # Peak auto-correction during batch processing.
         self.correctcheckbox = QCheckBox("correct during batch processing",
                                          self)
         self.correctcheckbox.stateChanged.connect(self._model.set_correctbatchpeaks)
 
-        # selecting stats for saving
+        # Selection of stats for saving.
         self.periodcheckbox = QCheckBox("period", self)
         self.periodcheckbox.stateChanged.connect(lambda: self.select_stats("period"))
         self.ratecheckbox = QCheckBox("rate", self)
@@ -108,7 +127,7 @@ class View(QMainWindow):
         self.tidalampcheckbox = QCheckBox("tidal amplitude", self)
         self.tidalampcheckbox.stateChanged.connect(lambda: self.select_stats("tidalamp"))
 
-        # channel selection
+        # Channel selection.
         self.sigchanmenulabel = QLabel("biosignal")
         self.sigchanmenu = QComboBox(self)
         self.sigchanmenu.addItem("A1")
@@ -118,8 +137,7 @@ class View(QMainWindow):
         self.sigchanmenu.addItem("A5")
         self.sigchanmenu.addItem("A6")
         self.sigchanmenu.currentTextChanged.connect(self._model.set_signalchan)
-        # initialize with default value
-        self._model.set_signalchan(self.sigchanmenu.currentText())
+        self._model.set_signalchan(self.sigchanmenu.currentText())    # initialize with default value
 
         self.markerchanmenulabel = QLabel("marker")
         self.markerchanmenu = QComboBox(self)
@@ -134,21 +152,19 @@ class View(QMainWindow):
         self.markerchanmenu.addItem("A6")
         self.markerchanmenu.currentTextChanged.connect(self._model.
                                                        set_markerchan)
-        # initialize with default value
         self._model.set_markerchan(self.markerchanmenu.currentText())
 
-        # processing mode (batch or single file)
+        # Processing mode.
         self.batchmenulabel = QLabel("mode")
         self.batchmenu = QComboBox(self)
         self.batchmenu.addItem("single file")
         self.batchmenu.addItem("multiple files")
         self.batchmenu.currentTextChanged.connect(self._model.set_batchmode)
         self.batchmenu.currentTextChanged.connect(self.toggle_options)
-        # initialize with default value
         self._model.set_batchmode(self.batchmenu.currentText())
         self.toggle_options(self.batchmenu.currentText())
 
-        # modality selection
+        # Modality selection.
         self.modmenulabel = QLabel("modality")
         self.modmenu = QComboBox(self)
         self.modmenu.addItem("ECG")
@@ -156,20 +172,16 @@ class View(QMainWindow):
         self.modmenu.addItem("RESP")
         self.modmenu.currentTextChanged.connect(self._model.set_modality)
         self.modmenu.currentTextChanged.connect(self.toggle_options)
-        # initialize with default value
         self._model.set_modality(self.modmenu.currentText())
         self.toggle_options(self.modmenu.currentText())
 
-        # segment selection; this widget can be openend / set visible from
-        # the menu and closed from within itself (see mapping of segmentermap);
-        # it provides utilities to select a segment from the signal
+        # Segment selection. This widget can be openend / set visible from
+        # the menu and closed from within itself (see mapping of segmentermap).
         self.segmentermap = QSignalMapper(self)
         self.segmenter = QDockWidget("select a segment", self)
-        # disable closing such that widget can only be closed by confirming
-        # selection or custom button
-        self.segmenter.setFeatures(QDockWidget.NoDockWidgetFeatures)
-        # Limit number of decimals to four.
-        regex = QRegExp("[0-9]*\.?[0-9]{4}")
+        self.segmenter.setFeatures(QDockWidget.NoDockWidgetFeatures)    # disable closing such that widget can only be closed by confirming selection or custom button
+        regex = QRegExp("[0-9]*\.?[0-9]{4}")    # Limit number of decimals to four
+
         validator = QRegExpValidator(regex)
 
         self.startlabel = QLabel("start")
@@ -193,14 +205,13 @@ class View(QMainWindow):
         self.previewedit.clicked.connect(lambdafn)
 
         self.confirmedit = QPushButton("confirm segment")
-        self.confirmedit.clicked.connect(self._controller.segment_signal)
+        self.confirmedit.clicked.connect(self._controller.segment_dataset)
         self.confirmedit.clicked.connect(self.segmentermap.map)
         self.segmentermap.setMapping(self.confirmedit, 0)
 
         self.abortedit = QPushButton("abort segmentation")
         self.abortedit.clicked.connect(self.segmentermap.map)
-        # reset the segment to None
-        self.segmentermap.setMapping(self.abortedit, 2)
+        self.segmentermap.setMapping(self.abortedit, 2)    # resets the segment to None
 
         self.segmenterlayout = QFormLayout()
         self.segmenterlayout.addRow(self.startlabel, self.startedit)
@@ -216,9 +227,7 @@ class View(QMainWindow):
         self.segmenter.setAllowedAreas(Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.RightDockWidgetArea, self.segmenter)
 
-
-        # Set up dialog to gather user input for custom files.
-
+        # Custom file dialog.
         regex = QRegExp("[1-9][0-9]")
         validator = QRegExpValidator(regex)
 
@@ -267,20 +276,19 @@ class View(QMainWindow):
         self.customfilelayout.addRow(self.continuecustomfile)
         self.customfiledialog.setLayout(self.customfilelayout)
 
-        # set up menubar
+        # Layout.
         menubar = self.menuBar()
 
-        # signal menu
         signalmenu = menubar.addMenu("biosignal")
 
         openSignal = signalmenu.addMenu("load")
         openEDF = QAction("EDF", self)
         openEDF.triggered.connect(lambda: self._model.set_filetype("EDF"))
-        openEDF.triggered.connect(self._controller.get_fpaths)
+        openEDF.triggered.connect(self._controller.load_channels)
         openSignal.addAction(openEDF)
         openOpenSignals = QAction("OpenSignals", self)
         openOpenSignals.triggered.connect(lambda: self._model.set_filetype("OpenSignals"))
-        openOpenSignals.triggered.connect(self._controller.get_fpaths)
+        openOpenSignals.triggered.connect(self._controller.load_channels)
         openSignal.addAction(openOpenSignals)
         openCustom = QAction("Custom", self)
         openCustom.triggered.connect(lambda: self._model.set_filetype("Custom"))
@@ -295,10 +303,9 @@ class View(QMainWindow):
         self.segmentermap.mapped.connect(self.toggle_segmenter)
 
         saveSignal = QAction("save", self)
-        saveSignal.triggered.connect(self._controller.get_wpathsignal)
+        saveSignal.triggered.connect(self._controller.save_channels)
         signalmenu.addAction(saveSignal)
 
-        # peak menu
         peakmenu = menubar.addMenu("peaks")
 
         findPeaks = QAction("find", self)
@@ -310,14 +317,13 @@ class View(QMainWindow):
         peakmenu.addAction(autocorrectPeaks)
 
         savePeaks = QAction("save", self)
-        savePeaks.triggered.connect(self._controller.get_wpathpeaks)
+        savePeaks.triggered.connect(self._controller.save_peaks)
         peakmenu.addAction(savePeaks)
 
         loadPeaks = QAction("load", self)
-        loadPeaks.triggered.connect(self._controller.get_rpathpeaks)
+        loadPeaks.triggered.connect(self._controller.load_peaks)
         peakmenu.addAction(loadPeaks)
 
-        # stats menu
         statsmenu = menubar.addMenu("statistics")
 
         calculateStats = QAction("calculate", self)
@@ -325,10 +331,9 @@ class View(QMainWindow):
         statsmenu.addAction(calculateStats)
 
         saveStats = QAction("save", self)
-        saveStats.triggered.connect(self._controller.get_wpathstats)
+        saveStats.triggered.connect(self._controller.save_stats)
         statsmenu.addAction(saveStats)
 
-        # set up status bar to display error messages and current file path
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
         self.progressBar = QProgressBar(self)
@@ -337,31 +342,22 @@ class View(QMainWindow):
         self.currentFile = QLabel()
         self.statusBar.addPermanentWidget(self.currentFile)
 
-        # set up the central widget containing the plot and navigationtoolbar
-        self.centwidget = QWidget()
+        self.centwidget = QWidget()    # contains figures and navigationtoolbar
         self.setCentralWidget(self.centwidget)
 
-        # connect canvas0 to keyboard and mouse input for peak editing;
-        # only widgets (e.g. canvas) that currently have focus capture
-        # keyboard input: "You must enable keyboard focus for a widget if
-        # it processes keyboard events."
-        self.canvas0.setFocusPolicy(Qt.ClickFocus)
+        self.canvas0.setFocusPolicy(Qt.ClickFocus)    # only widgets (e.g. canvas) that currently have focus capture keyboard input
         self.canvas0.setFocus()
         self.canvas0.mpl_connect("key_press_event",
-                                 self._controller.edit_peaks)
-        self.canvas0.mpl_connect("button_press_event", self.get_xcursor)
+                                 self._controller.edit_peaks)    # connect canvas to keyboard input for peak editing
+        self.canvas0.mpl_connect("button_press_event", self.get_xcursor)    # connect canvas to mouse input for peak editing
 
-        # arrange the three figure canvases in splitter object
-        self.splitter = QSplitter(Qt.Vertical)
-        # setting opaque resizing to false is important, since resizing gets
-        # very slow otherwise once axes are populated
-        self.splitter.setOpaqueResize(False)
+        self.splitter = QSplitter(Qt.Vertical)    # arrange the three figure canvases in splitter object
+        self.splitter.setOpaqueResize(False)    # resizing gets very slow otherwise once axes are populated
         self.splitter.addWidget(self.canvas0)
         self.splitter.addWidget(self.canvas1)
         self.splitter.addWidget(self.canvas2)
         self.splitter.setChildrenCollapsible(False)
 
-        # define GUI layout
         self.vlayout0 = QVBoxLayout(self.centwidget)
         self.vlayout1 = QVBoxLayout()
         self.vlayoutA = QFormLayout()
@@ -406,15 +402,12 @@ class View(QMainWindow):
         self.optionsgroup.setWidget(self.optionsgroupwidget)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.optionsgroup)
 
-
         self.vlayout0.addWidget(self.splitter)
 
         self.hlayout0.addWidget(self.navitools)
         self.vlayout0.addLayout(self.hlayout0)
 
-        ##############################################
-        # connect output widgets to external signals #
-        ##############################################
+        # Subscribe to updates from the Model.
         self._model.signal_changed.connect(self.plot_signal)
         self._model.marker_changed.connect(self.plot_marker)
         self._model.peaks_changed.connect(self.plot_peaks)
@@ -427,161 +420,287 @@ class View(QMainWindow):
         self._model.progress_changed.connect(self.display_progress)
         self._model.model_reset.connect(self.reset_plot)
 
-    ###########
-    # methods #
-    ###########
+    def plot_signal(self, signal):
+        """Plot the biosignal.
 
-    def plot_signal(self, value):
+        Receives updates in signal from Model.
+
+        Parameters
+        ----------
+        signal : ndarray of float
+            Vector representing the biosignal.
+
+        See Also
+        --------
+        model.Model.signal
+        """
         self.ax00.clear()
         self.ax00.relim()
-        # reset navitools history
-        self.navitools.update()
-        self.line00 = self.ax00.plot(self._model.sec, value, zorder=1)
+        self.navitools.update()    # reset navitools history
+        self.line00 = self.ax00.plot(self._model.sec, signal, zorder=1)
         self.ax00.set_xlabel("seconds", fontsize="large", fontweight="heavy")
         self.canvas0.draw()
-#        print("plot_signal listening")
-#        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
 
+    def plot_peaks(self, peaks):
+        """Plot the extrema.
 
-    def plot_peaks(self, value):
-        # self.scat is listed in ax.collections
-        if self.ax00.collections:
+        Receives updates in peaks from Model.
+
+        Parameters
+        ----------
+        peaks : ndarray of int
+            Vector representing the extrema.
+
+        See Also
+        --------
+        model.Model.peaks
+        """
+        if self.ax00.collections:    # self.scat is listed in ax.collections
             self.ax00.collections[0].remove()
-        self.scat = self.ax00.scatter(self._model.sec[value],
-                                      self._model.signal[value], c="m",
+        self.scat = self.ax00.scatter(self._model.sec[peaks],
+                                      self._model.signal[peaks], c="m",
                                       zorder=2)
         self.canvas0.draw()
-#        print("plot_peaks listening")
-#        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
 
+    def plot_segment(self, segment):
+        """Show preview of segment.
 
-    def plot_segment(self, value):
-        # If an invalid signal has been selected reset the segmenter interface.
-        if value is None:
+        Receives updates in segment from Model.
+
+        Parameters
+        ----------
+        segment : list of float
+            The start and end of the segment in seconds.
+
+        See Also
+        --------
+        model.Model.segment
+        """
+        if segment is None:    # if an invalid segment has been selected reset the segmenter interface
             self.toggle_segmenter(1)
             return
         if self.ax00.patches:    # self.segementspan is listed in ax.patches
             self.ax00.patches[0].remove()
-        self.segmentspan = self.ax00.axvspan(value[0], value[1], color="m",
+        self.segmentspan = self.ax00.axvspan(segment[0], segment[1], color="m",
                                              alpha=0.25)
         self.canvas0.draw()
         self.confirmedit.setEnabled(True)
-#        print(self.ax0.collections, self.ax0.patches, self.ax0.artists)
 
+    def plot_marker(self, marker):
+        """Plot the marker channel.
 
-    def plot_marker(self, value):
+        Receives updates in marker from Model.
+
+        Parameters
+        ----------
+        marker : list of ndarray
+            Seconds element is vector representing the marker channel and first
+            element is a vector representing the seconds associated with each
+            sample in the marker channel.
+
+        See Also
+        --------
+        model.Model.marker
+        """
         self.ax10.clear()
         self.ax10.relim()
-        self.line10 = self.ax10.plot(value[0], value[1])
+        self.line10 = self.ax10.plot(marker[0], marker[1])
         self.canvas1.draw()
-#        print("plot_marker listening")
 
+    def plot_period(self, period):
+        """Plot instantaneous period.
 
-    def plot_period(self, value):
+        Receives updates in period from Model.
+
+        Parameters
+        ----------
+        period : ndarray of float
+            Vector representing the instantaneous period.
+
+        See Also
+        --------
+        model.Model.periodintp
+        """
         self.ax20.clear()
         self.ax20.relim()
         self.navitools.home()
         if self._model.savestats["period"]:
-            self.line20 = self.ax20.plot(self._model.sec, value, c="m")
+            self.line20 = self.ax20.plot(self._model.sec, period, c="m")
         else:
-            self.line20 = self.ax20.plot(self._model.sec, value)
-        self.ax20.set_ylim(bottom=min(value), top=max(value))
+            self.line20 = self.ax20.plot(self._model.sec, period)
+        self.ax20.set_ylim(bottom=min(period), top=max(period))
         self.ax20.set_title("period", pad=0, fontweight="heavy")
         self.ax20.grid(True, axis="y")
         self.navitools.update()
         self.canvas2.draw()
-#        print("plot_period listening")
 
+    def plot_rate(self, rate):
+        """Plot instantaneous rate.
 
-    def plot_rate(self, value):
+        Receives updates in rate from Model.
+
+        Parameters
+        ----------
+        rate : ndarray of float
+            Vector representing the instantaneous rate.
+
+        See Also
+        --------
+        model.Model.rateintp
+        """
         self.ax21.clear()
         self.ax21.relim()
         self.navitools.home()
         if self._model.savestats["rate"]:
-            self.line21 = self.ax21.plot(self._model.sec, value, c="m")
+            self.line21 = self.ax21.plot(self._model.sec, rate, c="m")
         else:
-            self.line21 = self.ax21.plot(self._model.sec, value)
-        self.ax21.set_ylim(bottom=min(value), top=max(value))
+            self.line21 = self.ax21.plot(self._model.sec, rate)
+        self.ax21.set_ylim(bottom=min(rate), top=max(rate))
         self.ax21.set_title("rate", pad=0, fontweight="heavy")
         self.ax21.grid(True, axis="y")
         self.navitools.update()
         self.canvas2.draw()
-#        print("plot_rate listening")
 
+    def plot_tidalamp(self, tidalamp):
+        """Plot instantaneous tidal amplitude.
 
-    def plot_tidalamp(self, value):
+        Receives updates in tidal amplitude from Model.
+
+        Parameters
+        ----------
+        tidalamp : ndarray of float
+            Vector representing the instantaneous tidal amplitude.
+
+        See Also
+        --------
+        model.Model.tidalampintp
+        """
         self.ax22.clear()
         self.ax22.relim()
         self.navitools.home()
         if self._model.savestats["tidalamp"]:
-            self.line22 = self.ax22.plot(self._model.sec, value, c="m")
+            self.line22 = self.ax22.plot(self._model.sec, tidalamp, c="m")
         else:
-            self.line22 = self.ax22.plot(self._model.sec, value)
-        self.ax22.set_ylim(bottom=min(value), top=max(value))
+            self.line22 = self.ax22.plot(self._model.sec, tidalamp)
+        self.ax22.set_ylim(bottom=min(tidalamp), top=max(tidalamp))
         self.ax22.set_title("amplitude", pad=0, fontweight="heavy")
         self.ax22.grid(True, axis="y")
         self.navitools.update()
         self.canvas2.draw()
-#        print("plot_tidalamp listening")
 
+    def display_path(self, path):
+        """Display the path to the current dataset.
 
-    def display_path(self, value):
-        self.currentFile.setText(value)
+        Receives update in path from Model.
 
+        Parameters
+        ----------
+        path : str
+            The path to the file containing the current dataset.
+
+        See Also
+        --------
+        model.Model.rpathsignal
+        """
+        self.currentFile.setText(path)
 
     def display_status(self, status):
-        # display status until new status is set
+        """Display a status message.
+
+        Receives updates in status message from Model.
+
+        Parameters
+        ----------
+        status : str
+            A status message.
+
+        See Also
+        --------
+        model.Model.status
+        """
         self.statusBar.showMessage(status)
 
+    def display_progress(self, progress):
+        """Display task progress.
 
-    def display_progress(self, value):
-        # if value is 0, the progressbar indicates a busy state
-        self.progressBar.setRange(0, value)
+        Receives updates in progress from Model.
 
+        Parameters
+        ----------
+        progress : int
+            Integer indicating the current task progress.
 
-    def toggle_segmenter(self, value):
+        See Also
+        --------
+        model.Model.progress, controller.Worker, controller.threaded
+        """
+        self.progressBar.setRange(0, progress)    # indicates busy state if progress is 0
+
+    def toggle_segmenter(self, visibility_state):
+        """Toggle visibility of segmenter widget.
+
+        Parameters
+        ----------
+        visibility_state : int
+            Update in state of the segmenter widget's visibility.
+        """
         if not self._model.loaded:
             return
-        # Open segmenter when called from signalmenu or clear segmenter
-        # upon selection of invalid segment.
-        if value == 1:
+        if visibility_state == 1:    # open segmenter when called from signalmenu or clear segmenter upon selection of invalid segment
             self.segmenter.setVisible(True)
             self.confirmedit.setEnabled(False)
             self.startedit.clear()
             self.endedit.clear()
-            if self.ax00.patches:
-                self.ax00.patches[0].remove()
-                self.canvas0.draw()
-        # Close segmenter after segment has been confirmed.
-        elif value == 0:
+        elif visibility_state == 0:    # close segmenter after segment has been confirmed
             self.segmenter.setVisible(False)
-            if self.ax00.patches:
-                self.ax00.patches[0].remove()
-                self.canvas0.draw()
-        # Close segmenter after segmentation has been aborted (reset
-        # segment).
-        elif value == 2:
-            self._model.set_segment([0, 0])    # This will reset the model to None
+        elif visibility_state == 2:    # close segmenter after segmentation has been aborted (reset segment)
+            self._model.set_segment([0, 0])
             self.segmenter.setVisible(False)
-            if self.ax00.patches:
-                self.ax00.patches[0].remove()
-                self.canvas0.draw()
-
+        if self.ax00.patches:
+            self.ax00.patches[0].remove()
+            self.canvas0.draw()
 
     def enable_segmentedit(self):
-        # disable peak editing to avoid interference
-        self.editcheckbox.setChecked(False)
+        """Associate cursor position with a specific segmenter text field.
+
+        Regulate if cursor position is associated with editing the start or
+        end of a segment.
+        """
+        self.editcheckbox.setChecked(False)    # disable peak editing to avoid interference
         if self.startedit.hasFocus():
             self.segmentcursor = "start"
         elif self.endedit.hasFocus():
             self.segmentcursor = "end"
 
+    def get_xcursor(self, mouse_event):
+        """Retrieve input to segmenter text fields from cursor position.
+
+        Retrieve the start or end of a segment in seconds from the current
+        cursor position.
+
+        Parameters
+        ----------
+        mouse_event : MouseEvent
+            Event containing information about the current cursor position
+            in data coordinates.
+
+        See Also
+        --------
+        matplotlib.backend_bases.MouseEvent
+        """
+        if mouse_event.button != 1:    # 1 = left mouse button
+            return
+        if self.segmentcursor == "start":
+            self.startedit.selectAll()
+            self.startedit.insert("{:.2f}".format(mouse_event.xdata))    # limit number of decimal places to two
+        elif self.segmentcursor == "end":
+            self.endedit.selectAll()
+            self.endedit.insert("{:.2f}".format(mouse_event.xdata))
+        self.segmentcursor = False    # disable segment cursor again after value has been set
 
     def set_customheader(self):
-        """Populate the customheader with inputs from the customfiledialog"""
-
-        # Check if one of the mandatory fields is missing.
-        mandatoryfields = self.signaledit.text() and self.headerrowsedit.text() and self.sfreqedit.text()
+        """Populate the customheader with inputs from the customfiledialog."""
+        mandatoryfields = self.signaledit.text() and self.headerrowsedit.text() and self.sfreqedit.text()    # check if one of the mandatory fields is missing
 
         if not mandatoryfields:
             self._model.status = ("Please provide values for 'biosignal column'"
@@ -590,7 +709,7 @@ class View(QMainWindow):
             return
 
         seps = {"comma": ",", "tab": "\t", "colon": ":", "space": " "}
-        self._model.customheader = dict.fromkeys(self._model.customheader, None)    # reset header here since it cannot be reset in controller.get_fpaths()
+        self._model.customheader = dict.fromkeys(self._model.customheader, None)    # reset header here since it cannot be reset in controller.load_chanels
 
         self._model.customheader["signalidx"] = int(self.signaledit.text())
         self._model.customheader["skiprows"] = int(self.headerrowsedit.text())
@@ -600,62 +719,58 @@ class View(QMainWindow):
             self._model.customheader["markeridx"] = int(self.markeredit.text())
 
         self.customfiledialog.done(QDialog.Accepted)    # close the dialog window
-        self._controller.get_fpaths()    # move on to file selection
+        self._controller.load_channels()    # move on to file selection
 
+    def select_stats(self, statistic):
+        """Select statistics to be saved.
 
-    def get_xcursor(self, event):
-        # event.button 1 corresponds to left mouse button
-        if event.button != 1:
-            return
-        # limit number of decimal places to two
-        if self.segmentcursor == "start":
-            self.startedit.selectAll()
-            self.startedit.insert("{:.2f}".format(event.xdata))
-        elif self.segmentcursor == "end":
-            self.endedit.selectAll()
-            self.endedit.insert("{:.2f}".format(event.xdata))
-        # disable segment cursor again after value has been set
-        self.segmentcursor = False
-
-
-    def select_stats(self, event):
+        Parameters
+        ----------
+        statistic : str
+            The selected statistic.
         """
-        select or deselect statistics to be saved; toggle boolean with xor
-        operator ^=, toggle color with dictionary
-        """
-        self._model.savestats[event] ^= True
+        self._model.savestats[statistic] ^= True    # toggle boolean with xor operator
         line = None
-        if event == "period":
+        if statistic == "period":
             if self.line20:
                 line = self.line20[0]
-        elif event == "rate":
+        elif statistic == "rate":
             if self.line21:
                 line = self.line21[0]
-        elif event == "tidalamp":
+        elif statistic == "tidalamp":
             if self.line22:
                 line = self.line22[0]
         if line:
             line.set_color(self.togglecolors[line.get_color()])
         self.canvas2.draw()
 
+    def toggle_options(self, state):
+        """Toggle availability of configuration options.
 
-    def toggle_options(self, event):
-        if event in ["ECG", "PPG"]:
+        Based on current state.
+
+        Parameters
+        ----------
+        state : str
+            The aspect of the current state to which the availability of
+            configuration options needs to be adapted.
+        """
+        if state in ["ECG", "PPG"]:
             self.tidalampcheckbox.setEnabled(False)
             self.tidalampcheckbox.setChecked(False)
             self.ax22.set_visible(False)
             self.canvas2.draw()
-        elif event == "RESP":
+        elif state == "RESP":
             self.tidalampcheckbox.setEnabled(True)
             self.ax22.set_visible(True)
             self.canvas2.draw()
-        elif event == "multiple files":
+        elif state == "multiple files":
             self.editcheckbox.setEnabled(False)
             self.editcheckbox.setChecked(False)
             self.savecheckbox.setEnabled(True)
             self.correctcheckbox.setEnabled(True)
             self.markerchanmenu.setEnabled(False)
-        elif event == "single file":
+        elif state == "single file":
             self.editcheckbox.setEnabled(True)
             self.markerchanmenu.setEnabled(True)
             self.savecheckbox.setEnabled(False)
@@ -663,8 +778,8 @@ class View(QMainWindow):
             self.correctcheckbox.setEnabled(False)
             self.correctcheckbox.setChecked(False)
 
-
     def reset_plot(self):
+        """Reset plot elements associated with the current dataset."""
         self.ax00.clear()
         self.ax00.relim()
         self.line00 = None

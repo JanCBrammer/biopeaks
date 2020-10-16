@@ -57,14 +57,14 @@ the relevant local extrema are inhalation peaks and exhalation troughs. `biopeak
 using three biosignal-specific algorithms. Breathing extrema are detected using a variant of the "zero-crossing algorithm
 with amplitude threshold" [@khodadad]. Systolic peaks in PPG signals are identified using an implementation of "Method IV;
 Event-Related Moving Averages with Dynamic Threshold" introduced by Elgendi et al. [@elgendi]. Lastly, the ECG R-peak detector is a
-custom algorithm that has been evaluated on the Glasgow University Database (GUDB) [@gudb] which contains ECG signals along with R-peak annotations. The performance of the R-peak detector has been evaluated in terms of sensitivity (aka recall; i.e., how many of the correct extrema were detected?) and precision (i.e., how many of the detected extrema are correct extrema?). Peak detection has been evaluated on all 25 records using the ECG channel corresponding to Einthoven lead II. The tolerance for true positive peak detection was set to one sample. The GUDB has not been used to optimize the R-peak detector prior to the performance evaluation. The performance at rest (sitting) and in dynamic conditions (handbike) is as follows:
+custom algorithm that has been evaluated on the Glasgow University Database (GUDB) [@gudb] which contains ECG signals along with R-peak annotations. The performance of the R-peak detector has been evaluated in terms of sensitivity (aka recall; i.e., how many of the correct extrema were detected?) and precision (i.e., how many of the detected extrema are correct extrema?). Peak detection has been evaluated on the records of all 25 participants included in the GUDB using the ECG channel corresponding to Einthoven lead II. The tolerance for true positive peak detection was set to one sample. The GUDB has not been used to optimize the R-peak detector prior to the performance evaluation. The performance at rest (sitting, 25 records) and in dynamic conditions (handbike, 24 records due to the missing R-peak annotations of participant 04) is as follows:
 
 |           |    |sitting|handbike|
 |:---------:|:--:|:-----:|:------:|
-|precision  |mean|.998   |.984    |
-|           |std |.002   |.022    |
-|sensitivity|mean|.998   |.984    |
-|           |std |.004   |.025    |
+|precision  |mean|.9995  |.9855   |
+|           |std |.0017  |.0234   |
+|sensitivity|mean|.9974  |.9853   |
+|           |std |.0037  |.0250   |
 
 The code for performance evaluation is included in the `biopeaks` installation and can be run without downloading the GUDB (the database is streamed).
 Despite the robust performance of the extrema detectors, algorithmically identified extrema can be misplaced (false positives) or extrema might be missed (false negatives),

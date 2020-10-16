@@ -1,6 +1,7 @@
 ![logo](docs/images/logo.png)
 
 ![GH Actions](https://github.com/JanCBrammer/biopeaks/workflows/test/badge.svg?branch=dev)
+[![codecov](https://codecov.io/gh/JanCBrammer/biopeaks/branch/master/graph/badge.svg)](https://codecov.io/gh/JanCBrammer/biopeaks)
 [![DOI](https://www.zenodo.org/badge/172897525.svg)](https://www.zenodo.org/badge/latestdoi/172897525)
 [![PyPI version](https://img.shields.io/pypi/v/biopeaks.svg)](https://pypi.org/project/biopeaks/)
 
@@ -53,6 +54,11 @@ increase test coverage, or adding features to the GUI? Get started with the [con
 
 Click [here](https://zenodo.org/record/3971650#.X24GX-3gphE) to cite `biopeaks` in a format of your choice.
 Look for the `Cite as` box on the lower right of the page.
+
+
+# Changelog
+
+Have a look at the [changelog](https://jancbrammer.github.io/biopeaks/changelog.html) to get an overview of what has changed throughout the versions of `biopeaks`.
 
 
 
