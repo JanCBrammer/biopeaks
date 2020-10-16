@@ -8,8 +8,7 @@ from matplotlib.patches import Polygon
 from scipy.signal import find_peaks
 from .filters import (butter_highpass_filter, powerline_filter,
                       moving_average, butter_bandpass_filter)
-from .analysis_utils import (compute_threshold, find_segments, interp_stats,
-                             update_indices)
+from .analysis_utils import find_segments, interp_stats
 
 
 def ecg_peaks(signal, sfreq, smoothwindow=.1, avgwindow=.75,

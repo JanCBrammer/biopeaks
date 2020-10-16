@@ -3,7 +3,7 @@
 
 from functools import wraps
 from .heart import ecg_peaks, ppg_peaks, correct_peaks, heart_stats
-from .resp import resp_extrema, resp_stats
+from .resp import ensure_peak_trough_alternation, resp_extrema, resp_stats
 from .io_utils import (read_custom, read_opensignals, read_edf,
                        write_custom, write_opensignals, write_edf)
 from pathlib import Path
@@ -524,17 +524,10 @@ class Controller(QObject):
             savearray.to_csv(self._model.wpathpeaks, index=False,
                              header=['peaks'])
         elif self._model.modality == 'RESP':
-            # Check if the alternation of peaks and troughs is unbroken (it
-            # might be at this point due to user edits). If alternation of sign
-            # in extdiffs is broken, remove the extreme (or extrema) that
-            # cause(s) the break(s).
-            amps = self._model.signal[self._model.peaks]
-            extdiffs = np.sign(np.diff(amps))
-            extdiffs = np.add(extdiffs[0:-1], extdiffs[1:])
-            removeext = np.where(extdiffs != 0)[0] + 1
-            extrema = np.delete(self._model.peaks, removeext)    # work on local copy of extrema to avoid call to plotting function
-
+            extrema = ensure_peak_trough_alternation(self._model.peaks,
+                                                     self._model.signal)    # work on local copy of extrema to avoid call to plotting function
             amps = self._model.signal[extrema]
+            print(extrema, amps)
 
             if np.remainder(extrema.size, 2) != 0:
                 extrema = np.append(extrema, np.nan)    # pad extrema with NAN in order to ensure equal number of peaks and troughs

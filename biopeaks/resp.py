@@ -101,16 +101,8 @@ def resp_stats(extrema, signal, sfreq):
         Vectors with the same number of elements as `signal`, containing the
         instantaneous respiratory period, -rate, and tidal amplitude.
     """
-    # Check if the alternation of peaks and troughs is unbroken (it
-    # might be at this point due to user edits). If alternation of sign
-    # in extdiffs is broken, remove the extreme (or extrema) that
-    # cause(s) the break(s).
+    extrema = ensure_peak_trough_alternation(extrema, signal)
     amplitudes = signal[extrema]
-    extdiffs = np.sign(np.diff(amplitudes))
-    extdiffs = np.add(extdiffs[0:-1], extdiffs[1:])
-    removeext = np.where(extdiffs != 0)[0] + 1
-    extrema = np.delete(extrema, removeext)
-    amplitudes = np.delete(amplitudes, removeext)
 
     # Pad the amplitude series in such a way that it always starts with a
     # trough and ends with a peak (i.e., series of trough-peak pairs)
@@ -156,3 +148,31 @@ def resp_stats(extrema, signal, sfreq):
     rateintp = 60 / periodintp
 
     return periodintp, rateintp, tidalampintp
+
+
+def ensure_peak_trough_alternation(extrema, signal):
+    """Ensure peak-trough alternation in respiratory extrema.
+
+    Ensure that the alternation of inhalation peaks and exhalation troughs is
+    unbroken (it might be due to user edits).
+
+    Parameters
+    ----------
+    extrema : [type]
+        Samples marking the inhalation peaks and exhalation troughs.
+    signal : ndarray
+        The respiratory signal.
+
+    Returns
+    -------
+    alternating_extrema : ndarray
+        Alternating sequence of inhalation peaks and exhalation troughs (can
+        start with either peak or trough).
+    """
+    amplitudes = signal[extrema]
+    extdiffs = np.sign(np.diff(amplitudes))
+    extdiffs = np.add(extdiffs[0:-1], extdiffs[1:])
+    removeext = np.where(extdiffs != 0)[0] + 1    # indices at which alternation of sign in extdiffs is broken
+    alternating_extrema = np.delete(extrema, removeext)
+
+    return alternating_extrema
