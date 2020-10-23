@@ -246,7 +246,7 @@ def test_ecg_peaks(datadir):
     data = read_edf(datadir.joinpath("EDFmontage0.edf"), channel="A3",
                     channeltype="signal")
     test_extrema = ecg_peaks(data["signal"], data["sfreq"])
-    assert np.sum(test_extrema) == 202504458
+    assert np.allclose(np.sum(test_extrema), 202504458, atol=5)
 
 
 def test_ppg_peaks(datadir):
@@ -254,7 +254,7 @@ def test_ppg_peaks(datadir):
     data = read_edf(datadir.joinpath("EDFmontage0.edf"), channel="A5",
                     channeltype="signal")
     test_extrema = ppg_peaks(data["signal"], data["sfreq"])
-    assert np.sum(test_extrema) == 20238288
+    assert np.allclose(np.sum(test_extrema), 20238288, atol=5)
 
 
 def test_heart_stats(peaks_correct):
