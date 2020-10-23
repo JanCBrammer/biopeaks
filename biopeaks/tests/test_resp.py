@@ -28,7 +28,7 @@ def test_resp_extrema(datadir):
     data = read_edf(datadir.joinpath("EDFmontage0.edf"), channel="A5",
                     channeltype="signal")
     test_extrema = resp_extrema(data["signal"], data["sfreq"])
-    assert np.allclose(np.sum(test_extrema), 40410033, 5)
+    assert np.allclose(np.sum(test_extrema), 40410033, atol=5)
 
 
 def test_resp_stats(signal, extrema):
