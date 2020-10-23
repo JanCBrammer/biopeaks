@@ -169,10 +169,14 @@ def ensure_peak_trough_alternation(extrema, signal):
         Alternating sequence of inhalation peaks and exhalation troughs (can
         start with either peak or trough).
     """
-    amplitudes = signal[extrema]
-    extdiffs = np.sign(np.diff(amplitudes))
-    extdiffs = np.add(extdiffs[0:-1], extdiffs[1:])
-    removeext = np.where(extdiffs != 0)[0] + 1    # indices at which alternation of sign in extdiffs is broken
-    alternating_extrema = np.delete(extrema, removeext)
+    amp_at_ext = signal[extrema]
+    amp_at_ext += abs(min(amp_at_ext))    # enforce positive values in order to be able to rely on sign differences
+    amp_diffs = np.diff(amp_at_ext)
+    sign_amp_diffs = np.sign(amp_diffs)    # 1: positive amplitude difference, -1: negative amplitude difference, 0: no amplitude difference
+    sign_equal = sign_amp_diffs[:-1] == sign_amp_diffs[1:]    # extrema at which the amplitude doesn't switch sign
+    sign_constant = sign_amp_diffs[:-1] == 0    # extrema at which the amplitude is equal to the previous extreme
+    delete_ext = np.where(np.logical_or(sign_equal, sign_constant))[0]
+
+    alternating_extrema = np.delete(extrema, delete_ext + 1)
 
     return alternating_extrema
