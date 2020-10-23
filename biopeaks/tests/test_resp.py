@@ -18,6 +18,7 @@ def datadir():
 def signal():
     return np.array([-1, -1, 5, -3, -5, -5, -1, 0, 1, 0])
 
+
 @pytest.fixture
 def extrema(signal):
     return np.arange(signal.size)
