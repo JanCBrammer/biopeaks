@@ -3,7 +3,16 @@
 
 import pytest
 import numpy as np
-from biopeaks.resp import ensure_peak_trough_alternation
+from pathlib import Path
+from biopeaks.resp import (resp_extrema, resp_stats,
+                           ensure_peak_trough_alternation)
+from biopeaks.io_utils import read_edf
+
+
+@pytest.fixture
+def datadir():
+    return Path(__file__).parent.resolve().joinpath("testdata")
+
 
 @pytest.fixture
 def signal():
@@ -14,10 +23,22 @@ def extrema(signal):
     return np.arange(signal.size)
 
 
+def test_resp_extrema(datadir):
+    data = read_edf(datadir.joinpath("EDFmontage0.edf"), channel="A5",
+                    channeltype="signal")
+    test_extrema = resp_extrema(data["signal"], data["sfreq"])
+    assert np.sum(test_extrema) == 40410033
+
+
+def test_resp_stats(signal, extrema):
+
+    period, rate, tidalamp = resp_stats(extrema, signal, sfreq=1)
+    assert np.mean(period) == 6
+    assert np.mean(rate) == 10
+    assert np.mean(tidalamp) == 6
+
+
 def test_ensure_peak_trough_alternation(signal, extrema):
 
     alternating_extrema = ensure_peak_trough_alternation(extrema, signal)
-    print(alternating_extrema)
     assert np.sum(alternating_extrema - np.array([0, 2, 4, 8, 9])) == 0
-
-

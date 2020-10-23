@@ -3,7 +3,10 @@
 
 import pytest
 import numpy as np
-from biopeaks.heart import _find_artifacts, _correct_artifacts, correct_peaks
+from pathlib import Path
+from biopeaks.heart import (ecg_peaks, ppg_peaks, heart_stats, _find_artifacts,
+                            _correct_artifacts, correct_peaks)
+from biopeaks.io_utils import read_edf
 
 
 def compute_rmssd(peaks):
@@ -230,3 +233,32 @@ def test_missed_correction_wrapper(peaks_correct, peaks_missed, iterative,
     rmssd_diff_corrected = np.abs(rmssd_correct - rmssd_corrected)
 
     assert int(rmssd_diff_uncorrected - rmssd_diff_corrected) == rmssd_diff
+
+
+@pytest.fixture
+def datadir():
+
+    return Path(__file__).parent.resolve().joinpath("testdata")
+
+
+def test_ecg_peaks(datadir):
+
+    data = read_edf(datadir.joinpath("EDFmontage0.edf"), channel="A3",
+                    channeltype="signal")
+    test_extrema = ecg_peaks(data["signal"], data["sfreq"])
+    assert np.sum(test_extrema) == 202504458
+
+
+def test_ppg_peaks(datadir):
+
+    data = read_edf(datadir.joinpath("EDFmontage0.edf"), channel="A5",
+                    channeltype="signal")
+    test_extrema = ppg_peaks(data["signal"], data["sfreq"])
+    assert np.sum(test_extrema) == 20238288
+
+
+def test_heart_stats(peaks_correct):
+
+    period, rate = heart_stats(peaks_correct, sfreq=1000, nsamp=peaks_correct[-1])
+    assert np.allclose(np.mean(period), 1, atol=.01)
+    assert np.allclose(np.mean(rate), 60, atol=1)
