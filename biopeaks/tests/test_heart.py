@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Unit tests for cardiac artifact correction."""
+"""Unit tests for heart module."""
 
 import pytest
 import numpy as np
@@ -236,24 +236,32 @@ def test_missed_correction_wrapper(peaks_correct, peaks_missed, iterative,
 
 
 @pytest.fixture
-def datadir():
+def ecg_data():
 
-    return Path(__file__).parent.resolve().joinpath("testdata")
-
-
-def test_ecg_peaks(datadir):
-
+    datadir = Path(__file__).parent.resolve().joinpath("testdata")
     data = read_edf(datadir.joinpath("EDFmontage0.edf"), channel="A3",
                     channeltype="signal")
-    test_extrema = ecg_peaks(data["signal"], data["sfreq"])
+    return data
+
+
+@pytest.fixture
+def ppg_data():
+
+    datadir = Path(__file__).parent.resolve().joinpath("testdata")
+    data = read_edf(datadir.joinpath("EDFmontage0.edf"), channel="A5",
+                    channeltype="signal")
+    return data
+
+
+def test_ecg_peaks(ecg_data):
+
+    test_extrema = ecg_peaks(ecg_data["signal"], ecg_data["sfreq"])
     assert np.allclose(np.sum(test_extrema), 202504458, atol=5)
 
 
-def test_ppg_peaks(datadir):
+def test_ppg_peaks(ppg_data):
 
-    data = read_edf(datadir.joinpath("EDFmontage0.edf"), channel="A5",
-                    channeltype="signal")
-    test_extrema = ppg_peaks(data["signal"], data["sfreq"])
+    test_extrema = ppg_peaks(ppg_data["signal"], ppg_data["sfreq"])
     assert np.allclose(np.sum(test_extrema), 20238288, atol=5)
 
 

@@ -10,8 +10,11 @@ from biopeaks.io_utils import read_edf
 
 
 @pytest.fixture
-def datadir():
-    return Path(__file__).parent.resolve().joinpath("testdata")
+def resp_data():
+    datadir =  Path(__file__).parent.resolve().joinpath("testdata")
+    data = read_edf(datadir.joinpath("EDFmontage0.edf"), channel="A5",
+                    channeltype="signal")
+    return data
 
 
 @pytest.fixture
@@ -24,10 +27,9 @@ def extrema(signal):
     return np.arange(signal.size)
 
 
-def test_resp_extrema(datadir):
-    data = read_edf(datadir.joinpath("EDFmontage0.edf"), channel="A5",
-                    channeltype="signal")
-    test_extrema = resp_extrema(data["signal"], data["sfreq"])
+def test_resp_extrema(resp_data):
+
+    test_extrema = resp_extrema(resp_data["signal"], resp_data["sfreq"])
     assert np.allclose(np.sum(test_extrema), 40410033, atol=5)
 
 
