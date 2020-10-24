@@ -11,7 +11,7 @@ from biopeaks.io_utils import read_edf
 
 @pytest.fixture
 def resp_data():
-    datadir =  Path(__file__).parent.resolve().joinpath("testdata")
+    datadir = Path(__file__).parent.resolve().joinpath("testdata")
     data = read_edf(datadir.joinpath("EDFmontage0.edf"), channel="A5",
                     channeltype="signal")
     return data
