@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 """Controller component of the MVC application."""
 
+import sys
+import threading
+import pandas as pd
+import numpy as np
 from functools import wraps
 from .heart import ecg_peaks, ppg_peaks, correct_peaks, heart_stats
 from .resp import ensure_peak_trough_alternation, resp_extrema, resp_stats
 from .io_utils import (read_custom, read_opensignals, read_edf,
                        write_custom, write_opensignals, write_edf)
 from pathlib import Path
-import pandas as pd
-import numpy as np
 from scipy.signal import find_peaks as find_peaks_scipy
 from PySide2.QtCore import QObject, QRunnable, QThreadPool, Signal
 from PySide2.QtWidgets import QFileDialog
@@ -28,6 +30,10 @@ readfuncs = {"Custom": read_custom,
 writefuncs = {"Custom": write_custom,
               "OpenSignals": write_opensignals,
               "EDF": write_edf}
+
+running_coverage = "coverage" in sys.modules
+if running_coverage:
+    print("Enabling Worker tracing during testing with coverage.")
 
 
 class WorkerSignal(QObject):
@@ -69,6 +75,8 @@ class Worker(QRunnable):
     def run(self):
         """Execute method."""
         self.signals.progress.emit(0)
+        if running_coverage:
+            sys.settrace(threading._trace_hook)
         self.method(self.controller, **self.kwargs)
         self.signals.progress.emit(1)
 
@@ -527,7 +535,6 @@ class Controller(QObject):
             extrema = ensure_peak_trough_alternation(self._model.peaks,
                                                      self._model.signal)    # work on local copy of extrema to avoid call to plotting function
             amps = self._model.signal[extrema]
-            print(extrema, amps)
 
             if np.remainder(extrema.size, 2) != 0:
                 extrema = np.append(extrema, np.nan)    # pad extrema with NAN in order to ensure equal number of peaks and troughs
