@@ -1,11 +1,7 @@
 name: publish
 on:
-  push:
-     branches:
-      - dev
-  #release:
-    #types: [published]
-
+  release:
+    types: [published]
 
 jobs:
 
@@ -174,13 +170,13 @@ jobs:
           path: dist    # download to "dist" folder
 
       - name: Publish
-        env:
-          TWINE_USERNAME: ${{ secrets.TESTPYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.TESTPYPI_PASSWORD }}
-        run: |
-          twine upload --repository-url https://test.pypi.org/legacy/ dist/*
         # env:
-        #   TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-        #   TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        #   TWINE_USERNAME: ${{ secrets.TESTPYPI_USERNAME }}
+        #   TWINE_PASSWORD: ${{ secrets.TESTPYPI_PASSWORD }}
         # run: |
-        #   twine upload dist/*
+        #   twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          twine upload dist/*
