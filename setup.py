@@ -6,6 +6,9 @@ from setuptools import setup, find_namespace_packages
 with open("README.md") as readme:
     long_description = readme.read()
 
+# Update local links such that project description on PyPI points to GitHub.
+long_description = long_description.replace("](docs/images",
+                                            "](https://github.com/JanCBrammer/biopeaks/raw/master/docs/images")
 
 setup(
     name="biopeaks",
