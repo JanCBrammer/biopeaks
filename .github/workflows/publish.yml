@@ -1,7 +1,10 @@
 name: publish
 on:
-  release:
-    types: [published]
+  push:
+     branches:
+      - dev
+  #release:
+    #types: [published]
 
 
 jobs:
