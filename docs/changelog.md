@@ -1,5 +1,10 @@
 # Changelog
 
+### Version 1.4.1 (October 26, 2020)
++ enhancement: updated documentation and docstrings.
++ enhancement: more convenient PPG benchmarking.
++ bugfix: `resp.ensure_peak_trough_alternation()` now considers neighboring extrema with equal amplitude.
+
 ### Version 1.4.0 (August 04, 2020)
 + enhancement: added support for plain text files (.txt, .csv, .tsv).
 + enhancement: stream [Glasgow University Database (GUDB)](http://researchdata.gla.ac.uk/716/) for ECG benchmarking (download is no longer required).

@@ -2,13 +2,22 @@
 
 from setuptools import setup, find_namespace_packages
 
+
+with open("README.md") as readme:
+    long_description = readme.read()
+
+
 setup(
     name="biopeaks",
-    version="1.4.0",
+    version="1.4.1",
     description="A graphical user interface for feature extraction from heart- and breathing biosignals.",
     url="https://github.com/JanCBrammer/biopeaks",
     author="Jan C. Brammer",
     author_email="jan.c.brammer@gmail.com",
+    long_description=long_description,
+    long_description_type="text/markdown",
+    project_urls={"Documentation": "https://jancbrammer.github.io/biopeaks",
+                  "Source": "https://github.com/JanCBrammer/biopeaks"},
     keywords="ECG PPG Breathing Biosignals Bitalino OpenSignals EDF GUI",
     packages=find_namespace_packages(exclude=["misc", "paper"]),
     python_requires=">=3.7",
