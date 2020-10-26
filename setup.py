@@ -15,7 +15,7 @@ setup(
     author="Jan C. Brammer",
     author_email="jan.c.brammer@gmail.com",
     long_description=long_description,
-    long_description_type="text/markdown",
+    long_description_content_type="text/markdown",
     project_urls={"Documentation": "https://jancbrammer.github.io/biopeaks",
                   "Source": "https://github.com/JanCBrammer/biopeaks"},
     keywords="ECG PPG Breathing Biosignals Bitalino OpenSignals EDF GUI",
