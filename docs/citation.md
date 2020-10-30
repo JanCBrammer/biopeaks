@@ -1,4 +1,3 @@
 # Citation
 
-Click [here](https://zenodo.org/record/3971650#.X24GX-3gphE) to cite `biopeaks` in a format of your choice.
-Look for the `Cite as` box on the lower right of the page.
+Please refer to the [biopeaks paper](https://joss.theoj.org/papers/10.21105/joss.02621) in The Journal of Open Source Software.

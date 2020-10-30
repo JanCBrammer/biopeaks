@@ -4,6 +4,7 @@
 [![codecov](https://codecov.io/gh/JanCBrammer/biopeaks/branch/master/graph/badge.svg)](https://codecov.io/gh/JanCBrammer/biopeaks)
 [![DOI](https://www.zenodo.org/badge/172897525.svg)](https://www.zenodo.org/badge/latestdoi/172897525)
 [![PyPI version](https://img.shields.io/pypi/v/biopeaks.svg)](https://pypi.org/project/biopeaks/)
+[![JOSS](https://joss.theoj.org/papers/10.21105/joss.02621/status.svg)](https://doi.org/10.21105/joss.02621)
 
 
 # General Information
@@ -52,8 +53,7 @@ increase test coverage, or adding features to the GUI? Get started with the [con
 
 # Citation
 
-Click [here](https://zenodo.org/record/3971650#.X24GX-3gphE) to cite `biopeaks` in a format of your choice.
-Look for the `Cite as` box on the lower right of the page.
+Please refer to the [biopeaks paper](https://joss.theoj.org/papers/10.21105/joss.02621) in The Journal of Open Source Software.
 
 
 # Changelog
