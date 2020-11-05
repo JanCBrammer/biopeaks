@@ -1,0 +1,24 @@
+{
+  "title": "biopeaks: a graphical user interface for feature extraction from heart- and breathing biosignals",
+  "description": "<a href=\"https://jancbrammer.github.io/biopeaks\">jancbrammer.github.io/biopeaks</a>",
+  "creators": [
+    {
+      "affiliation": "Behavioral Science Institute, Radboud University Nijmegen, Nijmegen, The Netherlands",
+      "name": "Brammer, Jan C",
+      "orcid": "0000-0002-7664-3753"
+    }
+  ],
+  "keywords": [
+    "Python",
+    "GUI",
+    "biosignals",
+    "heart",
+    "breathing",
+    "ECG",
+    "PPG",
+    "meg",
+    "feature extraction"
+  ],
+  "license": "GPL-3.0",
+  "upload_type": "software"
+}
