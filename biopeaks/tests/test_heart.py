@@ -156,9 +156,9 @@ def idfn(val):
 
 
 @pytest.mark.parametrize("peaks_misaligned, iterative, rmssd_diff",
-                         [(2, True, 34), (2, False, 27),
+                         [(2, True, 33), (2, False, 27),
                           (4, True, 133), (4, False, 113),
-                          (8, True, 466), (8, False, 444)],
+                          (8, True, 467), (8, False, 444)],
                          indirect=["peaks_misaligned"], ids=idfn)
 def test_misaligned_correction_wrapper(peaks_correct, peaks_misaligned,
                                        iterative, rmssd_diff):

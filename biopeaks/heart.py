@@ -238,14 +238,14 @@ def correct_peaks(peaks, sfreq, iterative=True):
     sfreq : int
         Sampling frequency of the cardiac signal containing `peaks`.
     iterative : bool, optional
-        Repeat correction until no artifacts are identified. Default is True.
+        Repeat correction until heuristic convergence. Default is True.
         The iterative application of the artifact correction is not part of
         the algorithm described in [1].
 
     Returns
     -------
-    peaks_clean
-        [description]
+    peaks_clean : ndarray
+        Cardiac extrema (R-peaks or systolic peaks) after artifact correction.
 
     References
     ----------
@@ -257,24 +257,34 @@ def correct_peaks(peaks, sfreq, iterative=True):
     artifacts = _find_artifacts(peaks, sfreq)
     peaks_clean = _correct_artifacts(artifacts, peaks)
 
-    if iterative:    # apply artifact correction until the number of artifacts doesn't change from one iteration to the next
+    if iterative:
+        hashed_artifacts = _hash_artifacts(artifacts)
+        # Keep track of all artifact constellations that occurred throughout iterations.
+        # Hash artifacts to avoid keeping track of dictionaries. Use set for fast lookup.
+        previous_artifacts = {hashed_artifacts}
 
-        n_artifacts_previous = np.inf
-        n_artifacts_current = sum([len(i) for i in artifacts.values()])
-
-        previous_diff = 0
-
-        while n_artifacts_current - n_artifacts_previous != previous_diff:
-
-            previous_diff = n_artifacts_previous - n_artifacts_current
+        while True:
 
             artifacts = _find_artifacts(peaks_clean, sfreq)
+            hashed_artifacts = _hash_artifacts(artifacts)
+            if hashed_artifacts in previous_artifacts:
+                # Stop iterating if this exact artifact constellation occurred before,
+                # which heuristically implies convergence in the form of
+                # a) cyclic recurrence of artifact constellations or b) unchanging artifact constellation.
+                break
+            previous_artifacts.add(hashed_artifacts)
             peaks_clean = _correct_artifacts(artifacts, peaks_clean)
 
-            n_artifacts_previous = n_artifacts_current
-            n_artifacts_current = sum([len(i) for i in artifacts.values()])
-
     return peaks_clean
+
+
+def _hash_artifacts(artifacts):
+    """Hash artifact constellation."""
+    flattened_artifacts = [item for sublist in artifacts.values()
+                           for item in sublist]
+    hashed_artifacts = hash(tuple(flattened_artifacts))    # only immutable structures allow hashing, hence conversion
+
+    return hashed_artifacts
 
 
 def _find_artifacts(peaks, sfreq, enable_plot=False):
