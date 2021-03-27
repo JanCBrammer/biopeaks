@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
 """Collection of filters.
 
-To obtain a zero-phase, non-causal filter, scipy.signal.filtfilt is used to
+To obtain a zero-phase, non-causal filter, scipy.signal.sosfiltfilt is used to
 filter the signal. I.e. the filtered signal is not phase shifted with respect
 to the original signal since the filtering is performed in both directions
 (phase shifts cancel each other out).
+
+Following SciPy recommendations, the second-order sections format is used to
+avoid numerical error with transfer function (ba) format.
 """
 
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, sosfiltfilt, filtfilt
 import numpy as np
 
 
-def butter_lowpass(cutoff, sfreq, order=5):
+def _butter_lowpass(cutoff, sfreq, order=5):
     """Design IIR low-pass Butterworth filter.
 
     Parameters
@@ -25,13 +28,13 @@ def butter_lowpass(cutoff, sfreq, order=5):
 
     Returns
     -------
-    b, a : ndarray, ndarray
-        Numerator (`b`) and denominator (`a`) polynomials of the IIR filter.
+    sos : ndarray
+        Second-order sections representation of the IIR filter.
     """
     nyq = 0.5 * sfreq
     normal_cutoff = cutoff / nyq
-    b, a = butter(order, normal_cutoff, btype='low')
-    return b, a
+    sos = butter(order, normal_cutoff, btype="low", output="sos")
+    return sos
 
 
 def butter_lowpass_filter(signal, cutoff, sfreq, order=5):
@@ -53,12 +56,12 @@ def butter_lowpass_filter(signal, cutoff, sfreq, order=5):
     y : ndarray
         The filtered signal.
     """
-    b, a = butter_lowpass(cutoff, sfreq, order=order)
-    y = filtfilt(b, a, signal, method='pad')
+    sos = _butter_lowpass(cutoff, sfreq, order=order)
+    y = sosfiltfilt(sos, signal)
     return y
 
 
-def butter_highpass(cutoff, sfreq, order=5):
+def _butter_highpass(cutoff, sfreq, order=5):
     """Design IIR high-pass Butterworth filter.
 
     Parameters
@@ -72,13 +75,13 @@ def butter_highpass(cutoff, sfreq, order=5):
 
     Returns
     -------
-    b, a : ndarray, ndarray
-        Numerator (`b`) and denominator (`a`) polynomials of the IIR filter.
+    sos : ndarray
+        Second-order sections representation of the IIR filter.
     """
     nyq = 0.5 * sfreq
     normal_cutoff = cutoff / nyq
-    b, a = butter(order, normal_cutoff, btype='high')
-    return b, a
+    sos = butter(order, normal_cutoff, btype="high", output="sos")
+    return sos
 
 
 def butter_highpass_filter(signal, cutoff, sfreq, order=5):
@@ -100,12 +103,12 @@ def butter_highpass_filter(signal, cutoff, sfreq, order=5):
     y : ndarray
         The filtered signal.
     """
-    b, a = butter_highpass(cutoff, sfreq, order=order)
-    y = filtfilt(b, a, signal, method='pad')
+    sos = _butter_highpass(cutoff, sfreq, order=order)
+    y = sosfiltfilt(sos, signal)
     return y
 
 
-def butter_bandpass(lowcut, highcut, sfreq, order=5):
+def _butter_bandpass(lowcut, highcut, sfreq, order=5):
     """Design IIR band-pass Butterworth filter.
 
     Parameters
@@ -119,14 +122,14 @@ def butter_bandpass(lowcut, highcut, sfreq, order=5):
 
     Returns
     -------
-    b, a : ndarray, ndarray
-        Numerator (`b`) and denominator (`a`) polynomials of the IIR filter.
+    sos : ndarray
+        Second-order sections representation of the IIR filter.
     """
     nyq = 0.5 * sfreq
     low = lowcut / nyq
     high = highcut / nyq
-    b, a = butter(order, [low, high], btype='band')
-    return b, a
+    sos = butter(order, [low, high], btype="band", output="sos")
+    return sos
 
 
 def butter_bandpass_filter(signal, lowcut, highcut, sfreq, order=5):
@@ -148,8 +151,8 @@ def butter_bandpass_filter(signal, lowcut, highcut, sfreq, order=5):
     y : ndarray
         The filtered signal.
     """
-    b, a = butter_bandpass(lowcut, highcut, sfreq, order=order)
-    y = filtfilt(b, a, signal, method='pad')
+    sos = _butter_bandpass(lowcut, highcut, sfreq, order=order)
+    y = sosfiltfilt(sos, signal)
     return y
 
 
@@ -168,7 +171,7 @@ def moving_average(signal, window_size):
     y : ndarray
         The filtered signal.
     """
-    y = np.convolve(signal, np.ones((window_size,)) / window_size, mode='same')
+    y = np.convolve(signal, np.ones((window_size,)) / window_size, mode="same")
     return y
 
 
