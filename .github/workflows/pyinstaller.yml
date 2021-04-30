@@ -4,10 +4,6 @@ on:
   # release:
   #   types: [published]
 
-defaults:
-  run:
-    working-directory: pyinstaller
-
 jobs:
 
   build_windows:
@@ -23,16 +19,17 @@ jobs:
       with:
         auto-update-conda: true
         activate-environment: pyinstaller_env
-        environment-file: environment.yml
+        environment-file: pyinstaller/environment.yml
         python-version: 3.8
         auto-activate-base: false
 
     - name: build with pyinstaller
       shell: powershell
+      working-directory: pyinstaller
       run: | # make sure to add root (..) to paths, otherwise biopeaks cannot be imported
         pyinstaller --onefile --name=biopeaks --icon=python_icon.ico --paths=.. pyinstaller_entry.py
     - name: upload exe artifact
       uses: actions/upload-artifact@v2
       with:
         name: biopeaks_windows
-        path: dist/biopeaks.exe
+        path: pyinstaller/dist/biopeaks.exe
