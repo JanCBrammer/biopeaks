@@ -22,7 +22,7 @@ setup(
     project_urls={"Documentation": "https://jancbrammer.github.io/biopeaks",
                   "Source": "https://github.com/JanCBrammer/biopeaks"},
     keywords="ECG PPG Breathing Biosignals Bitalino OpenSignals EDF GUI",
-    packages=find_namespace_packages(exclude=["misc", "paper"]),
+    packages=find_namespace_packages(exclude=["misc", "paper", "pyinstaller"]),
     python_requires=">=3.7",
     license="GPL-3.0",
     include_package_data=True,
