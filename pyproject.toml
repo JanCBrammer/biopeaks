@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "biopeaks"
+version = "1.4.1"
+description = "A graphical user interface for feature extraction from heart- and breathing biosignals."
+authors = ["Jan C. Brammer <jan.c.brammer@gmail.com>"]
+license = "GPL-3.0"
+exclude = ["misc", "paper", "pyinstaller"]
+readme = "README.md"
+keywords= ["ECG", "PPG", "Breathing", "Biosignals", "GUI"]
+repository = "https://github.com/JanCBrammer/biopeaks"
+documentation = "https://jancbrammer.github.io/biopeaks"
+
+[tool.poetry.dependencies]
+python = "3.8.10"
+scipy = "^1.6.3"
+numpy = "^1.20.3"
+pandas = "^1.2.4"
+matplotlib = "^3.4.2"
+PySide2 = "^5.15.2"
+
+[tool.poetry.dev-dependencies]
+flake8 = "^3.9.2"
+pyinstaller = "^4.3"
+pytest = "^6.2.4"
+pytest-cov = "^2.12.0"
+pytest-qt = "^3.3.0"
+
+[tool.poetry.scripts]
+biopeaks = "biopeaks.__main__:main"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

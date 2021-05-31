@@ -1,4 +1,4 @@
-![logo](docs/images/logo.png)
+![logo](https://github.com/JanCBrammer/biopeaks/raw/master/docs/images/logo.png)
 
 ![GH Actions](https://github.com/JanCBrammer/biopeaks/workflows/test/badge.svg?branch=dev)
 [![codecov](https://codecov.io/gh/JanCBrammer/biopeaks/branch/master/graph/badge.svg)](https://codecov.io/gh/JanCBrammer/biopeaks)
@@ -26,7 +26,7 @@ peaks in breathing signals) with signal-specific, sensible defaults
 + automatic analysis of multiple files (batch processing)
 
 
-![GUI](docs/images/screenshot_statistics.png)
+![GUI](https://github.com/JanCBrammer/biopeaks/raw/master/docs/images/screenshot_statistics.png)
 
 
 # Installation
