@@ -11,7 +11,7 @@ on:
 
 jobs:
 
-  build:
+  lint_test:
 
     runs-on: ${{ matrix.os }}
     continue-on-error: false
@@ -31,31 +31,41 @@ jobs:
     - name: Install and configure Poetry
       uses: snok/install-poetry@v1.1.6
       with:
-        version: 1.1.6
-        virtualenvs-create: false
-        virtualenvs-in-project: false
+        virtualenvs-create: true
+        virtualenvs-in-project: true
 
-    - name: Local install
-      shell: bash -l {0}
-      run: |    # local install as well as dependencies
-        poetry install
+    - name: Load cached venv
+      id: cached-pip-wheels
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache
+        key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
+    - name: Install dependencies
+      run: poetry install --no-interaction --no-root
+
+    - name: Install biopeaks
+      run: poetry install --no-interaction
 
     - name: Lint
       if: matrix.os == 'ubuntu-latest'
       shell: bash -l {0}
       run: |
+        source $VENV
         flake8 biopeaks --exclude biopeaks/images,biopeaks/tests/testdata,biopeaks/resources.py --max-complexity=10 --ignore E303,C901,E203,W503,E501,W504,E129,W605,E371,E731
 
     - name: Test on Windows and MacOS
       if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
       shell: bash -l {0}
       run: |
+        source $VENV
         pytest -v
 
     - name: Test on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       shell: bash -l {0}
       run: |    # run coverage only on Ubuntu
+        source $VENV
         sudo apt install -y xvfb x11-utils libxkbcommon-x11-0
         xvfb-run pytest -v --cov-config=.coveragerc --cov-report=xml --cov=biopeaks
 
