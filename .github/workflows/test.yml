@@ -66,7 +66,7 @@ jobs:
       shell: bash -l {0}
       run: |    # run coverage only on Ubuntu
         source $VENV
-        sudo apt install -y xvfb x11-utils libxkbcommon-x11-0
+        sudo apt-get install -y xvfb x11-utils libxkbcommon-x11-0
         xvfb-run pytest -v --cov-config=.coveragerc --cov-report=xml --cov=biopeaks
 
     - name: Upload coverage report
