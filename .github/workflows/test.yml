@@ -57,7 +57,7 @@ jobs:
         flake8 biopeaks --exclude biopeaks/images,biopeaks/tests/testdata,biopeaks/resources.py --max-complexity=10 --ignore E303,C901,E203,W503,E501,W504,E129,W605,E371,E731
 
     - name: Test on Windows
-      if: matrix.os == 'windows-latest
+      if: matrix.os == 'windows-latest'
       shell: bash -l {0}
       run: |
         source $VENV
