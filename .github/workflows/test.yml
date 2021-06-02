@@ -14,10 +14,10 @@ jobs:
   lint_test:
 
     runs-on: ${{ matrix.os }}
-    continue-on-error: false
     strategy:
+      fail-fast: false
       matrix:    # all steps of this job will run using this matrix (matrix not accessible to other jobs)
-        os: [windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: [3.8]
 
     steps:
