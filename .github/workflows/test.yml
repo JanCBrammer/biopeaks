@@ -56,11 +56,19 @@ jobs:
         source $VENV
         flake8 biopeaks --exclude biopeaks/images,biopeaks/tests/testdata,biopeaks/resources.py --max-complexity=10 --ignore E303,C901,E203,W503,E501,W504,E129,W605,E371,E731
 
-    - name: Test on Windows and MacOS
-      if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
+    - name: Test on Windows
+      if: matrix.os == 'windows-latest
       shell: bash -l {0}
       run: |
         source $VENV
+        pytest -v
+
+    - name: Test on MacOS
+      if: matrix.os == 'macos-latest'
+      shell: bash -l {0}
+      run: |
+        source $VENV
+        export QT_QPA_PLATFORM=offscreen
         pytest -v
 
     - name: Test on Ubuntu
