@@ -3,8 +3,8 @@
 
 import numpy as np
 from itertools import cycle
-from .filters import butter_bandpass_filter
-from .analysis_utils import interp_stats
+from biopeaks.filters import butter_bandpass_filter
+from biopeaks.analysis_utils import interp_stats
 
 
 def resp_extrema(signal, sfreq):

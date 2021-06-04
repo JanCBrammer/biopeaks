@@ -3,9 +3,9 @@
 
 import sys
 from PySide2.QtWidgets import QApplication
-from .model import Model
-from .view import View
-from .controller import Controller
+from biopeaks.model import Model
+from biopeaks.view import View
+from biopeaks.controller import Controller
 
 
 class Application(QApplication):

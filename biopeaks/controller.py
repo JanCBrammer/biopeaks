@@ -6,10 +6,10 @@ import threading
 import pandas as pd
 import numpy as np
 from functools import wraps
-from .heart import ecg_peaks, ppg_peaks, correct_peaks, heart_stats
-from .resp import ensure_peak_trough_alternation, resp_extrema, resp_stats
-from .io_utils import (read_custom, read_opensignals, read_edf,
-                       write_custom, write_opensignals, write_edf)
+from biopeaks.heart import ecg_peaks, ppg_peaks, correct_peaks, heart_stats
+from biopeaks.resp import ensure_peak_trough_alternation, resp_extrema, resp_stats
+from biopeaks.io_utils import (read_custom, read_opensignals, read_edf,
+                               write_custom, write_opensignals, write_edf)
 from pathlib import Path
 from scipy.signal import find_peaks as find_peaks_scipy
 from PySide2.QtCore import QObject, QRunnable, QThreadPool, Signal
