@@ -17,13 +17,19 @@ numpy = "^1.20.3"
 pandas = "^1.2.4"
 matplotlib = "^3.4.2"
 PySide2 = "^5.15.2"
+# Don't include PyInstaller in dev-dependencies.
+# Instead install PyInstaller as extra (see below) in order to keep virtual environment lean.
+# I.e., don't install dev-dependencies when building with PyInstaller.
+pyinstaller = { version = "^4.3", optional = true }
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.9.2"
-pyinstaller = "^4.3"
 pytest = "^6.2.4"
 pytest-cov = "^2.12.0"
 pytest-qt = "^3.3.0"
+
+[tool.poetry.extras]
+pyinstaller = ["pyinstaller"]
 
 [tool.poetry.scripts]
 biopeaks = "biopeaks.__main__:main"
