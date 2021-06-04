@@ -32,7 +32,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        poetry install --no-interaction --no-root --extras "pyinstaller"
+        poetry install --no-interaction --no-root --no-dev --extras "pyinstaller"
 
     - name: Build with pyinstaller
       shell: bash -l {0}
