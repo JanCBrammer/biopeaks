@@ -34,13 +34,13 @@ jobs:
       run: |
         poetry install --no-interaction --no-root --no-dev --extras "pyinstaller"
 
-    - name: Build with pyinstaller
+    - name: Build executable
       shell: bash -l {0}
       run:  |
         source $VENV
         pyinstaller --onefile --name=biopeaks --icon=biopeaks/images/python_icon.ico biopeaks/__main__.py
 
-    - name: Upload exe artifact
+    - name: Upload executable
       uses: actions/upload-artifact@v2
       with:
         name: biopeaks_windows
