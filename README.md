@@ -36,6 +36,10 @@ peaks in breathing signals) with signal-specific, sensible defaults
 ```
 pip install biopeaks
 ```
+
+Alternatively, on Windows, download [biopeaks.exe](https://github.com/JanCBrammer/biopeaks/releases/latest)
+and run it. Running the executable does not require a Python installation.
+
 You can find more details on the installation [here](https://jancbrammer.github.io/biopeaks/installation.html).
 
 

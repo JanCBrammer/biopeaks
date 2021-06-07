@@ -1,5 +1,9 @@
 # Changelog
 
+### Version 1.4.2 (June 07, 2021)
++ enhancement: [improved stopping criterion for iterative artifact correction](https://github.com/JanCBrammer/biopeaks/commit/3a25e7c4f9cef3cab28afe067449f280340e71ee). 
++ enhancement: [using sos format instead of ba format for butterworth filters.](https://github.com/JanCBrammer/biopeaks/commit/8f52909cebafd3b162c943dddf9e4ca1d8838cab). 
+  
 ### Version 1.4.1 (October 26, 2020)
 + enhancement: updated documentation and docstrings.
 + enhancement: more convenient PPG benchmarking.

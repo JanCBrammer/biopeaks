@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "biopeaks"
-version = "1.4.1"
+version = "1.4.2"
 description = "A graphical user interface for feature extraction from heart- and breathing biosignals."
 authors = ["Jan C. Brammer <jan.c.brammer@gmail.com>"]
 license = "GPL-3.0"
@@ -18,20 +18,27 @@ pandas = "^1.2.4"
 matplotlib = "^3.4.2"
 PySide2 = "^5.15.2"
 # Don't include PyInstaller in dev-dependencies.
-# Instead install PyInstaller as extra (see below) in order to keep virtual environment lean.
+# Instead install PyInstaller as extra (see below) in order to keep virtual environment lean when building an executable.
 # I.e., don't install dev-dependencies when building with PyInstaller.
 pyinstaller = { version = "^4.3", optional = true }
 
 [tool.poetry.dev-dependencies]
+# linting
 flake8 = "^3.9.2"
+# testing
 pytest = "^6.2.4"
 pytest-cov = "^2.12.0"
 pytest-qt = "^3.3.0"
+# benchmarking
+aiohttp = "^3.7.4"
+wfdb = "^3.4.0"
+h5py = "^3.2.1"
 
 [tool.poetry.extras]
 pyinstaller = ["pyinstaller"]
 
 [tool.poetry.scripts]
+# command line entry-point
 biopeaks = "biopeaks.__main__:main"
 
 [build-system]

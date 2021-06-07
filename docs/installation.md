@@ -1,9 +1,18 @@
-## Installation
+# Installation
+
+## As executable
+
+For Windows you can download [biopeaks.exe](https://github.com/JanCBrammer/biopeaks/releases/latest). Double-click the 
+executable to run it. You don't need a Python installation on your computer to run the executable.
+Currently, there are no executables available for macOS or Linux
+(please [open an issue](https://help.github.com/en/github/managing-your-work-on-github/creating-an-issue) if you're interested).
+
+## As Python package
 
 ### Instructions for users without a Python installation
 If you don't have experience with installing Python packages and/or if you
 aren't sure if you have Python on your computer start by setting up Python.
-Go to https://docs.conda.io/en/latest/miniconda.html and install the latest
+Go to <https://docs.conda.io/en/latest/miniconda.html> and install the latest
 miniconda distribution for your operating system.
 Follow these [instructions](https://conda.io/projects/conda/en/latest/user-guide/install/index.html)
 in case you're unsure about the installation. Once you've installed miniconda, open the
@@ -14,7 +23,7 @@ the commands to be executed):
 ```
 conda config --add channels conda-forge
 conda config --set channel_priority strict
-conda create -y -n biopeaks python=3.7 scipy numpy pyside2 matplotlib pandas
+conda create -y -n biopeaks python=3.8 scipy numpy pyside2 matplotlib pandas
 conda activate biopeaks
 pip install biopeaks
 ```
@@ -31,19 +40,12 @@ biopeaks
 ```
 
 ### Instructions for users who already have a Python installation
+Have a look at the project's [pyproject.toml file](https://github.com/JanCBrammer/biopeaks/blob/master/pyproject.toml)
+for an up-to-date list of the dependencies. In order to manage the dependencies, it is highly recommended to install
+`biopeaks` into an isolated environment using [miniconda](https://docs.conda.io/en/latest/miniconda.html),
+[Poetry](https://python-poetry.org/), or other tools for creating and managing virtual environments.
 
-#### dependencies
-Make sure that the following requirements are met for your Python environment:
-
-python >= 3.7<br/>
-pyside2 >= 5.13.2<br/>
-qt >= 5.12.5<br/>
-numpy >= 1.18.1<br/>
-scipy >= 1.4.1<br/>
-pandas >= 0.25.3<br/>
-matplotlib >= 3.2.1
-
-Once you have all the dependencies, install `biopeaks` with
+Once you've set up an environment containing all the dependencies, install `biopeaks` with
 
 ```
 pip install biopeaks
@@ -54,6 +56,3 @@ You can then open the application by typing
 ```
 biopeaks
 ```
-
-In order to manage the dependencies, it is highly recommended to install
-`biopeaks` into an isolated environment (e.g., conda, or virtualenv).
