@@ -11,7 +11,7 @@ repository = "https://github.com/JanCBrammer/biopeaks"
 documentation = "https://jancbrammer.github.io/biopeaks"
 
 [tool.poetry.dependencies]
-python = "3.8.10"
+python = "3.8.*"
 scipy = "^1.6.3"
 numpy = "^1.20.3"
 pandas = "^1.2.4"
