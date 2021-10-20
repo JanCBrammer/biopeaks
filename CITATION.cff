@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "You can cite this software as below."
+authors:
+- family-names: "Brammer"
+  given-names: "Jan C."
+  orcid: "https://orcid.org/0000-0002-7664-3753"
+title: "biopeaks"
+version: 1.4.2
+doi: 10.5281/zenodo.4911192
+date-released: 2021-06-08
+url: "https://github.com/JanCBrammer/biopeaks"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Brammer"
+    given-names: "Jan C."
+    orcid: "https://orcid.org/0000-0002-7664-3753"
+  doi: "10.21105/joss.02621"
+  journal: "Journal of Open Source Software"
+  title: "biopeaks: a graphical user interface for feature extraction from heart- and breathing biosignals"
+  volume: 5
+  year: 2020
