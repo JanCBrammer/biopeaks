@@ -1,4 +1,4 @@
-![logo](https://github.com/JanCBrammer/biopeaks/raw/master/docs/images/logo.png)
+<img src="https://github.com/JanCBrammer/biopeaks/raw/master/docs/images/logo.png" alt="logo" style="width:600px;"/>
 
 ![GH Actions](https://github.com/JanCBrammer/biopeaks/workflows/test/badge.svg?branch=dev)
 [![codecov](https://codecov.io/gh/JanCBrammer/biopeaks/branch/master/graph/badge.svg)](https://codecov.io/gh/JanCBrammer/biopeaks)
