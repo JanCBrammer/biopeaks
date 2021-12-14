@@ -7,7 +7,7 @@
 name: CI
 on: [push, pull_request, release]    # runs on all branches
 env:
-  PYTHON_VERSION: 3.8
+  PYTHON_VERSION: 3.9
 
 jobs:
 
@@ -52,7 +52,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install and configure Poetry
-      uses: snok/install-poetry@v1.1.6
+      uses: snok/install-poetry@v1
       with:
         virtualenvs-create: true
         virtualenvs-in-project: true
@@ -87,7 +87,7 @@ jobs:
 
     - name: Upload coverage report
       if: matrix.os == 'ubuntu-latest'
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v2
       with:
         file: ./coverage.xml
 
@@ -108,7 +108,7 @@ jobs:
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install and configure Poetry
-      uses: snok/install-poetry@v1.1.6
+      uses: snok/install-poetry@v1
       with:
         virtualenvs-create: true
         virtualenvs-in-project: true
@@ -144,7 +144,7 @@ jobs:
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install and configure Poetry
-      uses: snok/install-poetry@v1.1.6
+      uses: snok/install-poetry@v1
       with:
         virtualenvs-create: true
         virtualenvs-in-project: true
