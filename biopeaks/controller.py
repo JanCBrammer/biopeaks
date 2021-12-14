@@ -12,8 +12,8 @@ from biopeaks.io_utils import (read_custom, read_opensignals, read_edf,
                                write_custom, write_opensignals, write_edf)
 from pathlib import Path
 from scipy.signal import find_peaks as find_peaks_scipy
-from PySide2.QtCore import QObject, QRunnable, QThreadPool, Signal
-from PySide2.QtWidgets import QFileDialog
+from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
+from PySide6.QtWidgets import QFileDialog
 getOpenFileName = QFileDialog.getOpenFileName
 getOpenFileNames = QFileDialog.getOpenFileNames
 getSaveFileName = QFileDialog.getSaveFileName

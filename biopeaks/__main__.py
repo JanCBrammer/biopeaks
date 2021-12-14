@@ -2,7 +2,7 @@
 """Instantiate the MVC application."""
 
 import sys
-from PySide2.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 from biopeaks.model import Model
 from biopeaks.view import View
 from biopeaks.controller import Controller

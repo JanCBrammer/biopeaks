@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """View component of the MVC application."""
 
-from PySide2.QtWidgets import (QWidget, QComboBox, QAction, QMainWindow,
+from PySide6.QtWidgets import (QWidget, QComboBox, QMainWindow,
                                QVBoxLayout, QHBoxLayout, QCheckBox,
                                QLabel, QStatusBar, QGroupBox, QDockWidget,
                                QLineEdit, QFormLayout, QPushButton,
                                QProgressBar, QSplitter, QDialog)
-from PySide2.QtCore import Qt, QSignalMapper, QRegExp
-from PySide2.QtGui import QIcon, QRegExpValidator
+from PySide6.QtCore import Qt, QSignalMapper, QRegularExpression
+from PySide6.QtGui import QIcon, QRegularExpressionValidator, QAction
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
                                                 FigureCanvas)
@@ -180,9 +180,9 @@ class View(QMainWindow):
         self.segmentermap = QSignalMapper(self)
         self.segmenter = QDockWidget("select a segment", self)
         self.segmenter.setFeatures(QDockWidget.NoDockWidgetFeatures)    # disable closing such that widget can only be closed by confirming selection or custom button
-        regex = QRegExp("[0-9]*\.?[0-9]{4}")    # Limit number of decimals to four
+        regex = QRegularExpression("[0-9]*\.?[0-9]{4}")    # Limit number of decimals to four
 
-        validator = QRegExpValidator(regex)
+        validator = QRegularExpressionValidator(regex)
 
         self.startlabel = QLabel("start")
         self.startedit = QLineEdit()
@@ -228,8 +228,8 @@ class View(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.segmenter)
 
         # Custom file dialog.
-        regex = QRegExp("[1-9][0-9]")
-        validator = QRegExpValidator(regex)
+        regex = QRegularExpression("[1-9][0-9]")
+        validator = QRegularExpressionValidator(regex)
 
         self.signallabel = QLabel("biosignal column")
         self.signaledit = QLineEdit()
@@ -239,15 +239,15 @@ class View(QMainWindow):
         self.markeredit = QLineEdit()
         self.markeredit.setValidator(validator)
 
-        regex = QRegExp("[0-9]{2}")
-        validator = QRegExpValidator(regex)
+        regex = QRegularExpression("[0-9]{2}")
+        validator = QRegularExpressionValidator(regex)
 
         self.headerrowslabel = QLabel("number of header rows")
         self.headerrowsedit = QLineEdit()
         self.headerrowsedit.setValidator(validator)
 
-        regex = QRegExp("[0-9]{5}")
-        validator = QRegExpValidator(regex)
+        regex = QRegularExpression("[0-9]{5}")
+        validator = QRegularExpressionValidator(regex)
 
         self.sfreqlabel = QLabel("sampling rate")
         self.sfreqedit = QLineEdit()
@@ -300,7 +300,7 @@ class View(QMainWindow):
         self.segmentermap.setMapping(segmentSignal, 1)
         signalmenu.addAction(segmentSignal)
 
-        self.segmentermap.mapped.connect(self.toggle_segmenter)
+        self.segmentermap.mappedInt.connect(self.toggle_segmenter)
 
         saveSignal = QAction("save", self)
         saveSignal.triggered.connect(self._controller.save_channels)

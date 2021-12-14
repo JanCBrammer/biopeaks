@@ -3,7 +3,7 @@
 
 import numpy as np
 from pathlib import Path
-from PySide2.QtCore import QObject, Signal, Slot, Property
+from PySide6.QtCore import QObject, Signal, Slot, Property
 
 
 class Model(QObject):

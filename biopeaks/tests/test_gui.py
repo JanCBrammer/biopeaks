@@ -15,7 +15,7 @@ import pytest
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from PySide2.QtCore import Qt
+from PySide6.QtCore import Qt
 from biopeaks.model import Model
 from biopeaks.view import View
 from biopeaks.controller import Controller
