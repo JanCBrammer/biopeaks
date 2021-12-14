@@ -112,3 +112,24 @@ You can then run the `benchmark_PPG_local` script in the `benchmarks` folder. In
 
 ### [Using GitHub](https://docs.github.com/en)
 
+
+## Local development on Windows
+To develop and build `biopeaks` locally on Windows I found the following to be an ok solution (albeit somewhat hacky):
+Set up a minimal Python environment using [miniconda](https://docs.conda.io/en/latest/miniconda.html). This environment merely contains Python and pip.
+```
+conda create --name biopeaks_dev python=3.9
+```
+Within the conda environment, use [Poetry](https://python-poetry.org/) to manage dependencies.
+```
+conda activate biopeaks_dev
+pip install poetry
+```
+Note that Poetry usually creates its own virtual environments. However, we'll use it
+inside an existing environment. To make sure Poetry doesn't redundantly nest a virual environment within the conda environment we run
+```
+poetry config virtualenvs.create false --local
+```
+Now we can install an editable version of `biopeaks` alongside its depencencies with
+```
+poetry install --extras pyinstaller
+```
