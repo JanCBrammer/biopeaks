@@ -1,6 +1,6 @@
 <img src="https://github.com/JanCBrammer/biopeaks/raw/master/docs/images/logo.png" alt="logo" style="width:600px;"/>
 
-![GH Actions](https://github.com/JanCBrammer/biopeaks/workflows/test/badge.svg?branch=dev)
+![GH Actions](https://github.com/JanCBrammer/biopeaks/workflows/test/badge.svg?branch=master)
 [![codecov](https://codecov.io/gh/JanCBrammer/biopeaks/branch/master/graph/badge.svg)](https://codecov.io/gh/JanCBrammer/biopeaks)
 [![DOI](https://www.zenodo.org/badge/172897525.svg)](https://www.zenodo.org/badge/latestdoi/172897525)
 [![PyPI version](https://img.shields.io/pypi/v/biopeaks.svg)](https://pypi.org/project/biopeaks/)
