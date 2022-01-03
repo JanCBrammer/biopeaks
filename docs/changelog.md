@@ -1,6 +1,6 @@
 # Changelog
 
-### Version 1.4.3 (Month dd, yyyy)
+### Version 1.4.3 (January 04, 2022)
 + enhancement: ported from PySide2 to PySide6.
 
 ### Version 1.4.2 (June 07, 2021)
