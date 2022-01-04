@@ -114,6 +114,8 @@ You can then run the `benchmark_PPG_local` script in the `benchmarks` folder. In
 
 
 ## Local development on Windows
+
+### Editable development
 To develop and build `biopeaks` locally on Windows I found the following to be an ok solution (albeit somewhat hacky):
 Set up a minimal Python environment using [miniconda](https://docs.conda.io/en/latest/miniconda.html). This environment merely contains Python and pip.
 ```
@@ -132,4 +134,28 @@ poetry config virtualenvs.create false --local
 Now we can install an editable version of `biopeaks` alongside its depencencies with
 ```
 poetry install --extras pyinstaller
+```
+
+### Building executable with PyInstaller
+Create an additional environment that contains only the build dependencies in
+order to reduce the build size. Configure the build environment just like the [editable development environment](#editable-development).
+```
+conda create --name biopeaks_build python=3.9
+conda activate biopeaks_build
+pip install poetry
+poetry config virtualenvs.create false --local
+```
+Now we use Poetry to only install the build dependencies, leaving out the development dependencies.
+The latter would unnecessarily increase the build size.
+```
+poetry install --no-root --no-dev --extras "pyinstaller"
+```
+Now we can build the application from the root of the repository using PyInstaller.
+Note that PyInstaller needs access to the `__main__.py` entry-point as if the file
+would be located outside the `biopeaks` sub-directory (since `biopeaks` is imported
+using absolute imports inside `__main__.py`). This is why we need to pass the root (`.`)
+to the PyInstaller paths. For more details see https://pyinstaller.readthedocs.io/en/stable/runtime-information.html.
+```
+pyinstaller --onefile --windowed --name=biopeaks --paths=. \
+--icon=biopeaks\images\python_icon.ico biopeaks\__main__.py 
 ```
