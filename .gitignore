@@ -10,3 +10,6 @@ __pycache__/
 biopeaks.egg-info/
 coverage.xml
 .coverage
+poetry.lock
+poetry.toml
+.venv
