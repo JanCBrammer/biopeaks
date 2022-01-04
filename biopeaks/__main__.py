@@ -33,7 +33,7 @@ def main():
     """
     app = Application(sys.argv)
     app._view.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == '__main__':

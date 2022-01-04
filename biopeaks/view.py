@@ -292,7 +292,7 @@ class View(QMainWindow):
         openSignal.addAction(openOpenSignals)
         openCustom = QAction("Custom", self)
         openCustom.triggered.connect(lambda: self._model.set_filetype("Custom"))
-        openCustom.triggered.connect(lambda: self.customfiledialog.exec_())
+        openCustom.triggered.connect(lambda: self.customfiledialog.exec())
         openSignal.addAction(openCustom)
 
         segmentSignal = QAction("select segment", self)
