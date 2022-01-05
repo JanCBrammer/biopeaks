@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "biopeaks"
-version = "1.4.3"
+version = "1.4.4"
 description = "A graphical user interface for feature extraction from heart- and breathing biosignals."
 authors = ["Jan C. Brammer <jan.c.brammer@gmail.com>"]
 license = "GPL-3.0"
@@ -14,8 +14,8 @@ documentation = "https://jancbrammer.github.io/biopeaks"
 # Currently forced to cap Python at 3.11 due to PyInstaller requirements.
 python = ">=3.9,<3.11"
 scipy = ">=1.7.3"
-numpy = ">=1.21.4"
-pandas = ">=1.3.4"
+numpy = ">=1.22.0"
+pandas = ">=1.3.5"
 matplotlib = ">=3.5.0"
 PySide6 = ">=6.2.2"
 # Don't include PyInstaller in dev-dependencies.

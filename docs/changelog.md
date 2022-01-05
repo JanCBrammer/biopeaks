@@ -1,7 +1,10 @@
 # Changelog
 
-### Version 1.4.3 (January 04, 2022)
+### Version 1.4.4 (January 05, 2022)
 + enhancement: ported from PySide2 to PySide6.
+
+### Version 1.4.3 (January 03, 2022)
+Removed due to build error in Windows executable (also yanked from PyPI).
 
 ### Version 1.4.2 (June 07, 2021)
 + enhancement: [improved stopping criterion for iterative artifact correction](https://github.com/JanCBrammer/biopeaks/commit/3a25e7c4f9cef3cab28afe067449f280340e71ee). 

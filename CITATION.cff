@@ -5,7 +5,7 @@ authors:
   given-names: "Jan C."
   orcid: "https://orcid.org/0000-0002-7664-3753"
 title: "biopeaks"
-version: 1.4.3
+version: 1.4.4
 doi: 10.5281/zenodo.3698561
 date-released: 2022-01-04
 url: "https://github.com/JanCBrammer/biopeaks"

@@ -21,11 +21,9 @@ and run the following commands (hit enter once you've typed each of the lines be
 the commands to be executed):
 
 ```
-conda config --add channels conda-forge
-conda config --set channel_priority strict
-conda create -y -n biopeaks python=3.9 scipy numpy matplotlib pandas
+conda create -y -n biopeaks python=3.9
 conda activate biopeaks
-pip install biopeaks PySide6 
+pip install scipy numpy matplotlib pandas PySide6 biopeaks 
 ```
 
 After the successful installation, open the application by typing
