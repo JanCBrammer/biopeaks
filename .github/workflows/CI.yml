@@ -166,7 +166,10 @@ jobs:
       shell: bash -l {0}
       run:  |
         source $VENV
-        pyinstaller --onefile --windowed --name=biopeaks --icon=biopeaks/images/python_icon.ico --paths=D:\\a\\biopeaks\\biopeaks biopeaks/__main__.py
+        pyinstaller --onefile --windowed --name=biopeaks --paths=D:\\a\\biopeaks\\biopeaks \
+        --hidden-import=distutils --hidden-import=distutils.version --hidden-import=distutils.unixccompiler \
+        --hidden-import=numpy.distutils --collect-all=numpy.distutils \
+        --icon=biopeaks\\images\\python_icon.ico biopeaks\\__main__.py
 
     - name: Upload executable
       uses: actions/upload-artifact@v2
