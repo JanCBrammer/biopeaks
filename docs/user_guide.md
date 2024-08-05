@@ -24,7 +24,7 @@ used in the exemplary work-flow are described in detail in the [functionality se
 
 ### extracting ECG features from an OpenSignals file
 
-1. Download the [example data](https://github.com/JanCBrammer/biopeaks/blob/master/docs/example_data.txt) (click the `Download` button on the upper right).
+1. Download the [example data](https://github.com/JanCBrammer/biopeaks/blob/main/docs/example_data.txt) (click the `Download` button on the upper right).
 
 2. Configure the processing options in the **configurations**:
     * Since we want to analyze ECG data, make sure that **_processing options_** -> _modality_ is set to "ECG".
@@ -49,7 +49,7 @@ used in the exemplary work-flow are described in detail in the [functionality se
 
 You can analyze any plain text file (.txt, .csv, .tsv) as long as it contains biosignal(s) as column(s).
 
-1. Download the [example data](https://github.com/JanCBrammer/biopeaks/blob/master/docs/example_data.txt) (click the `Download` button on the upper right).
+1. Download the [example data](https://github.com/JanCBrammer/biopeaks/blob/main/docs/example_data.txt) (click the `Download` button on the upper right).
 
 2. Configure the processing options in the **configurations**:
     * Since we want to analyze respiration data, make sure that **_processing options_** -> _modality_ is set to "RESP".

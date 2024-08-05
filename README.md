@@ -1,7 +1,7 @@
-<img src="https://github.com/JanCBrammer/biopeaks/raw/master/docs/images/logo.png" alt="logo" style="width:600px;"/>
+<img src="https://github.com/JanCBrammer/biopeaks/raw/main/docs/images/logo.png" alt="logo" style="width:600px;"/>
 
-![GH Actions](https://github.com/JanCBrammer/biopeaks/workflows/CI/badge.svg?branch=master)
-[![codecov](https://codecov.io/gh/JanCBrammer/biopeaks/branch/master/graph/badge.svg)](https://codecov.io/gh/JanCBrammer/biopeaks)
+![GH Actions](https://github.com/JanCBrammer/biopeaks/workflows/CI/badge.svg?branch=main)
+[![codecov](https://codecov.io/gh/JanCBrammer/biopeaks/branch/main/graph/badge.svg)](https://codecov.io/gh/JanCBrammer/biopeaks)
 [![DOI](https://www.zenodo.org/badge/172897525.svg)](https://www.zenodo.org/badge/latestdoi/172897525)
 [![PyPI version](https://img.shields.io/pypi/v/biopeaks.svg)](https://pypi.org/project/biopeaks/)
 [![JOSS](https://joss.theoj.org/papers/10.21105/joss.02621/status.svg)](https://doi.org/10.21105/joss.02621)
@@ -26,7 +26,7 @@ peaks in breathing signals) with signal-specific, sensible defaults
 + automatic analysis of multiple files (batch processing)
 
 
-![GUI](https://github.com/JanCBrammer/biopeaks/raw/master/docs/images/screenshot_statistics.png)
+![GUI](https://github.com/JanCBrammer/biopeaks/raw/main/docs/images/screenshot_statistics.png)
 
 
 # Installation

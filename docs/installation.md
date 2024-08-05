@@ -38,7 +38,7 @@ biopeaks
 ```
 
 ### Instructions for users who already have a Python installation
-Have a look at the project's [pyproject.toml file](https://github.com/JanCBrammer/biopeaks/blob/master/pyproject.toml)
+Have a look at the project's [pyproject.toml file](https://github.com/JanCBrammer/biopeaks/blob/main/pyproject.toml)
 for an up-to-date list of the dependencies. In order to manage the dependencies, it is highly recommended to install
 `biopeaks` into an isolated environment using [miniconda](https://docs.conda.io/en/latest/miniconda.html),
 [Poetry](https://python-poetry.org/), or other tools for creating and managing virtual environments.

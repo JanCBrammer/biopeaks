@@ -1,6 +1,6 @@
 # Contributor Guide
 
-Thanks for your interest in contributing to `biopeaks`! Please have a look at the [code of conduct](https://github.com/JanCBrammer/biopeaks/blob/master/code_of_conduct.md).
+Thanks for your interest in contributing to `biopeaks`! Please have a look at the [code of conduct](https://github.com/JanCBrammer/biopeaks/blob/main/code_of_conduct.md).
 
 
 ## Ways to contribute
@@ -50,7 +50,7 @@ You can follow these steps to contribute documentation, tests, or code:
 The GUI is structured according to a variant of the
 [model-view-controller architecture](https://martinfowler.com/eaaDev/uiArchs.html).
 To understand the relationship of the `model`, `view`, and `controller` have a look
-at how each of them is instantiated in [`__main__.py`](https://github.com/JanCBrammer/biopeaks/blob/master/biopeaks/__main__.py).
+at how each of them is instantiated in [`__main__.py`](https://github.com/JanCBrammer/biopeaks/blob/main/biopeaks/__main__.py).
 For example, the `view` has references to the `model` as well as the
 `controller`, whereas the `model` has no reference to any of the other
 components of the architecture (i.e., the `model` is agnostic to the `view` and
@@ -63,7 +63,7 @@ The documentation is hosted on GitHub pages, a static website associated
 with the `biopeaks` repository: <https://jancbrammer.github.io/biopeaks/>. It
 is automatically build from the `/docs` folder in the root of the `biopeaks` repository.
 The website is re-build every very time the content of `/docs` changes on the
-master branch (pushes, merged pull requests). `/docs` includes an `index.md` file
+main branch (pushes, merged pull requests). `/docs` includes an `index.md` file
 that constitutes the "landing page". It contains links to all other parts of the
 documentation. The layout of the website is defined in `/docs/layouts`. For
 additional information, head over to the [GitHub pages documentation](https://docs.github.com/en/free-pro-team@latest/github/working-with-github-pages).
